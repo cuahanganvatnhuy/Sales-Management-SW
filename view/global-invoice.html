@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hóa Đơn Toàn Cửa Hàng - PMQLDH</title>
+    <link rel="stylesheet" href="../style/man.css">
+    <link rel="stylesheet" href="../style/invoice.css">
+    <link rel="stylesheet" href="../style/navbar-submenu.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="../main/firebase.js"></script>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Đang tải...</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Navbar Component -->
+        <div id="navbar-container">
+            <!-- Navbar will be loaded here -->
+        </div>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header Component -->
+            <div id="header-container">
+                <!-- Header will be loaded here -->
+            </div>
+
+        <!-- Content Area -->
+        <div class="content-area">
+            <div class="page-container">
+                <!-- Invoice Navigation Tabs -->
+                <div class="page-tabs">
+                    <div class="tab-nav">
+                        <a href="global-invoice.html" class="tab-item active">
+                            <i class="fas fa-globe"></i>
+                            <span>Hóa Đơn Toàn Bộ</span>
+                        </a>
+                        <a href="store-invoice.html" class="tab-item">
+                            <i class="fas fa-store"></i>
+                            <span>Hóa Đơn Từng Cửa Hàng</span>
+                        </a>
+                        <!-- Debug button -->
+                       
+                    </div>
+                </div>
+
+               
+
+                <!-- Date Range Filter & Invoice Actions -->
+                <div class="date-filter-section">
+                    <div class="section-header">
+                        <h3><i class="fas fa-calendar-alt"></i> Khoảng Thời Gian &amp; Tạo Hóa Đơn</h3>
+                    </div>
+
+                    <div class="date-filter-controls">
+                        <div class="form-group">
+                            <label for="startDate">Từ ngày:</label>
+                            <input type="date" id="startDate" class="form-control">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="endDate">Đến ngày:</label>
+                            <input type="date" id="endDate" class="form-control">
+                        </div>
+
+                        <button type="button" class="btn btn-success" id="generateInvoiceBtn">
+                            <i class="fas fa-file-plus"></i> Tạo Hóa Đơn Toàn Bộ
+                        </button>
+
+                        <button type="button" class="btn btn-info hidden" id="printInvoiceBtn">
+                            <i class="fas fa-print"></i> In Hóa Đơn
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Invoice Preview -->
+                <div class="invoice-preview-section hidden" id="invoicePreviewSection">
+                    <div class="section-header">
+                        <h3><i class="fas fa-eye"></i> Xem Trước Hóa Đơn</h3>
+                    </div>
+
+                    <div class="invoice-content" id="invoiceContent">
+                        <!-- Invoice HTML will be inserted here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        </main>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <div class="toast-content">
+            <i class="toast-icon"></i>
+            <span class="toast-message"></span>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../main/submenu.js"></script>
+    <script src="../main/store-context.js"></script>
+    <script src="../main/header.js"></script>
+    <script src="../main/create-sample-stores.js"></script>
+
+    <!-- Fallback submenu function -->
+    <script>
+        // Fallback submenu toggle function - in case navbar not loaded yet
+        if (!window.toggleSubmenu) {
+            window.toggleSubmenu = function(event) {
+                event.preventDefault();
+                console.log('Toggle submenu clicked from global-invoice fallback');
+                
+                const submenu = document.getElementById('invoiceSubmenu');
+                if (submenu) {
+                    const isHidden = submenu.style.display === 'none' || submenu.style.display === '';
+                    
+                    if (isHidden) {
+                        submenu.style.display = 'block';
+                        console.log('Submenu shown');
+                    } else {
+                        submenu.style.display = 'none';
+                        console.log('Submenu hidden');
+                    }
+                } else {
+                    console.log('Submenu not found!');
+                }
+            };
+        }
+    </script>
+
+    <!-- Component Loading Script -->
+    <script>
+        // Load components when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load navbar
+            const xhr1 = new XMLHttpRequest();
+            xhr1.open('GET', '../components/navbar.html', true);
+            xhr1.onreadystatechange = function() {
+                if (xhr1.readyState === 4 && xhr1.status === 200) {
+                    document.getElementById('navbar-container').innerHTML = xhr1.responseText;
+                    // Set active nav item for invoice management
+                    setTimeout(() => {
+                        const invoiceNav = document.querySelector('.has-submenu');
+                        if (invoiceNav) {
+                            invoiceNav.classList.add('active');
+                        }
+                    }, 100);
+                }
+            };
+            xhr1.send();
+            
+            // Load header
+            const xhr2 = new XMLHttpRequest();
+            xhr2.open('GET', '../components/header.html', true);
+            xhr2.onreadystatechange = function() {
+                if (xhr2.readyState === 4 && xhr2.status === 200) {
+                    let content = xhr2.responseText;
+                    content = content.replace('{{PAGE_TITLE}}', 'Quản Lý Hóa Đơn');
+                    document.getElementById('header-container').innerHTML = content;
+                    
+                    // Initialize header after loading
+                    setTimeout(() => {
+                        if (typeof initializeHeader === 'function') {
+                            console.log('Initializing header...');
+                            initializeHeader();
+                        } else {
+                            console.log('initializeHeader function not found');
+                        }
+                        
+                        // Force create stores if needed
+                        setTimeout(() => {
+                            if (typeof checkAndCreateStores === 'function') {
+                                console.log('Checking and creating stores...');
+                                checkAndCreateStores();
+                            }
+                        }, 500);
+                    }, 200);
+                }
+            };
+            xhr2.send();
+        });
+    </script>
+    
+    <!-- Debug and Force Reload Script -->
+    <script>
+        // Force reload header stores
+        window.forceReloadStores = function() {
+            console.log('=== FORCE RELOAD STORES ===');
+            if (typeof loadStoresForSelector === 'function') {
+                loadStoresForSelector();
+            } else {
+                console.log('loadStoresForSelector not available');
+            }
+        };
+        
+        // Auto-reload after 2 seconds
+        setTimeout(() => {
+            console.log('Auto-reloading stores after 2 seconds...');
+            forceReloadStores();
+        }, 2000);
+    </script>
+
+    <script src="../main/global-invoice.js"></script>
+</body>
+</html>

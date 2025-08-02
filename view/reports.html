@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Báo Cáo - Quản Lý Đơn Hàng</title>
+    <link rel="stylesheet" href="../style/man.css">
+    <link rel="stylesheet" href="../style/reports.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <div id="navbar-placeholder"></div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <div id="header-placeholder"></div>
+            
+            <!-- Reports Content -->
+            <div class="reports-content">
+                <div class="page-header">
+                    <h1><i class="fas fa-chart-bar"></i> Báo Cáo</h1>
+                    <p>Thống kê và phân tích dữ liệu kinh doanh</p>
+                </div>
+                
+                <!-- Report Type Selection -->
+                <div class="report-type-selection">
+                    <div class="report-type-card active" id="globalReportCard" data-type="global">
+                        <div class="report-type-icon">
+                            <i class="fas fa-globe"></i>
+                        </div>
+                        <h3>Báo Cáo Toàn Bộ</h3>
+                        <p>Thống kê tổng hợp tất cả cửa hàng</p>
+                    </div>
+                    
+                    <div class="report-type-card" id="storeReportCard" data-type="store">
+                        <div class="report-type-icon">
+                            <i class="fas fa-store"></i>
+                        </div>
+                        <h3>Báo Cáo Từng Cửa Hàng</h3>
+                        <p>Thống kê chi tiết theo cửa hàng</p>
+                    </div>
+                </div>
+                
+                <!-- Store Selection for Store Report -->
+                <div id="storeSelectionSection" class="store-selection-section hidden">
+                    <div class="section-header">
+                        <h3><i class="fas fa-filter"></i> Chọn Cửa Hàng</h3>
+                    </div>
+                    <div class="store-filter">
+                        <select id="reportStoreSelect" class="form-select">
+                            <option value="">-- Chọn cửa hàng --</option>
+                        </select>
+                        
+                    </div>
+                </div>
+                
+                <!-- Date Range Filter -->
+                <div class="date-range-section">
+                    <div class="section-header">
+                        <h3><i class="fas fa-calendar-alt"></i> Khoảng Thời Gian</h3>
+                    </div>
+                    <div class="date-filter">
+                        <div class="date-input-group">
+                            <label for="startDate">Từ ngày:</label>
+                            <input type="date" id="startDate" class="form-input">
+                        </div>
+                        <div class="date-input-group">
+                            <label for="endDate">Đến ngày:</label>
+                            <input type="date" id="endDate" class="form-input">
+                        </div>
+
+                        <button id="generateStoreReport" class="btn btn-primary">
+                            <i class="fas fa-chart-line"></i> Tạo Báo Cáo
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Report Content -->
+                <div id="reportContent" class="report-content">
+                    <!-- Summary Statistics -->
+                    <div class="report-section" id="summaryStats">
+                        <div class="section-header">
+                            <h3><i class="fas fa-chart-pie"></i> Tổng Quan</h3>
+                        </div>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-icon total">
+                                    <i class="fas fa-shopping-cart"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <h3 id="totalOrders">0</h3>
+                                    <p>Tổng Đơn Hàng</p>
+                                </div>
+                            </div>
+                            
+                            <div class="stat-card">
+                                <div class="stat-icon revenue">
+                                    <i class="fas fa-dollar-sign"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <h3 id="totalRevenue">0đ</h3>
+                                    <p>Tổng Doanh Thu</p>
+                                </div>
+                            </div>
+                            
+                            <div class="stat-card">
+                                <div class="stat-icon average">
+                                    <i class="fas fa-chart-line"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <h3 id="averageOrder">0đ</h3>
+                                    <p>Đơn Hàng Trung Bình</p>
+                                </div>
+                            </div>
+                            
+                            <div class="stat-card">
+                                <div class="stat-icon stores">
+                                    <i class="fas fa-store"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <h3 id="totalStores">0</h3>
+                                    <p>Số Cửa Hàng</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Top Products -->
+                    <div class="report-section" id="topProducts">
+                        <div class="section-header">
+                            <h3><i class="fas fa-trophy"></i> Sản Phẩm Bán Chạy</h3>
+                        </div>
+                        <div class="top-products-table">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>STT</th>
+                                        <th>Sản Phẩm</th>
+                                        <th>SKU</th>
+                                        <th>Số Lượng Bán</th>
+                                        <th>Doanh Thu</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="topProductsTable">
+                                    <tr>
+                                        <td colspan="5" class="text-center">
+                                            <div class="empty-state">
+                                                <i class="fas fa-chart-bar"></i>
+                                                <p>Chưa có dữ liệu</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Store Performance (for global report) -->
+                    <div id="storePerformanceSection" class="report-section">
+                        <div class="section-header">
+                            <h3><i class="fas fa-building"></i> Hiệu Suất Cửa Hàng</h3>
+                        </div>
+                        <div class="store-performance-table">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>STT</th>
+                                        <th>Cửa Hàng</th>
+                                        <th>Số Đơn Hàng</th>
+                                        <th>Doanh Thu</th>
+                                        <th>Đơn TB</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="storePerformanceTable">
+                                    <tr>
+                                        <td colspan="5" class="text-center">
+                                            <div class="empty-state">
+                                                <i class="fas fa-store"></i>
+                                                <p>Chưa có dữ liệu</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Daily Sales Chart -->
+                    <div class="report-section hidden" id="dailySalesChart">
+                        <div class="section-header">
+                            <i class="fas fa-chart-line"></i>
+                            <h3>Biểu Đồ Doanh Thu Theo Ngày</h3>
+                        </div>
+                        <div class="chart-container">
+                            <div class="chart-placeholder">
+                                <div class="chart-empty">
+                                    <i class="fas fa-chart-bar"></i>
+                                    <p>Biểu đồ doanh thu theo ngày</p>
+                                    <small>Dữ liệu sẽ hiển thị sau khi tạo báo cáo</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Time Period Analysis -->
+                    <div class="report-section" id="timePeriodAnalysis">
+                        <div class="section-header">
+                            <h3><i class="fas fa-calendar-week"></i> Phân Tích Theo Thời Gian</h3>
+                        </div>
+                        <div class="time-analysis-grid">
+                            <div class="time-card">
+                                <div class="time-card-header">
+                                    <i class="fas fa-calendar-day"></i>
+                                    <h4>Hôm Nay</h4>
+                                </div>
+                                <div class="time-stats">
+                                    <div class="stat-item">
+                                        <span class="stat-label">Đơn hàng:</span>
+                                        <span class="stat-value" id="todayOrders">0</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-label">Doanh thu:</span>
+                                        <span class="stat-value" id="todayRevenue">0đ</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="time-card">
+                                <div class="time-card-header">
+                                    <i class="fas fa-calendar-week"></i>
+                                    <h4>Tuần Này</h4>
+                                </div>
+                                <div class="time-stats">
+                                    <div class="stat-item">
+                                        <span class="stat-label">Đơn hàng:</span>
+                                        <span class="stat-value" id="weekOrders">0</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-label">Doanh thu:</span>
+                                        <span class="stat-value" id="weekRevenue">0đ</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="time-card">
+                                <div class="time-card-header">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    <h4>Tháng Này</h4>
+                                </div>
+                                <div class="time-stats">
+                                    <div class="stat-item">
+                                        <span class="stat-label">Đơn hàng:</span>
+                                        <span class="stat-value" id="monthOrders">0</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-label">Doanh thu:</span>
+                                        <span class="stat-value" id="monthRevenue">0đ</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Customer Analysis -->
+                    <div class="report-section" id="customerAnalysis">
+                        <div class="section-header">
+                            <h3><i class="fas fa-users"></i> Phân Tích Khách Hàng</h3>
+                        </div>
+                        <div class="customer-stats-grid">
+                            <div class="customer-stat-card">
+                                <div class="stat-icon customers">
+                                    <i class="fas fa-user-plus"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <h3 id="newCustomers">0</h3>
+                                    <p>Khách Hàng Mới</p>
+                                </div>
+                            </div>
+                            
+                            <div class="customer-stat-card">
+                                <div class="stat-icon returning">
+                                    <i class="fas fa-user-check"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <h3 id="returningCustomers">0</h3>
+                                    <p>Khách Hàng Quay Lại</p>
+                                </div>
+                            </div>
+                            
+                            <div class="customer-stat-card">
+                                <div class="stat-icon average-value">
+                                    <i class="fas fa-shopping-bag"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <h3 id="avgCustomerValue">0đ</h3>
+                                    <p>Giá Trị TB/Khách</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Inventory Analysis -->
+                    <div class="report-section" id="inventoryAnalysis">
+                        <div class="section-header">
+                            <h3><i class="fas fa-boxes"></i> Phân Tích Hàng Tồn Kho</h3>
+                        </div>
+                        <div class="inventory-table">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">STT</th>
+                                        <th scope="col">Sản Phẩm</th>
+                                        <th scope="col">SKU</th>
+                                        <th scope="col">Tồn Kho</th>
+                                        <th scope="col">Đã Bán</th>
+                                        <th scope="col">Tỷ Lệ Luân Chuyển</th>
+                                        <th scope="col">Trạng Thái</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="inventoryTable">
+                                    <tr>
+                                        <td colspan="7" class="text-center">
+                                            <div class="empty-state">
+                                                <i class="fas fa-boxes"></i>
+                                                <p>Chưa có dữ liệu tồn kho</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Export Options -->
+                    <div class="report-section" id="exportOptions">
+                        <div class="section-header">
+                            <h3><i class="fas fa-download"></i> Xuất Báo Cáo</h3>
+                        </div>
+                        <div class="export-actions">
+                            <button type="button" class="btn btn-success" id="exportPdfBtn">
+                                <i class="fas fa-file-pdf"></i> Xuất PDF
+                            </button>
+                            <button type="button" class="btn btn-primary" id="exportExcelBtn">
+                                <i class="fas fa-file-excel"></i> Xuất Excel
+                            </button>
+                            <button type="button" class="btn btn-info" id="emailReportBtn">
+                                <i class="fas fa-envelope"></i> Gửi Email
+                            </button>
+                            <button type="button" class="btn btn-secondary" id="printReportBtn">
+                                <i class="fas fa-print"></i> In Báo Cáo
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Đang tạo báo cáo...</p>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="../main/firebase.js"></script>
+    <script src="../main/submenu.js"></script>
+    <script src="../main/store-context.js"></script>
+    <script src="../main/header.js"></script>
+    <script src="../main/reports.js"></script>
+
+    <script>
+        // Load components using XMLHttpRequest
+        function loadComponent(url, elementId, callback) {
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', url, true);
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4) {
+                    if (xhr.status === 200) {
+                        let content = xhr.responseText;
+                        // Replace page title placeholder if it's header
+                        if (elementId === 'header-placeholder') {
+                            content = content.replace('{{PAGE_TITLE}}', 'Báo Cáo');
+                        }
+                        document.getElementById(elementId).innerHTML = content;
+                        if (callback) callback();
+                    } else {
+                        console.error('Failed to load component:', url, xhr.status);
+                    }
+                }
+            };
+            xhr.send();
+        }
+        
+        // Load components when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load navbar first
+            loadComponent('../components/navbar.html', 'navbar-placeholder', function() {
+                console.log('Navbar loaded successfully');
+            });
+            
+            // Load header
+            loadComponent('../components/header.html', 'header-placeholder', function() {
+                console.log('Header loaded successfully');
+                // Initialize header functionality after loading
+                if (typeof initializeHeader === 'function') {
+                    initializeHeader();
+                }
+            });
+        });
+    </script>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    
+    <!-- Firebase Configuration -->
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDVMShVqAkxJsaFbhApFTcmvktynFzwcDA",
+            authDomain: "quan-ly-don-hang-a8b07.firebaseapp.com",
+            databaseURL: "https://quan-ly-don-hang-a8b07-default-rtdb.asia-southeast1.firebasedatabase.app/",
+            projectId: "quan-ly-don-hang-a8b07",
+            storageBucket: "quan-ly-don-hang-a8b07.firebasestorage.app",
+            messagingSenderId: "677915196614",
+            appId: "1:677915196614:web:32c0c33da92ac6a6572bc7"
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        console.log('Firebase initialized for reports page');
+    </script>
+    
+    <!-- Reports JavaScript -->
+    <script src="../main/reports.js"></script>
+</body>
+</html>

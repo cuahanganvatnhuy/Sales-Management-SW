@@ -1,0 +1,34 @@
+<!-- Header Component -->
+<header class="header">
+    <div class="header-left">
+        
+        <h1 id="page-title">{{PAGE_TITLE}}</h1>
+    </div>
+    <div class="header-right">
+        <div class="store-selector" id="storeSelectorContainer">
+            <div class="current-store" onclick="toggleStoreDropdown()">
+                <i class="fas fa-store"></i>
+                <span id="currentStoreName">Chọn Cửa Hàng</span>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="store-dropdown hidden" id="storeDropdown">
+                <div class="store-dropdown-header">
+                    <i class="fas fa-store"></i>
+                    <span>Danh Sách Cửa Hàng</span>
+                </div>
+                <div class="store-list" id="storeList">
+                    <!-- Store list will be loaded here -->
+                </div>
+                <div class="store-dropdown-footer">
+                    <a href="/view/stores.html" class="btn btn-sm btn-primary">
+                        <i class="fas fa-plus"></i> Quản Lý Cửa Hàng
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="user-info">
+            <i class="fas fa-user-circle"></i>
+            <span>Admin</span>
+        </div>
+    </div>
+</header>

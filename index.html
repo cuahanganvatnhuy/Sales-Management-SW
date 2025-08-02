@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Quản Lý Đơn Hàng</title>
+    <link rel="stylesheet" href="style/man.css">
+    <link rel="stylesheet" href="style/navbar-submenu.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <div id="navbar-placeholder"></div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <div id="header-placeholder"></div>
+            
+            <!-- Dashboard Content -->
+            <div class="dashboard-content">
+                <div class="page-header">
+                    <h1><i class="fas fa-tachometer-alt"></i> Dashboard</h1>
+                    <p>Tổng quan hệ thống quản lý đơn hàng</p>
+                </div>
+                
+                <!-- Store Selection Required Message -->
+                <div id="storeSelectionMessage" class="store-selection-required hidden">
+                    <div class="store-selection-icon">
+                        <i class="fas fa-store"></i>
+                    </div>
+                    <h3>Chào mừng đến với Dashboard!</h3>
+                    <p>Vui lòng chọn cửa hàng để xem thống kê và quản lý đơn hàng.</p>
+                    <div class="store-selection-actions">
+                        <button type="button" class="btn btn-primary" onclick="showStoreSelectionModal()">
+                            <i class="fas fa-store"></i> Chọn Cửa Hàng
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Dashboard Stats -->
+                <div id="dashboardStats" class="dashboard-stats hidden">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon orders">
+                                <i class="fas fa-shopping-cart"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="totalOrders">0</h3>
+                                <p>Tổng Đơn Hàng</p>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon revenue">
+                                <i class="fas fa-dollar-sign"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="totalRevenue">0 VNĐ</h3>
+                                <p>Tổng Doanh Thu</p>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon products">
+                                <i class="fas fa-box"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="totalProducts">0</h3>
+                                <p>Tổng Sản Phẩm</p>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon today">
+                                <i class="fas fa-calendar-day"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="todayOrders">0</h3>
+                                <p>Đơn Hàng Hôm Nay</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recent Orders -->
+                <div id="recentOrdersSection" class="dashboard-section hidden">
+                    <div class="section-header">
+                        <h2><i class="fas fa-clock"></i> Đơn Hàng Gần Đây</h2>
+                        <a href="/view/order-management.html" class="btn btn-outline">Xem Tất Cả</a>
+                    </div>
+                    <div class="recent-orders-container">
+                        <div id="recentOrdersList"></div>
+                        <div id="noRecentOrders" class="empty-state hidden">
+                            <i class="fas fa-inbox"></i>
+                            <p>Chưa có đơn hàng nào</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Quick Actions -->
+                <div id="quickActionsSection" class="dashboard-section hidden">
+                    <div class="section-header">
+                        <h2><i class="fas fa-bolt"></i> Thao Tác Nhanh</h2>
+                    </div>
+                    <div class="quick-actions">
+                        <a href="view/orders.html" class="quick-action-card">
+                            <div class="action-icon">
+                                <i class="fas fa-plus-circle"></i>
+                            </div>
+                            <h3>Tạo Đơn Hàng</h3>
+                            <p>Tạo đơn hàng mới cho cửa hàng</p>
+                        </a>
+                        
+                        <a href="view/products.html" class="quick-action-card">
+                            <div class="action-icon">
+                                <i class="fas fa-box-open"></i>
+                            </div>
+                            <h3>Quản Lý Sản Phẩm</h3>
+                            <p>Thêm, sửa, xóa sản phẩm</p>
+                        </a>
+                        
+                        <a href="view/order-management.html" class="quick-action-card">
+                            <div class="action-icon">
+                                <i class="fas fa-list-alt"></i>
+                            </div>
+                            <h3>Quản Lý Đơn Hàng</h3>
+                            <p>Xem và quản lý đơn hàng</p>
+                        </a>
+                        
+                        <a href="/view/stores.html" class="quick-action-card">
+                            <div class="action-icon">
+                                <i class="fas fa-store"></i>
+                            </div>
+                            <h3>Quản Lý Cửa Hàng</h3>
+                            <p>Thêm, sửa thông tin cửa hàng</p>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Store Selection Modal -->
+    <div id="storeSelectionModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-store"></i> Chọn Cửa Hàng</h2>
+                <button class="modal-close" onclick="hideStoreSelectionModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Vui lòng chọn cửa hàng để xem thống kê và quản lý đơn hàng:</p>
+                <div id="storesList" class="stores-list">
+                    <!-- Stores will be loaded here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="hideStoreSelectionModal()">
+                    <i class="fas fa-times"></i> Hủy
+                </button>
+                <a href="stores.html" class="btn btn-outline">
+                    <i class="fas fa-plus"></i> Thêm Cửa Hàng Mới
+                </a>
+            </div>
+        </div>
+        <div class="modal-backdrop" onclick="hideStoreSelectionModal()"></div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Đang tải...</p>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="main/firebase.js"></script>
+    <script src="main/store-context.js"></script>
+    <script src="main/header.js"></script>
+    <script src="main/dashboard.js"></script>
+
+    <script>
+        // Global submenu toggle function - simple inline style toggle
+        window.toggleSubmenu = function(event) {
+            event.preventDefault();
+            console.log('Toggle submenu clicked from index.html');
+            
+            const submenu = document.getElementById('invoiceSubmenu');
+            if (submenu) {
+                const isHidden = submenu.style.display === 'none' || submenu.style.display === '';
+                
+                if (isHidden) {
+                    submenu.style.display = 'block';
+                    console.log('Submenu shown');
+                } else {
+                    submenu.style.display = 'none';
+                    console.log('Submenu hidden');
+                }
+            } else {
+                console.log('Submenu not found!');
+            }
+        };
+        
+        // Navigation function for dashboard
+        window.navigateToInvoice = function(type) {
+            console.log('=== NAVIGATION DEBUG (Dashboard) ===');
+            console.log('Type:', type);
+            console.log('Current URL:', window.location.href);
+            console.log('Current pathname:', window.location.pathname);
+            
+            // Dashboard is always in root, so always use view/ prefix
+            let targetUrl;
+            if (type === 'global') {
+                targetUrl = 'view/global-invoice.html';
+            } else {
+                targetUrl = 'view/store-invoice.html';
+            }
+            
+            console.log('Target URL:', targetUrl);
+            console.log('Full target URL:', window.location.origin + '/' + targetUrl);
+            console.log('About to navigate from Dashboard...');
+            
+            window.location.href = targetUrl;
+        };
+    </script>
+
+    <script>
+        // Load components using XMLHttpRequest
+        function loadComponent(url, elementId, callback) {
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', url, true);
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4) {
+                    if (xhr.status === 200) {
+                        let content = xhr.responseText;
+                        // Replace page title placeholder if it's header
+                        if (elementId === 'header-placeholder') {
+                            content = content.replace('{{PAGE_TITLE}}', 'Dashboard');
+                        }
+                        document.getElementById(elementId).innerHTML = content;
+                        if (callback) callback();
+                    } else {
+                        console.error('Failed to load component:', url, xhr.status);
+                        // Try alternative approach - load from local server
+                        if (window.location.protocol === 'file:') {
+                            console.warn('Components may not load properly from file:// protocol. Please use a local server.');
+                        }
+                    }
+                }
+            };
+            xhr.send();
+        }
+        
+        // Load components when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load navbar first
+            loadComponent('components/navbar.html', 'navbar-placeholder', function() {
+                console.log('Navbar loaded successfully');
+                
+                // Debug submenu after navbar loads
+                setTimeout(() => {
+                    const hasSubmenu = document.querySelector('.has-submenu');
+                    const submenu = document.querySelector('.submenu');
+                    const submenuToggle = document.querySelector('.has-submenu > a');
+                    
+                    console.log('DEBUG - Submenu elements after navbar load:', {
+                        hasSubmenu: !!hasSubmenu,
+                        submenu: !!submenu,
+                        submenuToggle: !!submenuToggle,
+                        submenuDisplay: submenu ? window.getComputedStyle(submenu).display : 'not found'
+                    });
+                    
+                    // Force submenu to be hidden initially
+                    if (submenu && hasSubmenu && !hasSubmenu.classList.contains('open')) {
+                        submenu.style.display = 'none';
+                        console.log('DEBUG - Force hidden submenu on dashboard');
+                    }
+                }, 500);
+            });
+            
+            // Load header
+            loadComponent('components/header.html', 'header-placeholder', function() {
+                console.log('Header loaded successfully');
+                // Initialize header functionality after loading
+                if (typeof initializeHeader === 'function') {
+                    initializeHeader();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

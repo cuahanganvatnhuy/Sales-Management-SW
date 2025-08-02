@@ -1,0 +1,123 @@
+/* ===== NAVBAR SUBMENU STYLES ===== */
+/* Force hide submenu by default */
+ul.submenu,
+.has-submenu ul.submenu,
+.has-submenu .submenu {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    max-height: 0 !important;
+    overflow: hidden !important;
+}
+
+/* Show submenu when open */
+.has-submenu.open ul.submenu,
+.has-submenu.open .submenu {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    max-height: 200px !important;
+    overflow: visible !important;
+}
+
+.has-submenu {
+    position: relative;
+}
+
+.submenu-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.submenu-arrow {
+    font-size: 12px;
+    transition: transform 0.3s ease;
+    margin-left: auto;
+}
+
+.has-submenu.open .submenu-arrow {
+    transform: rotate(180deg);
+}
+
+.submenu {
+    display: none !important;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    margin-top: 8px;
+    overflow: hidden;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+}
+
+.has-submenu.open .submenu {
+    display: block !important;
+    opacity: 1;
+    transform: translateY(0);
+    animation: slideDown 0.3s ease;
+}
+
+.submenu li {
+    margin: 0;
+}
+
+.submenu a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px 12px 40px;
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    border-left: 3px solid transparent;
+}
+
+.submenu a:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border-left-color: rgba(255, 255, 255, 0.3);
+    padding-left: 45px;
+}
+
+.submenu a.active {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    border-left-color: white;
+    font-weight: 600;
+}
+
+.submenu i {
+    font-size: 14px;
+    width: 16px;
+    text-align: center;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Mobile submenu adjustments */
+@media (max-width: 768px) {
+    .submenu a {
+        padding: 10px 15px 10px 35px;
+        font-size: 13px;
+    }
+    
+    .submenu a:hover {
+        padding-left: 40px;
+    }
+}

@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Đơn Hàng - PMQLDH</title>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../style/man.css">
+    <link rel="stylesheet" href="../style/order-management.css">
+    
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Loading Overlay -->
+        <div id="loadingOverlay" class="loading-overlay hidden">
+            <div class="loading-spinner">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Đang xử lý...</p>
+            </div>
+        </div>
+
+        <!-- Notification -->
+        <div id="notification" class="notification hidden">
+            <div class="notification-content">
+                <i class="notification-icon"></i>
+                <span class="notification-message"></span>
+            </div>
+        </div>
+
+        <!-- Sidebar Container -->
+        <div id="navbar-container">
+            <!-- Navbar will be loaded here -->
+        </div>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header Component -->
+            <div id="header-container">
+                <!-- Header will be loaded here -->
+            </div>
+
+            <!-- Content -->
+            <div class="content">
+                <!-- Date Filters -->
+                <div class="date-filter-section">
+                    <div class="date-inputs">
+                        <div class="date-group">
+                            <label>Từ ngày:</label>
+                            <input type="date" id="fromDate" class="date-input">
+                        </div>
+                        <div class="date-group">
+                            <label>Đến ngày:</label>
+                            <input type="date" id="toDate" class="date-input">
+                        </div>
+                    </div>
+                    <div class="filter-buttons">
+                        <button type="button" class="btn btn-primary" onclick="applyDateFilter()">
+                            <i class="fas fa-search"></i> Lọc
+                        </button>
+                        <button type="button" class="btn btn-warning" onclick="clearAllFilters()">
+                            <i class="fas fa-times"></i> Xóa Tất Cả
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Quick Filter Buttons -->
+                <div class="quick-filters">
+                    <h4>Lọc nhanh:</h4>
+                    <div class="quick-filter-buttons">
+                        <button type="button" class="quick-btn" onclick="filterByPeriod('today')">
+                            <i class="fas fa-calendar-day"></i> Hôm Nay
+                        </button>
+                        <button type="button" class="quick-btn" onclick="filterByPeriod('week')">
+                            <i class="fas fa-calendar-week"></i> Tuần Này
+                        </button>
+                        <button type="button" class="quick-btn" onclick="filterByPeriod('month')">
+                            <i class="fas fa-calendar-alt"></i> Tháng Này
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Orders List -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-list"></i> Danh Sách Đơn Hàng</h2>
+                        <div class="card-actions">
+                            <button type="button" class="btn btn-success" onclick="exportOrders()">
+                                <i class="fas fa-download"></i> Xuất Excel
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <!-- Bulk Actions -->
+                        <div class="bulk-actions" id="bulkActions" style="display: none;">
+                            <div class="bulk-actions-info">
+                                <span id="selectedCount">0</span> đơn hàng được chọn
+                            </div>
+                            <div class="bulk-actions-buttons">
+                                <button type="button" class="btn-bulk btn-danger" onclick="deleteSelectedOrders()">
+                                    <i class="fas fa-trash"></i> Xóa đã chọn
+                                </button>
+                                <button type="button" class="btn-bulk btn-danger-all" onclick="deleteAllOrders()">
+                                    <i class="fas fa-trash-alt"></i> Xóa tất cả
+                                </button>
+                                <button type="button" class="btn-bulk btn-secondary" onclick="clearSelection()">
+                                    <i class="fas fa-times"></i> Bỏ chọn
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Orders Table -->
+                        <div class="table-container">
+                            <table class="orders-table">
+                                <thead>
+                                    <tr>
+                                        <th>
+                                            <div class="select-all-container">
+                                                <input type="checkbox" id="selectAll" onchange="toggleSelectAll()" 
+                                                       title="Chọn tất cả đơn hàng">
+                                                <label for="selectAll" class="select-all-label">Tất cả</label>
+                                            </div>
+                                        </th>
+                                        <th>STT</th>
+                                        <th>THÔNG TIN ĐƠN HÀNG</th>
+                                        <th>NGÀY TẠO</th>
+                                        <th>THAO TÁC</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ordersTableBody">
+                                    <tr>
+                                        <td colspan="5" class="text-center">
+                                            <div class="empty-state">
+                                                <i class="fas fa-shopping-cart"></i>
+                                                <p>Chưa có đơn hàng nào</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        <div class="pagination-container">
+                            <div class="pagination-info">
+                                Hiển thị <span id="showingFrom">0</span> - <span id="showingTo">0</span> 
+                                trong tổng số <span id="totalItems">0</span> đơn hàng
+                            </div>
+                            <div class="pagination-buttons">
+                                <!-- Pagination buttons will be generated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Order Detail Modal -->
+    <div id="orderDetailModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-eye"></i> Chi Tiết Đơn Hàng</h3>
+                <button type="button" class="modal-close" onclick="closeOrderDetail()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="orderDetailContent">
+                <!-- Order details will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Order Modal -->
+    <div id="editOrderModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-edit"></i> Chỉnh Sửa Đơn Hàng</h3>
+                <button type="button" class="modal-close" onclick="closeEditOrder()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="editOrderForm">
+                    <div class="form-group">
+                        <label for="editOrderStatus">Trạng Thái:</label>
+                        <select id="editOrderStatus" required>
+                            <option value="pending">Đang xử lý</option>
+                            <option value="processing">Đang giao</option>
+                            <option value="completed">Hoàn thành</option>
+                            <option value="cancelled">Đã hủy</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editOrderNotes">Ghi Chú:</label>
+                        <textarea id="editOrderNotes" rows="3" placeholder="Nhập ghi chú..."></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeEditOrder()">
+                            <i class="fas fa-times"></i> Hủy
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Lưu Thay Đổi
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    
+    <script src="../main/firebase.js"></script>
+    <script src="../main/submenu.js"></script>
+    <script src="../main/store-context.js"></script>
+    <script src="../main/navbar.js"></script>
+    <script src="../main/header.js"></script>
+    <script src="../main/order-management.js"></script>
+    
+    <script>
+        // Load components when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load navbar
+            const xhr1 = new XMLHttpRequest();
+            xhr1.open('GET', '../components/navbar.html', true);
+            xhr1.onreadystatechange = function() {
+                if (xhr1.readyState === 4 && xhr1.status === 200) {
+                    document.getElementById('navbar-container').innerHTML = xhr1.responseText;
+                }
+            };
+            xhr1.send();
+            
+            // Load header
+            const xhr2 = new XMLHttpRequest();
+            xhr2.open('GET', '../components/header.html', true);
+            xhr2.onreadystatechange = function() {
+                if (xhr2.readyState === 4 && xhr2.status === 200) {
+                    let content = xhr2.responseText;
+                    content = content.replace('{{PAGE_TITLE}}', 'Quản Lý Đơn Hàng');
+                    document.getElementById('header-container').innerHTML = content;
+                }
+            };
+            xhr2.send();
+        });
+    </script>
+</body>
+</html>

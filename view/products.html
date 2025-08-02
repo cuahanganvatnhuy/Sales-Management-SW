@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Sản Phẩm - Sales Manager</title>
+    <link rel="stylesheet" href="../style/man.css">
+    <link rel="stylesheet" href="../style/products.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Navbar Component -->
+        <div id="navbar-container">
+            <!-- Navbar will be loaded here -->
+        </div>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header Component -->
+            <div id="header-container">
+                <!-- Header will be loaded here -->
+            </div>
+
+            <!-- Content -->
+            <div class="content">
+                <!-- Add Product Section -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-plus"></i> Thêm Sản Phẩm Mới</h2>
+                    </div>
+                    <div class="card-body">
+                        <form id="addProductForm" class="simple-form" onsubmit="addNewProduct(event)">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="productName">Tên sản phẩm:</label>
+                                    <input type="text" id="productName" name="productName" required 
+                                           placeholder="Tên sản phẩm">
+                                </div>
+                                <div class="form-group">
+                                    <label for="productSKU">SKU:</label>
+                                    <input type="text" id="productSKU" name="productSKU" 
+                                           placeholder="Mã SKU (tùy chọn)" 
+                                           maxlength="50">
+                                    <small class="form-hint">Mã SKU để nhận diện sản phẩm (có thể để trống)</small>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="productPrice">Giá sản phẩm (đ):</label>
+                                    <input type="text" id="productPrice" name="productPrice" required 
+                                           placeholder="Nhập giá sản phẩm" 
+                                           maxlength="20" inputmode="numeric">
+                                </div>
+                                <div class="form-group">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-plus"></i> Thêm Sản Phẩm
+                                    </button>
+                                </div>
+                            </div>
+
+                        </form>
+                        <!-- Action Buttons -->
+                        <div class="action-buttons">
+                            <button type="button" class="btn btn-info" onclick="copyFile()">
+                                <i class="fas fa-copy"></i> Copy File
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="syncFile()">
+                                <i class="fas fa-sync"></i> Đồng Bộ File
+                            </button>
+                            <button type="button" class="btn btn-warning" onclick="exportJSON()">
+                                <i class="fas fa-download"></i> Export JSON
+                            </button>
+                            <button type="button" class="btn btn-danger" onclick="restoreData()">
+                                <i class="fas fa-undo"></i> Khôi Phục
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Products List -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-list"></i> Danh Sách Sản Phẩm Hiện Tại</h2>
+                    </div>
+                    <div class="card-body">
+                        <!-- Bulk Actions -->
+                        <div class="bulk-actions hidden" id="bulkActions">
+                            <button type="button" class="btn btn-danger" onclick="deleteSelectedProducts()">
+                                <i class="fas fa-trash"></i> Xóa Đã Chọn (<span id="selectedCount">0</span>)
+                            </button>
+                        </div>
+
+                        <!-- Products Table Container -->
+                        <div class="table-container">
+                            <table class="products-table" id="productsTable">
+                                <thead>
+                                    <tr>
+                                        <th class="checkbox-col">
+                                            <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                                        </th>
+                                        <th class="stt-col">STT</th>
+                                        <th class="name-col">Tên Sản Phẩm</th>
+                                        <th class="sku-col">SKU</th>
+                                        <th class="price-col">Giá (VNĐ)</th>
+                                        <th class="action-col">Sửa</th>
+                                        <th class="action-col">Xóa</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="productsContainer">
+                                    <!-- Dữ liệu sản phẩm sẽ được hiển thị ở đây -->
+                                </tbody>
+                            </table>
+
+                            <!-- Empty State -->
+                            <div id="emptyState" class="empty-state hidden">
+                                <div class="empty-icon">
+                                    <i class="fas fa-box-open"></i>
+                                </div>
+                                <h3>Chưa có sản phẩm nào</h3>
+                                <p>Hãy thêm sản phẩm đầu tiên của bạn!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Đang xử lý...</p>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+
+    <!-- Scripts -->
+    <script src="../main/firebase.js"></script>
+    <script src="../main/submenu.js"></script>
+    <script src="../main/navbar.js"></script>
+    <script src="../main/header.js"></script>
+    <script src="../main/products.js"></script>
+    
+    <script>
+        // Load components when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load navbar
+            const xhr1 = new XMLHttpRequest();
+            xhr1.open('GET', '../components/navbar.html', true);
+            xhr1.onreadystatechange = function() {
+                if (xhr1.readyState === 4 && xhr1.status === 200) {
+                    document.getElementById('navbar-container').innerHTML = xhr1.responseText;
+                }
+            };
+            xhr1.send();
+            
+            // Load header
+            const xhr2 = new XMLHttpRequest();
+            xhr2.open('GET', '../components/header.html', true);
+            xhr2.onreadystatechange = function() {
+                if (xhr2.readyState === 4 && xhr2.status === 200) {
+                    let content = xhr2.responseText;
+                    content = content.replace('{{PAGE_TITLE}}', 'Quản Lý Sản Phẩm');
+                    document.getElementById('header-container').innerHTML = content;
+                    
+                    // Hide store selector for products page (products are global)
+                    setTimeout(() => {
+                        const storeSelector = document.getElementById('storeSelectorContainer');
+                        if (storeSelector) {
+                            storeSelector.style.display = 'none';
+                        }
+                        
+                        // Show info that products are global
+                        const currentStoreName = document.getElementById('currentStoreName');
+                        if (currentStoreName) {
+                            currentStoreName.textContent = 'Sản Phẩm Toàn Cục';
+                            currentStoreName.style.color = '#666';
+                            currentStoreName.style.cursor = 'default';
+                        }
+                    }, 100);
+                }
+            };
+            xhr2.send();
+        });
+    </script>
+</body>
+</html>

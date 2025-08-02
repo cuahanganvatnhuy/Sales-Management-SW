@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chi Tiết Cửa Hàng - PMQLDH</title>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="../style/man.css">
+    <link rel="stylesheet" href="../style/navbar-submenu.css">
+
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-compat.js"></script>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Đang xử lý...</p>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div id="notification" class="notification hidden">
+        <div class="notification-content">
+            <i class="notification-icon"></i>
+            <span class="notification-message"></span>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Navbar Component -->
+        <div id="navbar-container">
+            <!-- Navbar will be loaded here -->
+        </div>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header Component -->
+            <div id="header-container">
+                <!-- Header will be loaded here -->
+            </div>
+
+            <!-- Store Stats -->
+            <div class="page-stats">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-box"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="totalProducts">0</div>
+                        <div class="stat-label">Sản Phẩm</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="totalOrders">0</div>
+                        <div class="stat-label">Đơn Hàng</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="totalRevenue">0</div>
+                        <div class="stat-label">Doanh Thu</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Navigation -->
+            <div class="tab-navigation">
+                <button type="button" class="tab-btn active" onclick="showTab('products')">
+                    <i class="fas fa-box"></i> Sản Phẩm
+                </button>
+                <button type="button" class="tab-btn" onclick="showTab('orders')">
+                    <i class="fas fa-shopping-cart"></i> Đơn Hàng
+                </button>
+                <button type="button" class="tab-btn" onclick="showTab('analytics')">
+                    <i class="fas fa-chart-bar"></i> Thống Kê
+                </button>
+            </div>
+
+        <!-- Store Info Card -->
+        <div class="card store-info-card">
+            <div class="card-body">
+                <div class="store-detail-info" id="storeDetailInfo">
+                    <!-- Store info will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="main-content">
+            <!-- Products Tab -->
+            <div id="productsTab" class="tab-content active">
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-box"></i> Sản Phẩm Của Cửa Hàng</h2>
+                        <div class="card-header-actions">
+                            <button class="btn btn-primary" onclick="addStoreProduct()">
+                                <i class="fas fa-plus"></i> Thêm Sản Phẩm
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="products-table">
+                                <thead>
+                                    <tr>
+                                        <th>STT</th>
+                                        <th>Tên Sản Phẩm</th>
+                                        <th>SKU</th>
+                                        <th>Giá</th>
+                                        <th>Tồn Kho</th>
+                                        <th>Trạng Thái</th>
+                                        <th>Thao Tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="storeProductsContainer">
+                                    <!-- Store products will be loaded here -->
+                                </tbody>
+                            </table>
+                            
+                            <div id="productsEmptyState" class="empty-state hidden">
+                                <div class="empty-icon">
+                                    <i class="fas fa-box"></i>
+                                </div>
+                                <h3>Chưa có sản phẩm nào</h3>
+                                <p>Hãy thêm sản phẩm đầu tiên cho cửa hàng này!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Orders Tab -->
+            <div id="ordersTab" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-shopping-cart"></i> Đơn Hàng Của Cửa Hàng</h2>
+                        <div class="card-header-actions">
+                            <button class="btn btn-primary" onclick="addStoreOrder()">
+                                <i class="fas fa-plus"></i> Tạo Đơn Hàng
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="products-table">
+                                <thead>
+                                    <tr>
+                                        <th>STT</th>
+                                        <th>Mã Đơn Hàng</th>
+                                        <th>Sản Phẩm</th>
+                                        <th>Số Lượng</th>
+                                        <th>Tổng Tiền</th>
+                                        <th>Ngày Tạo</th>
+                                        <th>Trạng Thái</th>
+                                        <th>Thao Tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="storeOrdersContainer">
+                                    <!-- Store orders will be loaded here -->
+                                </tbody>
+                            </table>
+                            
+                            <div id="ordersEmptyState" class="empty-state hidden">
+                                <div class="empty-icon">
+                                    <i class="fas fa-shopping-cart"></i>
+                                </div>
+                                <h3>Chưa có đơn hàng nào</h3>
+                                <p>Hãy tạo đơn hàng đầu tiên cho cửa hàng này!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics Tab -->
+            <div id="analyticsTab" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-chart-bar"></i> Thống Kê Cửa Hàng</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="analytics-grid">
+                            <div class="analytics-card">
+                                <div class="analytics-icon">
+                                    <i class="fas fa-box"></i>
+                                </div>
+                                <div class="analytics-content">
+                                    <h3 id="analyticsProducts">0</h3>
+                                    <p>Tổng Sản Phẩm</p>
+                                </div>
+                            </div>
+                            
+                            <div class="analytics-card">
+                                <div class="analytics-icon">
+                                    <i class="fas fa-shopping-cart"></i>
+                                </div>
+                                <div class="analytics-content">
+                                    <h3 id="analyticsOrders">0</h3>
+                                    <p>Tổng Đơn Hàng</p>
+                                </div>
+                            </div>
+                            
+                            <div class="analytics-card">
+                                <div class="analytics-icon">
+                                    <i class="fas fa-money-bill-wave"></i>
+                                </div>
+                                <div class="analytics-content">
+                                    <h3 id="analyticsRevenue">0 VNĐ</h3>
+                                    <p>Tổng Doanh Thu</p>
+                                </div>
+                            </div>
+                            
+                            <div class="analytics-card">
+                                <div class="analytics-icon">
+                                    <i class="fas fa-chart-line"></i>
+                                </div>
+                                <div class="analytics-content">
+                                    <h3 id="analyticsAverage">0 VNĐ</h3>
+                                    <p>Giá Trị TB/Đơn</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../main/firebase.js"></script>
+    <script src="../main/header.js"></script>
+    <script src="../main/store-detail.js"></script>
+    
+    <!-- Debug submenu -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(() => {
+            const submenu = document.querySelector('.submenu');
+            const hasSubmenu = document.querySelector('.has-submenu');
+            
+            console.log('DEBUG: Submenu elements:', {
+                submenu: !!submenu,
+                hasSubmenu: !!hasSubmenu,
+                submenuDisplay: submenu ? window.getComputedStyle(submenu).display : 'not found'
+            });
+            
+            // Only hide if parent doesn't have 'open' class
+            if (submenu && hasSubmenu && !hasSubmenu.classList.contains('open')) {
+                submenu.style.display = 'none';
+                console.log('DEBUG: Force hidden submenu (not open)');
+            }
+        }, 200);
+    });
+    </script>
+    
+    <script>
+        // Load components
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load navbar
+            fetch('../components/navbar.html')
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('navbar-container').innerHTML = html;
+                    // Set active nav item
+                    document.getElementById('nav-stores').classList.add('active');
+                });
+            
+            // Load header and set dynamic title
+            const storeId = getStoreIdFromUrl();
+            fetch('../components/header.html')
+                .then(response => response.text())
+                .then(html => {
+                    // Set initial header
+                    document.getElementById('header-container').innerHTML = html.replace('{{PAGE_TITLE}}', 'Chi Tiết Cửa Hàng');
+                    
+                    // Update store name in header when data is loaded
+                    updateHeaderWithStoreName();
+                });
+        });
+    </script>
+</body>
+</html>

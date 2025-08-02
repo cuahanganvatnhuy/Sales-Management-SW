@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Đơn Hàng - PMQLDH</title>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="../style/man.css">
+
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-compat.js"></script>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Đang xử lý...</p>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div id="notification" class="notification hidden">
+        <div class="notification-content">
+            <i class="notification-icon"></i>
+            <span class="notification-message"></span>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Navbar Component -->
+        <div id="navbar-container">
+            <!-- Navbar will be loaded here -->
+        </div>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header Component -->
+            <div id="header-container">
+                <!-- Header will be loaded here -->
+            </div>
+
+            <!-- Content -->
+            <div class="content">
+                <!-- Add Order Form -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-plus"></i> Thêm Đơn Hàng Mới</h2>
+                    </div>
+                    <div class="card-body">
+                        <form id="addOrderForm" class="order-form" onsubmit="createOrders(event)">
+                            <!-- Order Info -->
+                            <div class="form-section">
+                                <h3><i class="fas fa-info-circle"></i> Thông Tin Đơn Hàng</h3>
+
+                                <!-- Order Creation Method Selection -->
+                                <div class="creation-method-selection">
+                                    <div class="method-buttons">
+                                        <button type="button" class="btn btn-method active" id="manualMethodBtn" onclick="selectCreationMethod('manual')">
+                                            <i class="fas fa-edit"></i> Tự Tạo Đơn
+                                        </button>
+                                        <button type="button" class="btn btn-method" id="pdfMethodBtn" onclick="selectCreationMethod('pdf')">
+                                            <i class="fas fa-file-pdf"></i> Upload PDF TikTok
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="orderDate">Ngày Tạo Đơn:</label>
+                                        <input type="date" id="orderDate" name="orderDate" required>
+                                    </div>
+
+                                    <!-- Manual Order Creation -->
+                                    <div class="form-group" id="manualOrderGroup">
+                                        <label for="orderCount">Số Lượng Đơn Hàng:</label>
+                                        <div class="input-with-button">
+                                            <input type="number" id="orderCount" name="orderCount" 
+                                                   min="1" max="50" required 
+                                                   placeholder="Nhập số lượng đơn hàng"
+                                                   onkeypress="if(event.key==='Enter') generateOrderForms()">
+                                            <button type="button" class="btn btn-primary btn-confirm" 
+                                                    onclick="generateOrderForms()">
+                                                <i class="fas fa-check"></i> Xác Nhận
+                                            </button>
+                                        </div>
+                                        <small class="form-hint">Nhập số lượng đơn hàng bạn muốn tạo (tối đa 5000 đơn)</small>
+                                    </div>
+
+                                    <!-- PDF Upload -->
+                                    <div class="form-group" id="pdfUploadGroup" style="display: none;">
+                                        <label>Upload File PDF TikTok:</label>
+                                        <div class="pdf-upload-compact">
+                                            <div class="upload-area-compact" id="pdfDropAreaCompact">
+                                                <i class="fas fa-cloud-upload-alt"></i>
+                                                <span>Kéo thả PDF hoặc <span class="upload-link" id="uploadLinkCompact">chọn file</span></span>
+                                                <input type="file" id="pdfFileInputCompact" accept=".pdf" multiple style="display: none;">
+                                            </div>
+
+                                            <!-- Progress indicator -->
+                                            <div id="uploadProgress" class="upload-progress" style="display: none;">
+                                                <div class="progress-spinner"></div>
+                                                <span id="progressText">Đang xử lý...</span>
+                                            </div>
+                                        </div>
+                                        <small class="form-hint">Hỗ trợ nhiều file PDF cùng lúc</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- PDF Upload Container -->
+                            <div id="pdfUploadContainer"></div>
+
+                            <!-- Dynamic Order Forms -->
+                            <div id="orderFormsContainer" class="orders-container">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i>
+                                    <p>Nhập số lượng đơn hàng và nhấn "Xác Nhận" để tạo các  đơn hàng.</p>
+                                </div>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary btn-large">
+                                    <i class="fas fa-save"></i> Lưu Tất Cả Đơn Hàng
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Orders List -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-list"></i> Danh Sách Đơn Hàng Hiện Tại</h2>
+                    </div>
+                    <div class="card-body">
+                        <!-- Bulk Actions -->
+                        <div class="bulk-actions hidden" id="bulkActions">
+                            <button type="button" class="btn btn-danger" onclick="deleteSelectedOrders()">
+                                <i class="fas fa-trash"></i> Xóa Đã Chọn (<span id="selectedCount">0</span>)
+                            </button>
+                        </div>
+
+                        <!-- Orders Table Container -->
+                        <div class="table-container orders-table-container">
+                            <table class="products-table" id="ordersTable">
+                                <thead>
+                                    <tr>
+                                        <th class="checkbox-col">
+                                            <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                                        </th>
+                                        <th class="stt-col">STT</th>
+                                        <th class="name-col">Sản Phẩm</th>
+                                        <th class="sku-col">SKU</th>
+                                        <th class="price-col">Số Lượng (kg)</th>
+                                        <th class="price-col">Giá (VNĐ)</th>
+                                        <th class="price-col">Tổng Tiền</th>
+                                        <th class="action-col">Ngày Tạo</th>
+                                        <th class="action-col">Xóa</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ordersContainer">
+                                    <!-- Dữ liệu đơn hàng sẽ được hiển thị ở đây -->
+                                </tbody>
+                            </table>
+
+                            <!-- Empty State -->
+                            <div id="emptyState" class="empty-state hidden">
+                                <div class="empty-icon">
+                                    <i class="fas fa-shopping-bag"></i>
+                                </div>
+                                <h3>Chưa có đơn hàng nào</h3>
+                                <p>Hãy thêm đơn hàng đầu tiên của bạn!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <!-- PDF.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        // Configure PDF.js worker with error handling
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            console.log('PDF.js loaded successfully');
+        } else {
+            console.error('PDF.js failed to load');
+        }
+    </script>
+
+    <script src="../main/firebase.js"></script>
+    <script src="../main/submenu.js"></script>
+    <script src="../main/store-context.js"></script>
+    <script src="../main/navbar.js"></script>
+    <script src="../main/header.js"></script>
+    <script src="../main/searchable-select.js"></script>
+    <script src="../main/orders.js"></script>
+    <script src="../main/delete-order-form.js"></script>
+    <script src="../main/method-selection.js"></script>
+    <script src="../main/tiktok-order-processor.js"></script>
+    <script>
+        // Load components when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load navbar
+            const xhr1 = new XMLHttpRequest();
+            xhr1.open('GET', '../components/navbar.html', true);
+            xhr1.onreadystatechange = function() {
+                if (xhr1.readyState === 4 && xhr1.status === 200) {
+                    document.getElementById('navbar-container').innerHTML = xhr1.responseText;
+                }
+            };
+            xhr1.send();
+            
+            // Load header
+            const xhr2 = new XMLHttpRequest();
+            xhr2.open('GET', '../components/header.html', true);
+            xhr2.onreadystatechange = function() {
+                if (xhr2.readyState === 4 && xhr2.status === 200) {
+                    let content = xhr2.responseText;
+                    content = content.replace('{{PAGE_TITLE}}', 'Quản Lý Đơn Hàng');
+                    document.getElementById('header-container').innerHTML = content;
+                }
+            };
+            xhr2.send();
+        });
+    </script>
+</body>
+</html>

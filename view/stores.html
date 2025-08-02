@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Cửa Hàng - PMQLDH</title>
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="../style/man.css">
+    
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-compat.js"></script>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Đang xử lý...</p>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div id="notification" class="notification hidden">
+        <div class="notification-content">
+            <i class="notification-icon"></i>
+            <span class="notification-message"></span>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Navbar Component -->
+        <div id="navbar-container">
+            <!-- Navbar will be loaded here -->
+        </div>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header Component -->
+            <div id="header-container">
+                <!-- Header will be loaded here -->
+            </div>
+            
+            <!-- Page Stats -->
+            <div class="page-stats">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-store"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="totalStores">0</div>
+                        <div class="stat-label">Tổng Cửa Hàng</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon active">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="activeStores">0</div>
+                        <div class="stat-label">Hoạt Động</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <!-- Add Store Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h2><i class="fas fa-plus-circle"></i> Thêm Cửa Hàng Mới</h2>
+                </div>
+                <div class="card-body">
+                    <form id="storeForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="storeName">🏢 Tên Cửa Hàng:</label>
+                                <input type="text" id="storeName" name="storeName" required 
+                                       placeholder="Nhập tên cửa hàng">
+                            </div>
+                            <div class="form-group">
+                                <label for="storeOwner">👤 Chủ Cửa Hàng:</label>
+                                <input type="text" id="storeOwner" name="storeOwner" required 
+                                       placeholder="Nhập tên chủ cửa hàng">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="storeAddress">📍 Địa Chỉ:</label>
+                                <input type="text" id="storeAddress" name="storeAddress" required 
+                                       placeholder="Nhập địa chỉ cửa hàng">
+                            </div>
+                            <div class="form-group">
+                                <label for="storePhone">📞 Số Điện Thoại:</label>
+                                <input type="tel" id="storePhone" name="storePhone" required 
+                                       placeholder="Nhập số điện thoại">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="storeEmail">✉️ Email:</label>
+                                <input type="email" id="storeEmail" name="storeEmail" 
+                                       placeholder="Nhập email (tùy chọn)">
+                            </div>
+                            <div class="form-group">
+                                <label for="storeStatus">🟢 Trạng Thái:</label>
+                                <select id="storeStatus" name="storeStatus" required>
+                                    <option value="active">Hoạt Động</option>
+                                    <option value="inactive">Tạm Dừng</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary btn-large">
+                                <i class="fas fa-save"></i> Lưu Cửa Hàng
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="clearForm()">
+                                <i class="fas fa-times"></i> Hủy Bỏ
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Stores List -->
+            <div class="card">
+                <div class="card-header">
+                    <h2><i class="fas fa-list"></i> Danh Sách Cửa Hàng</h2>
+                    <div class="card-header-actions">
+                        <div class="search-box">
+                            <input type="text" id="searchStores" placeholder="Tìm kiếm cửa hàng..." 
+                                   onkeyup="searchStores()">
+                            <i class="fas fa-search"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Bulk Actions -->
+                    <div class="bulk-actions hidden" id="bulkActions">
+                        <button type="button" class="btn btn-danger" onclick="deleteSelectedStores()">
+                            <i class="fas fa-trash"></i> Xóa Đã Chọn (<span id="selectedCount">0</span>)
+                        </button>
+                    </div>
+
+                    <!-- Stores Table -->
+                    <div class="table-container">
+                        <table class="products-table" id="storesTable">
+                            <thead>
+                                <tr>
+                                    <th class="checkbox-col">
+                                        <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                                    </th>
+                                    <th class="stt-col">STT</th>
+                                    <th class="name-col">Cửa Hàng</th>
+                                    <th class="owner-col">Chủ Cửa Hàng</th>
+                                    <th class="contact-col">Liên Hệ</th>
+                                    <th class="status-col">Trạng Thái</th>
+                                    <th class="stats-col">Thống Kê</th>
+                                    <th class="action-col">Thao Tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="storesContainer">
+                                <!-- Dữ liệu cửa hàng sẽ được hiển thị ở đây -->
+                            </tbody>
+                        </table>
+
+                        <!-- Empty State -->
+                        <div id="emptyState" class="empty-state hidden">
+                            <div class="empty-icon">
+                                <i class="fas fa-store"></i>
+                            </div>
+                            <h3>Chưa có cửa hàng nào</h3>
+                            <p>Hãy thêm cửa hàng đầu tiên của bạn!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../main/firebase.js"></script>
+    <script src="../main/submenu.js"></script>
+    <script src="../main/header.js"></script>
+    <script src="../main/stores.js"></script>
+    <script>
+        // Load components
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load navbar
+            fetch('../components/navbar.html')
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('navbar-container').innerHTML = html;
+                    // Set active nav item
+                    document.getElementById('nav-stores').classList.add('active');
+                });
+            
+            // Load header
+            fetch('../components/header.html')
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('header-container').innerHTML = html.replace('{{PAGE_TITLE}}', 'Quản Lý Cửa Hàng');
+                });
+        });
+    </script>
+</body>
+</html>
