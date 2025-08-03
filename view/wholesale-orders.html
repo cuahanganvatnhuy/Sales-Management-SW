@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đơn Hàng Bán Sỉ - PMQLDH</title>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="../style/man.css">
+    <link rel="stylesheet" href="../style/wholesale-orders.css">
+
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-compat.js"></script>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Đang xử lý...</p>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div id="notification" class="notification hidden">
+        <div class="notification-content">
+            <i class="notification-icon"></i>
+            <span class="notification-message"></span>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Navbar Component -->
+        <div id="navbar-container">
+            <!-- Navbar will be loaded here -->
+        </div>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header Component -->
+            <div id="header-container">
+                <!-- Header will be loaded here -->
+            </div>
+
+            <!-- Content -->
+            <div class="content">
+                <div class="wholesale-container">
+                    <!-- Header -->
+                    <div class="wholesale-header">
+                        <h1><i class="fas fa-warehouse"></i> Quản Lý Đơn Hàng Bán Sỉ</h1>
+                        <p>Tạo và quản lý đơn hàng bán sỉ cho khách hàng doanh nghiệp</p>
+                    </div>
+
+                    <!-- Add Wholesale Order Form -->
+                    <div class="wholesale-form-card">
+                        <form id="wholesaleOrderForm" onsubmit="createWholesaleOrder(event)">
+                            <!-- Customer Information -->
+                            <div class="wholesale-form-section">
+                                <h3 class="wholesale-section-title">
+                                    <i class="fas fa-building"></i>
+                                    Thông Tin Khách Hàng
+                                </h3>
+                                <div class="wholesale-form-row">
+                                    <div class="wholesale-form-group">
+                                        <label for="wholesaleCustomerName">Tên Khách Hàng *</label>
+                                        <input type="text" id="wholesaleCustomerName" name="customerName"
+                                               placeholder="Nhập tên khách hàng" required>
+                                    </div>
+                                    <div class="wholesale-form-group">
+                                        <label for="wholesaleCustomerPhone">Số Điện Thoại</label>
+                                        <input type="tel" id="wholesaleCustomerPhone" name="customerPhone"
+                                               placeholder="Nhập số điện thoại">
+                                    </div>
+                                </div>
+                                <div class="wholesale-form-row">
+                                    <div class="wholesale-form-group">
+                                        <label for="wholesaleCustomerAddress">Địa Chỉ</label>
+                                        <input type="text" id="wholesaleCustomerAddress" name="customerAddress"
+                                               placeholder="Nhập địa chỉ khách hàng">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Order Information -->
+                            <div class="wholesale-form-section">
+                                <h3 class="wholesale-section-title">
+                                    <i class="fas fa-calendar"></i>
+                                    Thông Tin Đơn Hàng
+                                </h3>
+                                <div class="wholesale-form-row">
+                                    <div class="wholesale-form-group">
+                                        <label for="wholesaleOrderDate">Ngày Đặt Hàng *</label>
+                                        <input type="date" id="wholesaleOrderDate" name="orderDate" required>
+                                    </div>
+                                    <div class="wholesale-form-group">
+                                        <label for="wholesaleDeliveryDate">Ngày Giao Hàng</label>
+                                        <input type="date" id="wholesaleDeliveryDate" name="deliveryDate">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Products -->
+                            <div class="wholesale-form-section">
+                                <h3 class="wholesale-section-title">
+                                    <i class="fas fa-boxes"></i>
+                                    Sản Phẩm
+                                </h3>
+                                <div class="wholesale-items-container" id="wholesaleItemsContainer">
+                                    <!-- Items will be added here -->
+                                </div>
+                                <button type="button" class="wholesale-btn wholesale-btn-success wholesale-btn-small"
+                                        onclick="addWholesaleItem()">
+                                    <i class="fas fa-plus"></i>
+                                    Thêm Sản Phẩm
+                                </button>
+                            </div>
+
+                            <!-- Summary -->
+                            <div class="wholesale-form-section">
+                                <h3 class="wholesale-section-title">
+                                    <i class="fas fa-calculator"></i>
+                                    Tổng Kết Đơn Hàng
+                                </h3>
+                                <div class="wholesale-summary">
+                                    <div class="wholesale-summary-row">
+                                        <span class="wholesale-summary-label">Tạm Tính:</span>
+                                        <span class="wholesale-summary-value" id="wholesaleSubtotal">0 VNĐ</span>
+                                    </div>
+                                    <div class="wholesale-summary-row">
+                                        <span class="wholesale-summary-label">Giảm Giá:</span>
+                                        <input type="number" id="wholesaleDiscount" min="0" value="0"
+                                               onchange="updateWholesaleSummary()" class="wholesale-input-small">
+                                    </div>
+                                    <div class="wholesale-summary-row">
+                                        <span class="wholesale-summary-label">Phí Vận Chuyển:</span>
+                                        <input type="number" id="wholesaleShipping" min="0" value="0"
+                                               onchange="updateWholesaleSummary()" class="wholesale-input-small">
+                                    </div>
+                                    <div class="wholesale-deposit-row wholesale-summary-row">
+                                        <span class="wholesale-summary-label">Tiền Cọc:</span>
+                                        <input type="number" id="wholesaleDeposit" min="0" value="0"
+                                               onchange="updateWholesaleSummary()" class="wholesale-input-small">
+                                    </div>
+                                    <div class="wholesale-summary-row">
+                                        <span class="wholesale-summary-label">Tổng Cộng:</span>
+                                        <span class="wholesale-summary-value" id="wholesaleTotal">0 VNĐ</span>
+                                    </div>
+                                    <div class="wholesale-remaining-row wholesale-summary-row">
+                                        <span class="wholesale-summary-label">Còn Phải Trả:</span>
+                                        <span class="wholesale-summary-value" id="wholesaleRemaining">0 VNĐ</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Form Actions -->
+                            <div class="wholesale-form-actions">
+                                <button type="submit" class="wholesale-btn wholesale-btn-primary">
+                                    <i class="fas fa-save"></i>
+                                    Tạo Đơn Hàng
+                                </button>
+                                <button type="button" class="wholesale-btn wholesale-btn-secondary" onclick="clearWholesaleForm()">
+                                    <i class="fas fa-undo"></i>
+                                    Làm Mới
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Orders List -->
+                    <div class="wholesale-orders-card">
+                        <div class="wholesale-orders-header">
+                            <h2><i class="fas fa-list"></i> Danh Sách Đơn Hàng Bán Sỉ</h2>
+                        </div>
+                        <div class="wholesale-table-container">
+                            <table class="wholesale-table" id="wholesaleOrdersTable">
+                                <thead>
+                                    <tr>
+                                        <th>STT</th>
+                                        <th>Khách Hàng</th>
+                                        <th>Số Điện Thoại</th>
+                                        <th>Ngày Đặt</th>
+                                        <th>Sản Phẩm</th>
+                                        <th>Tổng Tiền</th>
+                                        <th>Tiền Cọc</th>
+                                        <th>Còn Lại</th>
+                                        <th>Trạng Thái</th>
+                                        <th>Thao Tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="wholesaleOrdersBody">
+                                    <!-- Orders will be loaded here -->
+                                </tbody>
+                            </table>
+
+                            <!-- Empty State -->
+                            <div id="wholesaleEmptyState" class="wholesale-empty-state">
+                                <div class="wholesale-empty-icon">
+                                    <i class="fas fa-warehouse"></i>
+                                </div>
+                                <h3>Chưa có đơn hàng bán sỉ nào</h3>
+                                <p>Hãy tạo đơn hàng bán sỉ đầu tiên của bạn!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../main/firebase.js"></script>
+    <script src="../main/submenu.js"></script>
+    <script src="../main/store-context.js"></script>
+    <script src="../main/navbar.js"></script>
+    <script src="../main/header.js"></script>
+    <script src="../main/order-type-selection.js"></script>
+    <script src="../main/searchable-select.js"></script>
+    <script src="../main/products.js"></script>
+    <script src="../main/new-wholesale-orders.js"></script>
+
+    <script>
+        // Load components when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load navbar
+            const xhr1 = new XMLHttpRequest();
+            xhr1.open('GET', '../components/navbar.html', true);
+            xhr1.onreadystatechange = function() {
+                if (xhr1.readyState === 4 && xhr1.status === 200) {
+                    document.getElementById('navbar-container').innerHTML = xhr1.responseText;
+                }
+            };
+            xhr1.send();
+
+            // Load header
+            const xhr2 = new XMLHttpRequest();
+            xhr2.open('GET', '../components/header.html', true);
+            xhr2.onreadystatechange = function() {
+                if (xhr2.readyState === 4 && xhr2.status === 200) {
+                    let content = xhr2.responseText;
+                    content = content.replace('{{PAGE_TITLE}}', 'Đơn Hàng Bán Sỉ');
+                    document.getElementById('header-container').innerHTML = content;
+                }
+            };
+            xhr2.send();
+
+            // Initialize wholesale orders
+            setTimeout(() => {
+                if (typeof initWholesaleOrders === 'function') {
+                    initWholesaleOrders();
+                }
+            }, 500);
+        });
+    </script>
+</body>
+</html>

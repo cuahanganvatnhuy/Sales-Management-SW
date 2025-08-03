@@ -178,12 +178,16 @@
     </div>
 
     <!-- Scripts -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-compat.js"></script>
     <script src="main/firebase.js"></script>
     <script src="main/store-context.js"></script>
+    <script src="main/submenu.js"></script>
+    <script src="main/navbar.js"></script>
     <script src="main/header.js"></script>
     <script src="main/dashboard.js"></script>
+    <script src="main/order-type-selection.js"></script>
+    <script src="main/new-retail-orders.js"></script>
+    <script src="main/new-wholesale-orders.js"></script>
 
     <script>
         // Global submenu toggle function - simple inline style toggle
@@ -230,6 +234,7 @@
         };
     </script>
 
+    <script src="main/order-type-selection.js"></script>
     <script>
         // Load components using XMLHttpRequest
         function loadComponent(url, elementId, callback) {
@@ -263,23 +268,23 @@
             loadComponent('components/navbar.html', 'navbar-placeholder', function() {
                 console.log('Navbar loaded successfully');
                 
-                // Debug submenu after navbar loads
+                // Debug order submenu after navbar loads
                 setTimeout(() => {
-                    const hasSubmenu = document.querySelector('.has-submenu');
-                    const submenu = document.querySelector('.submenu');
-                    const submenuToggle = document.querySelector('.has-submenu > a');
+                    const hasOrderSubmenu = document.querySelector('.has-submenu');
+                    const orderSubmenu = document.getElementById('orderSubmenu');
+                    const orderSubmenuToggle = document.querySelector('a[href="#"][onclick*="toggleOrderSubmenu"]');
                     
-                    console.log('DEBUG - Submenu elements after navbar load:', {
-                        hasSubmenu: !!hasSubmenu,
-                        submenu: !!submenu,
-                        submenuToggle: !!submenuToggle,
-                        submenuDisplay: submenu ? window.getComputedStyle(submenu).display : 'not found'
+                    console.log('DEBUG - Order submenu elements after navbar load:', {
+                        hasOrderSubmenu: !!hasOrderSubmenu,
+                        orderSubmenu: !!orderSubmenu,
+                        orderSubmenuToggle: !!orderSubmenuToggle,
+                        orderSubmenuDisplay: orderSubmenu ? window.getComputedStyle(orderSubmenu).display : 'not found'
                     });
                     
-                    // Force submenu to be hidden initially
-                    if (submenu && hasSubmenu && !hasSubmenu.classList.contains('open')) {
-                        submenu.style.display = 'none';
-                        console.log('DEBUG - Force hidden submenu on dashboard');
+                    // Force order submenu to be hidden initially
+                    if (orderSubmenu && !orderSubmenu.classList.contains('show')) {
+                        orderSubmenu.style.display = 'none';
+                        console.log('DEBUG - Force hidden order submenu on dashboard');
                     }
                 }, 500);
             });

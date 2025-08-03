@@ -69,6 +69,21 @@
                                     </div>
                                 </div>
 
+                                <!-- Order Type Selection -->
+                                <div class="order-type-selection">
+                                    <div class="order-type-buttons">
+                                        <button type="button" class="btn btn-order-type active" id="ecommerceTypeBtn" onclick="selectOrderType('ecommerce')">
+                                            <i class="fas fa-shopping-cart"></i> Đơn TMĐT
+                                        </button>
+                                        <button type="button" class="btn btn-order-type" id="retailTypeBtn" onclick="selectOrderType('retail')">
+                                            <i class="fas fa-store"></i> Bán Lẻ
+                                        </button>
+                                        <button type="button" class="btn btn-order-type" id="wholesaleTypeBtn" onclick="selectOrderType('wholesale')">
+                                            <i class="fas fa-warehouse"></i> Bán Sỉ
+                                        </button>
+                                    </div>
+                                </div>
+
                                 <div class="form-row">
                                     <div class="form-group">
                                         <label for="orderDate">Ngày Tạo Đơn:</label>
@@ -207,30 +222,50 @@
     <script src="../main/delete-order-form.js"></script>
     <script src="../main/method-selection.js"></script>
     <script src="../main/tiktok-order-processor.js"></script>
+    <script src="../main/order-type-selection.js"></script>
+    <script src="../main/new-retail-orders.js"></script>
+    <script src="../main/new-wholesale-orders.js"></script>
     <script>
+        // Load components using XMLHttpRequest
+        function loadComponent(url, elementId, callback) {
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', url, true);
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4) {
+                    if (xhr.status === 200) {
+                        document.getElementById(elementId).innerHTML = xhr.responseText;
+                        if (callback) callback();
+                    } else {
+                        console.error('Failed to load component:', url, xhr.status);
+                    }
+                }
+            };
+            xhr.send();
+        }
+        
         // Load components when DOM is ready
         document.addEventListener('DOMContentLoaded', function() {
-            // Load navbar
-            const xhr1 = new XMLHttpRequest();
-            xhr1.open('GET', '../components/navbar.html', true);
-            xhr1.onreadystatechange = function() {
-                if (xhr1.readyState === 4 && xhr1.status === 200) {
-                    document.getElementById('navbar-container').innerHTML = xhr1.responseText;
+            // Load navbar first
+            loadComponent('components/navbar.html', 'navbar-placeholder', function() {
+                console.log('Navbar loaded');
+                // Initialize navbar functionality
+                if (typeof initializeNavbar === 'function') {
+                    initializeNavbar();
                 }
-            };
-            xhr1.send();
+                // Initialize order type selection after navbar is loaded
+                if (typeof initializeOrderTypeSelection === 'function') {
+                    initializeOrderTypeSelection();
+                }
+            });
             
             // Load header
-            const xhr2 = new XMLHttpRequest();
-            xhr2.open('GET', '../components/header.html', true);
-            xhr2.onreadystatechange = function() {
-                if (xhr2.readyState === 4 && xhr2.status === 200) {
-                    let content = xhr2.responseText;
-                    content = content.replace('{{PAGE_TITLE}}', 'Quản Lý Đơn Hàng');
-                    document.getElementById('header-container').innerHTML = content;
+            loadComponent('components/header.html', 'header-placeholder', function() {
+                console.log('Header loaded');
+                // Initialize header functionality after loading
+                if (typeof initializeHeader === 'function') {
+                    initializeHeader();
                 }
-            };
-            xhr2.send();
+            });
         });
     </script>
 </body>

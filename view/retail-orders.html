@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đơn Hàng Bán Lẻ - PMQLDH</title>
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="../style/man.css">
+    <link rel="stylesheet" href="../style/retail-orders.css">
+    
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-compat.js"></script>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Đang xử lý...</p>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div id="notification" class="notification hidden">
+        <div class="notification-content">
+            <i class="notification-icon"></i>
+            <span class="notification-message"></span>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Navbar Component -->
+        <div id="navbar-container">
+            <!-- Navbar will be loaded here -->
+        </div>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header Component -->
+            <div id="header-container">
+                <!-- Header will be loaded here -->
+            </div>
+
+            <!-- Content -->
+            <div class="content">
+                <div class="retail-container">
+                    <!-- Header -->
+                    <div class="retail-header">
+                        <h1><i class="fas fa-shopping-cart"></i> Quản Lý Đơn Hàng Bán Lẻ</h1>
+                        <p>Tạo và quản lý đơn hàng bán lẻ cho khách hàng cá nhân</p>
+                    </div>
+
+                    <!-- Add Retail Order Form -->
+                    <div class="retail-form-card">
+                        <form id="retailOrderForm" onsubmit="createRetailOrder(event)">
+                            <!-- Customer Information -->
+                            <div class="retail-form-section">
+                                <h3 class="retail-section-title">
+                                    <i class="fas fa-user"></i>
+                                    Thông Tin Khách Hàng
+                                </h3>
+                                <div class="retail-form-row">
+                                    <div class="retail-form-group">
+                                        <label for="retailCustomerName">Tên Khách Hàng *</label>
+                                        <input type="text" id="retailCustomerName" name="customerName" 
+                                               placeholder="Nhập tên khách hàng" required>
+                                    </div>
+                                    <div class="retail-form-group">
+                                        <label for="retailCustomerPhone">Số Điện Thoại</label>
+                                        <input type="tel" id="retailCustomerPhone" name="customerPhone" 
+                                               placeholder="Nhập số điện thoại">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Order Information -->
+                            <div class="retail-form-section">
+                                <h3 class="retail-section-title">
+                                    <i class="fas fa-calendar"></i>
+                                    Thông Tin Đơn Hàng
+                                </h3>
+                                <div class="retail-form-row">
+                                    <div class="retail-form-group">
+                                        <label for="retailOrderDate">Ngày Bán *</label>
+                                        <input type="date" id="retailOrderDate" name="orderDate" required>
+                                    </div>
+                                    <div class="retail-form-group">
+                                        <label for="retailOrderTime">Giờ Bán *</label>
+                                        <input type="time" id="retailOrderTime" name="orderTime" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Products -->
+                            <div class="retail-form-section">
+                                <h3 class="retail-section-title">
+                                    <i class="fas fa-box"></i>
+                                    Sản Phẩm
+                                </h3>
+                                <div class="retail-items-container" id="retailItemsContainer">
+                                    <!-- Items will be added here -->
+                                </div>
+                                <button type="button" class="retail-btn retail-btn-success retail-btn-small" 
+                                        onclick="addRetailItem()">
+                                    <i class="fas fa-plus"></i>
+                                    Thêm Sản Phẩm
+                                </button>
+                            </div>
+
+                            <!-- Summary -->
+                            <div class="retail-form-section">
+                                <h3 class="retail-section-title">
+                                    <i class="fas fa-calculator"></i>
+                                    Tổng Kết Đơn Hàng
+                                </h3>
+                                <div class="retail-summary">
+                                    <div class="retail-summary-row">
+                                        <span class="retail-summary-label">Tạm Tính:</span>
+                                        <span class="retail-summary-value" id="retailSubtotal">0 VNĐ</span>
+                                    </div>
+                                    <div class="retail-summary-row">
+                                        <span class="retail-summary-label">Giảm Giá:</span>
+                                        <input type="number" id="retailDiscount" min="0" value="0" 
+                                               onchange="updateRetailSummary()" style="width: 120px; text-align: right;">
+                                    </div>
+                                    <div class="retail-summary-row">
+                                        <span class="retail-summary-label">Phí Vận Chuyển:</span>
+                                        <input type="number" id="retailShipping" min="0" value="0" 
+                                               onchange="updateRetailSummary()" style="width: 120px; text-align: right;">
+                                    </div>
+                                    <div class="retail-summary-row">
+                                        <span class="retail-summary-label">Tổng Cộng:</span>
+                                        <span class="retail-summary-value" id="retailTotal">0 VNĐ</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Form Actions -->
+                            <div class="retail-form-actions">
+                                <button type="submit" class="retail-btn retail-btn-primary">
+                                    <i class="fas fa-save"></i>
+                                    Tạo Đơn Hàng
+                                </button>
+                                <button type="button" class="retail-btn retail-btn-secondary" onclick="clearRetailForm()">
+                                    <i class="fas fa-undo"></i>
+                                    Làm Mới
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Orders List -->
+                    <div class="retail-orders-card">
+                        <div class="retail-orders-header">
+                            <h2><i class="fas fa-list"></i> Danh Sách Đơn Hàng Bán Lẻ</h2>
+                        </div>
+                        <div class="retail-table-container">
+                            <table class="retail-table" id="retailOrdersTable">
+                                <thead>
+                                    <tr>
+                                        <th>STT</th>
+                                        <th>Khách Hàng</th>
+                                        <th>Số Điện Thoại</th>
+                                        <th>Ngày Bán</th>
+                                        <th>Sản Phẩm</th>
+                                        <th>Tổng Tiền</th>
+                                        <th>Thao Tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="retailOrdersBody">
+                                    <!-- Orders will be loaded here -->
+                                </tbody>
+                            </table>
+                            
+                            <!-- Empty State -->
+                            <div id="retailEmptyState" class="retail-empty-state">
+                                <div class="retail-empty-icon">
+                                    <i class="fas fa-shopping-cart"></i>
+                                </div>
+                                <h3>Chưa có đơn hàng bán lẻ nào</h3>
+                                <p>Hãy tạo đơn hàng bán lẻ đầu tiên của bạn!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../main/firebase.js"></script>
+    <script src="../main/submenu.js"></script>
+    <script src="../main/store-context.js"></script>
+    <script src="../main/navbar.js"></script>
+    <script src="../main/header.js"></script>
+    <script src="../main/order-type-selection.js"></script>
+    <script src="../main/searchable-select.js"></script>
+    <script src="../main/products.js"></script>
+    <script src="../main/new-retail-orders.js"></script>
+    
+    <script>
+        // Load components when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load navbar
+            const xhr1 = new XMLHttpRequest();
+            xhr1.open('GET', '../components/navbar.html', true);
+            xhr1.onreadystatechange = function() {
+                if (xhr1.readyState === 4 && xhr1.status === 200) {
+                    document.getElementById('navbar-container').innerHTML = xhr1.responseText;
+                }
+            };
+            xhr1.send();
+            
+            // Load header
+            const xhr2 = new XMLHttpRequest();
+            xhr2.open('GET', '../components/header.html', true);
+            xhr2.onreadystatechange = function() {
+                if (xhr2.readyState === 4 && xhr2.status === 200) {
+                    let content = xhr2.responseText;
+                    content = content.replace('{{PAGE_TITLE}}', 'Đơn Hàng Bán Lẻ');
+                    document.getElementById('header-container').innerHTML = content;
+                }
+            };
+            xhr2.send();
+            
+            // Initialize retail orders
+            setTimeout(() => {
+                if (typeof initRetailOrders === 'function') {
+                    initRetailOrders();
+                }
+            }, 500);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,446 @@
+/* Wholesale Orders CSS */
+
+/* Container và Layout */
+.wholesale-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.wholesale-header {
+    background: linear-gradient(135deg, #fd7e14 0%, #e83e8c 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 15px;
+    margin-bottom: 30px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.wholesale-header h1 {
+    margin: 0;
+    font-size: 2.5rem;
+    font-weight: 700;
+}
+
+.wholesale-header p {
+    margin: 10px 0 0 0;
+    opacity: 0.9;
+    font-size: 1.1rem;
+}
+
+/* Form Styling */
+.wholesale-form-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    padding: 40px;
+    margin-bottom: 30px;
+}
+
+.wholesale-form-section {
+    margin-bottom: 35px;
+    padding-bottom: 25px;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.wholesale-form-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.wholesale-section-title {
+    color: #333;
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.wholesale-section-title i {
+    color: #fd7e14;
+    font-size: 1.2rem;
+}
+
+/* Form Controls */
+.wholesale-form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.wholesale-form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.wholesale-form-group label {
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+}
+
+.wholesale-form-group input,
+.wholesale-form-group select,
+.wholesale-form-group textarea {
+    padding: 12px 15px;
+    border: 2px solid #e1e5e9;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.wholesale-form-group input:focus,
+.wholesale-form-group select:focus,
+.wholesale-form-group textarea:focus {
+    outline: none;
+    border-color: #fd7e14;
+    box-shadow: 0 0 0 3px rgba(253, 126, 20, 0.1);
+}
+
+/* Product Items */
+.wholesale-items-container {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    margin: 20px 0;
+}
+
+.wholesale-item {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 15px;
+    border: 1px solid #e1e5e9;
+    position: relative;
+}
+
+.wholesale-item:last-child {
+    margin-bottom: 0;
+}
+
+.wholesale-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.wholesale-item-number {
+    background: #fd7e14;
+    color: white;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.wholesale-remove-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+}
+
+.wholesale-remove-btn:hover {
+    background: #c82333;
+    transform: translateY(-1px);
+}
+
+/* Summary Section */
+.wholesale-summary {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+    border-radius: 10px;
+    padding: 25px;
+    margin-top: 20px;
+    border: 1px solid #ffeaa7;
+}
+
+.wholesale-summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.wholesale-summary-row:last-child {
+    border-bottom: none;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #fd7e14;
+    padding-top: 15px;
+    margin-top: 10px;
+    border-top: 2px solid #fd7e14;
+}
+
+.wholesale-summary-label {
+    font-weight: 600;
+    color: #555;
+}
+
+.wholesale-summary-value {
+    font-weight: 700;
+    color: #333;
+}
+
+.wholesale-deposit-row {
+    background: #e8f5e8;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 10px 0;
+    border-left: 4px solid #28a745;
+}
+
+.wholesale-remaining-row {
+    background: #fff3cd;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 10px 0;
+    border-left: 4px solid #ffc107;
+}
+
+/* Buttons */
+.wholesale-btn {
+    padding: 12px 25px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+}
+
+.wholesale-btn-primary {
+    background: linear-gradient(135deg, #fd7e14 0%, #e83e8c 100%);
+    color: white;
+}
+
+.wholesale-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(253, 126, 20, 0.4);
+}
+
+.wholesale-btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.wholesale-btn-secondary:hover {
+    background: #5a6268;
+    transform: translateY(-1px);
+}
+
+.wholesale-btn-success {
+    background: #28a745;
+    color: white;
+}
+
+.wholesale-btn-success:hover {
+    background: #218838;
+    transform: translateY(-1px);
+}
+
+.wholesale-btn-small {
+    padding: 8px 15px;
+    font-size: 0.9rem;
+}
+
+.wholesale-form-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 2px solid #f0f0f0;
+}
+
+/* Orders List */
+.wholesale-orders-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.wholesale-orders-header {
+    background: linear-gradient(135deg, #fd7e14 0%, #e83e8c 100%);
+    color: white;
+    padding: 25px;
+    text-align: center;
+}
+
+.wholesale-orders-header h2 {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 600;
+}
+
+.wholesale-table-container {
+    overflow-x: auto;
+    padding: 20px;
+}
+
+.wholesale-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+}
+
+.wholesale-table th {
+    background: #f8f9fa;
+    padding: 15px 10px;
+    text-align: left;
+    font-weight: 600;
+    color: #555;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.wholesale-table td {
+    padding: 12px 10px;
+    border-bottom: 1px solid #dee2e6;
+    vertical-align: middle;
+}
+
+.wholesale-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+/* Status Badges */
+.wholesale-status-badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.wholesale-status-pending {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+.wholesale-status-paid {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.wholesale-status-partial {
+    background: #cce5ff;
+    color: #004085;
+    border: 1px solid #b3d7ff;
+}
+
+/* Empty State */
+.wholesale-empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #6c757d;
+}
+
+.wholesale-empty-icon {
+    font-size: 4rem;
+    color: #dee2e6;
+    margin-bottom: 20px;
+}
+
+.wholesale-empty-state h3 {
+    color: #495057;
+    margin-bottom: 10px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .wholesale-container {
+        padding: 15px;
+    }
+    
+    .wholesale-form-card {
+        padding: 25px;
+    }
+    
+    .wholesale-header {
+        padding: 20px;
+    }
+    
+    .wholesale-header h1 {
+        font-size: 2rem;
+    }
+    
+    .wholesale-form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .wholesale-form-actions {
+        flex-direction: column;
+    }
+    
+    .wholesale-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* Loading và Animation */
+.wholesale-loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #fd7e14;
+    border-radius: 50%;
+    animation: wholesale-spin 1s linear infinite;
+}
+
+@keyframes wholesale-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Notification */
+.wholesale-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 20px;
+    border-radius: 8px;
+    color: white;
+    font-weight: 600;
+    z-index: 1000;
+    transform: translateX(400px);
+    transition: transform 0.3s ease;
+}
+
+.wholesale-notification.show {
+    transform: translateX(0);
+}
+
+.wholesale-notification.success {
+    background: #28a745;
+}
+
+.wholesale-notification.error {
+    background: #dc3545;
+}
+
+.wholesale-notification.warning {
+    background: #ffc107;
+    color: #212529;
+}
