@@ -246,6 +246,7 @@ body {
     border-radius: 16px;
     box-shadow: 0 4px 20px rgba(45, 90, 39, 0.08);
     margin-bottom: 32px;
+    padding: 39px;
     overflow: hidden;
     border: 1px solid rgba(45, 90, 39, 0.1);
     transition: all 0.3s ease;
@@ -894,7 +895,7 @@ textarea {
 }
 
 .form-section {
-    margin-bottom: 30px;
+    margin-bottom: 15px;
     padding: 20px;
     background: #f8f9fa;
     border-radius: 12px;
@@ -966,11 +967,11 @@ textarea {
 
 .form-group input[readonly] {
     background: #f9fafb;
-    color: green;
+    /* color: green; */
     cursor: not-allowed;
     font-size: 16px;
-    font-family: ui-monospace;
-    font-weight: bolder;
+    font-family:none;
+    /* font-weight: bolder; */
 }
 
 /* Input with button layout */
@@ -1115,11 +1116,10 @@ textarea {
 }
 
 .form-actions {
-    margin-top: 30px;
-    text-align: center;
-    padding: 20px;
-    background: #f8f9fa;
+    text-align: end;
+   
     border-radius: 12px;
+    margin-bottom: 15px;
 }
 
 .btn-large {

@@ -32,10 +32,7 @@ if (!window.toggleOrderSubmenu) {
         const submenu = document.getElementById('orderSubmenu');
         if (submenu) {
             submenu.classList.toggle('show');
-            // Call updateOrderTypeUI if it exists
-            if (typeof window.updateOrderTypeUI === 'function') {
-                window.updateOrderTypeUI();
-            }
+            // Removed updateOrderTypeUI call to prevent unnecessary UI updates
             console.log('Order submenu toggled');
         } else {
             console.log('Order submenu not found!');

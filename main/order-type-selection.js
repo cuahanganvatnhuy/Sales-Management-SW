@@ -6,6 +6,12 @@ let currentCreationMethod = 'manual'; // Default to manual
 
 // Initialize order type selection functionality
 function initializeOrderTypeSelection() {
+    // Check if already initialized to prevent duplicate event listeners
+    if (window.orderTypeSelectionInitialized) {
+        console.log('Order type selection already initialized, skipping...');
+        return;
+    }
+    
     console.log('Initializing order type selection...');
     
     // Bind event listeners to order type buttons
@@ -46,6 +52,8 @@ function initializeOrderTypeSelection() {
     updateOrderTypeUI();
     updateCreationMethodUI();
     
+    // Mark as initialized
+    window.orderTypeSelectionInitialized = true;
     console.log('Order type selection initialized with type:', currentOrderType, 'and method:', currentCreationMethod);
 }
 
@@ -155,5 +163,6 @@ function updateOrderTypeUI() {
         }
     }
     
-    console.log('UI updated for order type:', currentOrderType);
+    // Removed excessive logging to prevent console spam
+    // console.log('UI updated for order type:', currentOrderType);
 }

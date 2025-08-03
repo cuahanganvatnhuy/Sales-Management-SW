@@ -14,6 +14,84 @@
     
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-compat.js"></script>
+    <style>
+        /* Notification Styles */
+        .notification {
+            position: fixed;
+            top: 12%;
+            right: 20px;
+            z-index: 9999;
+            min-width: 300px;
+            max-width: 500px;
+            padding: 16px 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            transform: translateX(100%);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+        }
+        
+        .notification:not(.hidden) {
+            transform: translateX(0);
+        }
+        
+        .notification.hidden {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        
+        .notification.success {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            border-left: 4px solid #065f46;
+        }
+        
+        .notification.error {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            border-left: 4px solid #991b1b;
+        }
+        
+        .notification.warning {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            border-left: 4px solid #92400e;
+        }
+        
+        .notification.info {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            border-left: 4px solid #1d4ed8;
+        }
+        
+        .notification-icon {
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        
+        .notification-message {
+            flex: 1;
+            line-height: 1.4;
+        }
+        
+        /* Responsive */
+        @media (max-width: 640px) {
+            .notification {
+                top: 10px;
+                right: 10px;
+                left: 10px;
+                min-width: auto;
+                max-width: none;
+            }
+        }
+    </style>
 </head>
 <body>
     <!-- Loading Overlay -->
@@ -47,29 +125,46 @@
 
             <!-- Content -->
             <div class="content">
-                <div class="retail-container">
-                    <!-- Header -->
-                    <div class="retail-header">
-                        <h1><i class="fas fa-shopping-cart"></i> Quản Lý Đơn Hàng Bán Lẻ</h1>
-                        <p>Tạo và quản lý đơn hàng bán lẻ cho khách hàng cá nhân</p>
+                <!-- Add Order Form -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-plus"></i> Thêm Đơn Hàng Mới</h2>
                     </div>
+                    <!-- Order Type Selection -->
+                     <!-- Order Type Selection -->
+                     <div class="order-type-selection" style="margin-bottom: 20px;margin-left: 20px;">
+                        <div class="order-type-buttons">
+                            <a href="./orders.html">
+                            <button type="button" class="btn btn-order-type active" id="ecommerceTypeBtn" onclick="selectOrderType('ecommerce')">
+                                <i class="fas fa-shopping-cart"></i> Đơn TMĐT
+                            </button>
+                        </a>
+                            <a href="./retail-orders.html">
+                            <button type="button" class="btn btn-order-type" id="retailTypeBtn" onclick="selectOrderType('retail')">
+                                <i class="fas fa-store"></i> Đơn Bán Lẻ
 
-                    <!-- Add Retail Order Form -->
-                    <div class="retail-form-card">
-                        <form id="retailOrderForm" onsubmit="createRetailOrder(event)">
+                            </button>
+                            </a>
+                            <a href="./wholesale-orders.html">
+                            <button type="button" class="btn btn-order-type" id="wholesaleTypeBtn" onclick="selectOrderType('wholesale')">
+                                <i class="fas fa-warehouse"></i> Đơn Bán Sỉ
+                            </button>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <!-- Add Retail Order Form -->
+                        <form id="retailOrderForm" class="order-form">
                             <!-- Customer Information -->
-                            <div class="retail-form-section">
-                                <h3 class="retail-section-title">
-                                    <i class="fas fa-user"></i>
-                                    Thông Tin Khách Hàng
-                                </h3>
-                                <div class="retail-form-row">
-                                    <div class="retail-form-group">
+                            <div class="form-section">
+                                <h3><i class="fas fa-user"></i> Thông Tin Khách Hàng</h3>
+                                <div class="form-row">
+                                    <div class="form-group">
                                         <label for="retailCustomerName">Tên Khách Hàng *</label>
                                         <input type="text" id="retailCustomerName" name="customerName" 
                                                placeholder="Nhập tên khách hàng" required>
                                     </div>
-                                    <div class="retail-form-group">
+                                    <div class="form-group">
                                         <label for="retailCustomerPhone">Số Điện Thoại</label>
                                         <input type="tel" id="retailCustomerPhone" name="customerPhone" 
                                                placeholder="Nhập số điện thoại">
@@ -78,17 +173,14 @@
                             </div>
 
                             <!-- Order Information -->
-                            <div class="retail-form-section">
-                                <h3 class="retail-section-title">
-                                    <i class="fas fa-calendar"></i>
-                                    Thông Tin Đơn Hàng
-                                </h3>
-                                <div class="retail-form-row">
-                                    <div class="retail-form-group">
+                            <div class="form-section">
+                                <h3><i class="fas fa-calendar"></i> Thông Tin Đơn Hàng</h3>
+                                <div class="form-row">
+                                    <div class="form-group">
                                         <label for="retailOrderDate">Ngày Bán *</label>
                                         <input type="date" id="retailOrderDate" name="orderDate" required>
                                     </div>
-                                    <div class="retail-form-group">
+                                    <div class="form-group">
                                         <label for="retailOrderTime">Giờ Bán *</label>
                                         <input type="time" id="retailOrderTime" name="orderTime" required>
                                     </div>
@@ -96,15 +188,12 @@
                             </div>
 
                             <!-- Products -->
-                            <div class="retail-form-section">
-                                <h3 class="retail-section-title">
-                                    <i class="fas fa-box"></i>
-                                    Sản Phẩm
-                                </h3>
+                            <div class="form-section">
+                                <h3><i class="fas fa-box"></i> Sản Phẩm</h3>
                                 <div class="retail-items-container" id="retailItemsContainer">
                                     <!-- Items will be added here -->
                                 </div>
-                                <button type="button" class="retail-btn retail-btn-success retail-btn-small" 
+                                <button type="button" class="btn btn-success" 
                                         onclick="addRetailItem()">
                                     <i class="fas fa-plus"></i>
                                     Thêm Sản Phẩm
@@ -112,51 +201,56 @@
                             </div>
 
                             <!-- Summary -->
-                            <div class="retail-form-section">
-                                <h3 class="retail-section-title">
-                                    <i class="fas fa-calculator"></i>
-                                    Tổng Kết Đơn Hàng
-                                </h3>
-                                <div class="retail-summary">
-                                    <div class="retail-summary-row">
-                                        <span class="retail-summary-label">Tạm Tính:</span>
-                                        <span class="retail-summary-value" id="retailSubtotal">0 VNĐ</span>
+                            <div class="form-section">
+                                <h3><i class="fas fa-calculator"></i> Tổng Kết Đơn Hàng</h3>
+                                <div class="order-summary">
+                                    <div class="summary-row">
+                                        <span class="summary-label">Tạm Tính:</span>
+                                        <span class="summary-value" id="retailSubtotal">0 VNĐ</span>
                                     </div>
-                                    <div class="retail-summary-row">
-                                        <span class="retail-summary-label">Giảm Giá:</span>
-                                        <input type="number" id="retailDiscount" min="0" value="0" 
-                                               onchange="updateRetailSummary()" style="width: 120px; text-align: right;">
+                                    
+                                    <!-- Input fields in one row -->
+                                    <div class="summary-inputs-row">
+                                        <div class="input-group">
+                                            <label class="input-label">Giảm Giá:</label>
+                                            <input type="text" id="retailDiscount" 
+                                                   onchange="updateRetailSummary()" oninput="formatNumberInput(this)" 
+                                                   class="input-large" placeholder="Ví dụ: 10.000">
+                                        </div>
+                                        <div class="input-group">
+                                            <label class="input-label">Phí Vận Chuyển:</label>
+                                            <input type="text" id="retailShipping" 
+                                                   onchange="updateRetailSummary()" oninput="formatNumberInput(this)"
+                                                   class="input-large" placeholder="Ví dụ: 25.000">
+                                        </div>
                                     </div>
-                                    <div class="retail-summary-row">
-                                        <span class="retail-summary-label">Phí Vận Chuyển:</span>
-                                        <input type="number" id="retailShipping" min="0" value="0" 
-                                               onchange="updateRetailSummary()" style="width: 120px; text-align: right;">
-                                    </div>
-                                    <div class="retail-summary-row">
-                                        <span class="retail-summary-label">Tổng Cộng:</span>
-                                        <span class="retail-summary-value" id="retailTotal">0 VNĐ</span>
+                                    
+                                    <div class="summary-row">
+                                        <span class="summary-label">Tổng Cộng:</span>
+                                        <span class="summary-value" id="retailTotal">0 VNĐ</span>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Form Actions -->
-                            <div class="retail-form-actions">
-                                <button type="submit" class="retail-btn retail-btn-primary">
-                                    <i class="fas fa-save"></i>
-                                    Tạo Đơn Hàng
-                                </button>
-                                <button type="button" class="retail-btn retail-btn-secondary" onclick="clearRetailForm()">
+                            <div class="form-actions">
+                                <button type="button" class="btn btn-secondary" onclick="clearRetailForm()">
                                     <i class="fas fa-undo"></i>
                                     Làm Mới
                                 </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i>
+                                    Tạo Đơn Hàng Bán lẻ
+                                </button>
+                                
                             </div>
                         </form>
                     </div>
 
                     <!-- Orders List -->
                     <div class="retail-orders-card">
-                        <div class="retail-orders-header">
-                            <h2><i class="fas fa-list"></i> Danh Sách Đơn Hàng Bán Lẻ</h2>
+                        <div class="card-header">
+                            <h2><i class="fas fa-list"></i> Danh Sách Đơn Hàng lẻ Hiện Tại</h2>
                         </div>
                         <div class="retail-table-container">
                             <table class="retail-table" id="retailOrdersTable">

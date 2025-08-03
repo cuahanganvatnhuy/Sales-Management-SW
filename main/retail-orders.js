@@ -1,3 +1,7 @@
+// TEMPORARILY DISABLED - This file is causing conflicts with new-retail-orders.js
+// All functions in this file have been commented out to prevent duplicate order creation
+
+/*
 // Retail Orders Functions
 
 // Add retail order item
@@ -303,3 +307,4 @@ window.addRetailOrderItem = addRetailOrderItem;
 window.removeRetailOrderItem = removeRetailOrderItem;
 window.updateRetailItemPrice = updateRetailItemPrice;
 window.updateRetailItemTotal = updateRetailItemTotal;
+*/

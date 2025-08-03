@@ -281,10 +281,11 @@
                         orderSubmenuDisplay: orderSubmenu ? window.getComputedStyle(orderSubmenu).display : 'not found'
                     });
                     
-                    // Force order submenu to be hidden initially
+                    // Only ensure submenu is initially hidden, but don't override toggle functionality
                     if (orderSubmenu && !orderSubmenu.classList.contains('show')) {
-                        orderSubmenu.style.display = 'none';
-                        console.log('DEBUG - Force hidden order submenu on dashboard');
+                        // Remove any inline display style to let CSS handle it
+                        orderSubmenu.style.display = '';
+                        console.log('DEBUG - Order submenu initialized on dashboard');
                     }
                 }, 500);
             });

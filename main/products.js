@@ -1,5 +1,7 @@
 // Products Management - Simple Version
 let productsData = {};
+// Expose to global scope for other pages to use
+window.productsData = productsData;
 
 // Format currency (135000 -> 135.000)
 function formatCurrency(amount) {
@@ -68,20 +70,46 @@ function setupPriceFormatting() {
 
 // Load products when page loads
 window.addEventListener('DOMContentLoaded', function() {
-    loadProducts();
-    setupPriceFormatting();
+    console.log('DOM loaded, initializing products page...');
+    
+    // Wait a bit for Firebase to be ready
+    setTimeout(() => {
+        console.log('Checking Firebase availability...');
+        if (typeof database !== 'undefined' && database) {
+            console.log('Firebase database is available');
+            loadProducts();
+        } else {
+            console.error('Firebase database not available. Please check your internet connection and refresh the page.');
+            showNotification('Không thể kết nối cơ sở dữ liệu. Vui lòng kiểm tra kết nối internet và tải lại trang.', 'error');
+        }
+        setupPriceFormatting();
+    }, 500);
 });
 
 // Load products from Firebase
 async function loadProducts() {
+    // Check if Firebase is available first
+    if (typeof database === 'undefined' || !database) {
+        console.error('Firebase database not available for loadProducts');
+        return;
+    }
+    
+    if (typeof getAllProducts !== 'function') {
+        console.error('getAllProducts function not available');
+        return;
+    }
+    
     try {
         console.log('Loading products from Firebase...');
         productsData = await getAllProducts();
-        console.log('Products loaded:', productsData);
+        // Update global reference
+        window.productsData = productsData;
+        console.log('Products loaded:', Object.keys(productsData).length, 'products');
         displayProducts();
     } catch (error) {
         console.error('Error loading products:', error);
-        showNotification('Lỗi tải danh sách sản phẩm!', 'error');
+        // Silent fail - don't show notifications to avoid spam
+        // User can check console for details
     }
 }
 
@@ -105,13 +133,13 @@ function displayProducts() {
     
     if (!productsData || Object.keys(productsData).length === 0) {
         container.innerHTML = '';
-        emptyState.classList.remove('hidden');
-        table.classList.add('hidden');
+        if (emptyState) emptyState.classList.remove('hidden');
+        if (table) table.classList.add('hidden');
         return;
     }
     
-    emptyState.classList.add('hidden');
-    table.classList.remove('hidden');
+    if (emptyState) emptyState.classList.add('hidden');
+    if (table) table.classList.remove('hidden');
     
     let productsHTML = '';
     let index = 1;
@@ -152,6 +180,19 @@ async function addNewProduct(event) {
     }
     
     console.log('Starting addNewProduct...');
+    
+    // Check if Firebase is available
+    if (typeof database === 'undefined' || !database) {
+        console.error('Firebase database not available');
+        showNotification('Lỗi kết nối cơ sở dữ liệu!', 'error');
+        return;
+    }
+    
+    if (typeof addProduct !== 'function') {
+        console.error('addProduct function not available');
+        showNotification('Chức năng thêm sản phẩm chưa sẵn sàng!', 'error');
+        return;
+    }
     
     // Get form values
     const name = document.getElementById('productName').value.trim();
@@ -195,7 +236,7 @@ async function addNewProduct(event) {
         
     } catch (error) {
         console.error('Error adding product:', error);
-        showNotification('Lỗi thêm sản phẩm!', 'error');
+        showNotification('Lỗi thêm sản phẩm: ' + error.message, 'error');
     } finally {
         showLoading(false);
     }
@@ -371,6 +412,63 @@ function deleteProductById(productId) {
 function showLoading(show) {
     const overlay = document.getElementById('loadingOverlay');
     if (overlay) {
-        overlay.style.display = show ? 'flex' : 'none';
+        if (show) {
+            overlay.style.display = 'flex';
+        } else {
+            overlay.style.display = 'none';
+        }
     }
+}
+
+// Show notification
+function showNotification(message, type = 'info') {
+    console.log(`Notification [${type}]: ${message}`);
+    
+    // Try to use existing notification system if available
+    if (typeof window.showNotification === 'function') {
+        window.showNotification(message, type);
+        return;
+    }
+    
+    // Fallback: create simple notification
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        border-radius: 5px;
+        color: white;
+        font-weight: bold;
+        z-index: 10000;
+        max-width: 300px;
+        word-wrap: break-word;
+    `;
+    
+    // Set background color based on type
+    switch (type) {
+        case 'success':
+            notification.style.backgroundColor = '#28a745';
+            break;
+        case 'error':
+            notification.style.backgroundColor = '#dc3545';
+            break;
+        case 'warning':
+            notification.style.backgroundColor = '#ffc107';
+            notification.style.color = '#000';
+            break;
+        default:
+            notification.style.backgroundColor = '#17a2b8';
+    }
+    
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    // Auto remove after 3 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+        }
+    }, 3000);
 }

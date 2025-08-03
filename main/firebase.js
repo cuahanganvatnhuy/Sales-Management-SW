@@ -15,6 +15,9 @@ firebase.initializeApp(firebaseConfig);
 // Khởi tạo Realtime Database
 const database = firebase.database();
 
+// Expose database to global scope
+window.database = database;
+
 // ===== FUNCTIONS QUẢN LÝ ĐƠN HÀNG =====
 
 // Lấy tất cả đơn hàng

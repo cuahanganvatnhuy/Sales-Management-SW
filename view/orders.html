@@ -13,6 +13,90 @@
 
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-compat.js"></script>
+    <style>
+        /* Notification Styles */
+        .notification {
+            position: fixed;
+            top: 12%;
+            right: 20px;
+            z-index: 9999;
+            min-width: 300px;
+            max-width: 500px;
+            padding: 16px 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            transform: translateX(100%);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+        }
+        
+        .notification:not(.hidden) {
+            transform: translateX(0);
+        }
+        
+        .notification.hidden {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        
+        .notification.success {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            border-left: 4px solid #065f46;
+        }
+        
+        .notification.error {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            border-left: 4px solid #991b1b;
+        }
+        
+        .notification.warning {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            border-left: 4px solid #92400e;
+        }
+        
+        .notification.info {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            border-left: 4px solid #1d4ed8;
+        }
+        
+        .notification-icon {
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        
+        .notification-message {
+            flex: 1;
+            line-height: 1.4;
+        }
+        
+        /* Responsive */
+        @media (max-width: 640px) {
+            .notification {
+                top: 10px;
+                right: 10px;
+                left: 10px;
+                min-width: auto;
+                max-width: none;
+            }
+        }
+        .btn-large {
+            padding: 12px 32px;
+            font-size: 14px;
+            font-weight: 700;
+            min-width: 200px;
+        }
+    </style>
 </head>
 <body>
     <!-- Loading Overlay -->
@@ -51,6 +135,27 @@
                     <div class="card-header">
                         <h2><i class="fas fa-plus"></i> Thêm Đơn Hàng Mới</h2>
                     </div>
+                                <!-- Order Type Selection -->
+                                <div class="order-type-selection" style="margin-bottom: 20px;margin-left: 20px;">
+                                    <div class="order-type-buttons">
+                                        <a href="./orders.html">
+                                            <button type="button" class="btn btn-order-type active" id="ecommerceTypeBtn" onclick="selectOrderType('ecommerce')">
+                                                <i class="fas fa-shopping-cart"></i> Đơn TMĐT
+                                            </button>
+                                        </a>
+                                        <a href="./retail-orders.html">
+                                        <button type="button" class="btn btn-order-type" id="retailTypeBtn" onclick="selectOrderType('retail')">
+                                            <i class="fas fa-store"></i> Đơn Bán Lẻ
+
+                                        </button>
+                                        </a>
+                                        <a href="./wholesale-orders.html">
+                                        <button type="button" class="btn btn-order-type" id="wholesaleTypeBtn" onclick="selectOrderType('wholesale')">
+                                            <i class="fas fa-warehouse"></i> Đơn Bán Sỉ
+                                        </button>
+                                        </a>
+                                    </div>
+                                </div>
                     <div class="card-body">
                         <form id="addOrderForm" class="order-form" onsubmit="createOrders(event)">
                             <!-- Order Info -->
@@ -69,20 +174,6 @@
                                     </div>
                                 </div>
 
-                                <!-- Order Type Selection -->
-                                <div class="order-type-selection">
-                                    <div class="order-type-buttons">
-                                        <button type="button" class="btn btn-order-type active" id="ecommerceTypeBtn" onclick="selectOrderType('ecommerce')">
-                                            <i class="fas fa-shopping-cart"></i> Đơn TMĐT
-                                        </button>
-                                        <button type="button" class="btn btn-order-type" id="retailTypeBtn" onclick="selectOrderType('retail')">
-                                            <i class="fas fa-store"></i> Bán Lẻ
-                                        </button>
-                                        <button type="button" class="btn btn-order-type" id="wholesaleTypeBtn" onclick="selectOrderType('wholesale')">
-                                            <i class="fas fa-warehouse"></i> Bán Sỉ
-                                        </button>
-                                    </div>
-                                </div>
 
                                 <div class="form-row">
                                     <div class="form-group">
@@ -141,7 +232,7 @@
                             <!-- Submit Button -->
                             <div class="form-actions">
                                 <button type="submit" class="btn btn-primary btn-large">
-                                    <i class="fas fa-save"></i> Lưu Tất Cả Đơn Hàng
+                                    <i class="fas fa-save"></i> Tạo Tất Cả Đơn Hàng
                                 </button>
                             </div>
                         </form>
@@ -246,7 +337,7 @@
         // Load components when DOM is ready
         document.addEventListener('DOMContentLoaded', function() {
             // Load navbar first
-            loadComponent('components/navbar.html', 'navbar-placeholder', function() {
+            loadComponent('../components/navbar.html', 'navbar-container', function() {
                 console.log('Navbar loaded');
                 // Initialize navbar functionality
                 if (typeof initializeNavbar === 'function') {
@@ -259,7 +350,7 @@
             });
             
             // Load header
-            loadComponent('components/header.html', 'header-placeholder', function() {
+            loadComponent('../components/header.html', 'header-container', function() {
                 console.log('Header loaded');
                 // Initialize header functionality after loading
                 if (typeof initializeHeader === 'function') {

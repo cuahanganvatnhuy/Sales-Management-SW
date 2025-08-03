@@ -110,15 +110,41 @@ async function loadProducts() {
 // Load orders from Firebase
 async function loadOrders() {
     try {
+        let allOrdersData = {};
+        
         // Check if store is selected
         if (typeof getStoreDataPath === 'function') {
             const ordersPath = getStoreDataPath('orders');
             const snapshot = await database.ref(ordersPath).once('value');
-            ordersData = snapshot.val() || {};
+            allOrdersData = snapshot.val() || {};
         } else {
             // Fallback to global orders
-            ordersData = await getAllOrders();
+            allOrdersData = await getAllOrders();
         }
+        
+        // Filter to show only TMĐT orders (exclude wholesale and retail orders)
+        ordersData = {};
+        for (const [orderId, order] of Object.entries(allOrdersData)) {
+            // Check both 'orderType' and 'type' fields for compatibility
+            const orderType = order.orderType || order.type;
+            
+            // EXCLUDE orders that are explicitly wholesale or retail
+            if (orderType === 'wholesale' || orderType === 'retail') {
+                continue; // Skip this order
+            }
+            
+            // INCLUDE orders that are:
+            // 1. TMĐT/ecommerce orders (orderType/type = 'ecommerce', 'tmdt', 'online')
+            // 2. Orders without any type specified (legacy orders, assume TMĐT)
+            if (!orderType || 
+                orderType === 'ecommerce' || 
+                orderType === 'tmdt' || 
+                orderType === 'online') {
+                ordersData[orderId] = order;
+            }
+        }
+        
+        console.log('Filtered TMĐT orders:', Object.keys(ordersData).length, 'out of', Object.keys(allOrdersData).length, 'total orders');
         displayOrders();
     } catch (error) {
         console.error('Error loading orders:', error);
