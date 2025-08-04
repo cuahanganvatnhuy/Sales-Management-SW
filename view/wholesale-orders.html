@@ -96,6 +96,15 @@
             /* max-width: 400px; */
             flex: 1 !important;
         }
+        .products-table th {
+    padding: 10px 9px;
+    font-weight: 700;
+    text-align: center;
+    border: none;
+    font-size: 11px;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+}
     </style>
 </head>
 <body>
@@ -137,19 +146,19 @@
                     </div>
                     <!-- Order Type Selection -->
                     <div class="order-type-selection" style="margin-bottom: 20px;margin-left: 20px;">
-                        <div class="order-type-buttons">
-                           <a href="./orders.html">
-                            <button type="button" class="btn btn-order-type active" id="ecommerceTypeBtn" onclick="selectOrderType('ecommerce')">
-                                <i class="fas fa-shopping-cart"></i> Đơn TMĐT
-                            </button>
-                           </a>
-                            <a href="./retail-orders.html">
+                        <div class="order-type-buttons" style="display: flex; !important">
+                            <a href="./orders.html" style="text-decoration: none; margin-right:10px;">
+                                <button type="button" class="btn btn-order-type active" id="ecommerceTypeBtn" onclick="selectOrderType('ecommerce')">
+                                    <i class="fas fa-shopping-cart"></i> Đơn TMĐT
+                                </button>
+                            </a>
+                            <a href="./retail-orders.html"  style="text-decoration: none; margin-right:10px;">
                             <button type="button" class="btn btn-order-type" id="retailTypeBtn" onclick="selectOrderType('retail')">
                                 <i class="fas fa-store"></i> Đơn Bán Lẻ
 
                             </button>
                             </a>
-                            <a href="./wholesale-orders.html">
+                            <a href="./wholesale-orders.html" style="text-decoration: none; margin-right:10px;">
                             <button type="button" class="btn btn-order-type" id="wholesaleTypeBtn" onclick="selectOrderType('wholesale')">
                                 <i class="fas fa-warehouse"></i> Đơn Bán Sỉ
                             </button>
@@ -372,8 +381,8 @@
                                 <div class="wholesale-empty-icon">
                                     <i class="fas fa-warehouse"></i>
                                 </div>
-                                <h3>Chưa có đơn hàng bán sỉ nào</h3>
-                                <p>Hãy tạo đơn hàng bán sỉ đầu tiên của bạn!</p>
+                                <h3>Chưa có đơn hàng bán sĩ nào</h3>
+                                <p>Hãy tạo đơn hàng bán sĩ đầu tiên của bạn!</p>
                             </div>
                         </div>
                     </div>
@@ -444,6 +453,7 @@
     <script src="../main/new-wholesale-orders.js"></script>
     <script src="../main/customer-modal.js"></script>
     <script src="../main/wholesale-orders-functions.js"></script>
+    <script src="../main/payment-status-exports.js"></script>
 
     <script>
         // Helper function to format number input in real-time
@@ -496,9 +506,33 @@
 
             // Initialize wholesale orders
             setTimeout(() => {
+                console.log('=== Attempting to initialize wholesale orders ===');
+                console.log('initWholesaleOrders function exists:', typeof initWholesaleOrders === 'function');
+                
                 if (typeof initWholesaleOrders === 'function') {
+                    console.log('Calling initWholesaleOrders()...');
                     initWholesaleOrders();
+                } else {
+                    console.error('initWholesaleOrders function not found! Available functions:', Object.keys(window).filter(key => key.includes('wholesale')));
+                    
+                    // Try to call loadWholesaleOrders directly
+                    if (typeof loadWholesaleOrders === 'function') {
+                        console.log('Calling loadWholesaleOrders() directly...');
+                        loadWholesaleOrders();
+                    } else {
+                        console.error('loadWholesaleOrders function also not found!');
+                    }
                 }
+                
+                // Export payment status functions to global scope
+                if (typeof updatePaymentStatus === 'function') {
+                    window.updatePaymentStatus = updatePaymentStatus;
+                }
+                if (typeof getPaymentStatusText === 'function') {
+                    window.getPaymentStatusText = getPaymentStatusText;
+                }
+                
+                console.log('Payment status functions exported to global scope');
             }, 500);
         });
     </script>

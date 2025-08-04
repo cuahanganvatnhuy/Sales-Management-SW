@@ -437,7 +437,8 @@ async function createOrders(event) {
             price: product.price,
             total: total,
             orderDate: orderDate,
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            type: 'ecommerce' // Mark as TMĐT/ecommerce order
         });
     }
     
@@ -445,17 +446,24 @@ async function createOrders(event) {
     
     try {
         showLoading(true);
+        console.log('=== Creating TMĐT orders ===');
+        console.log('Orders to create:', orders.length);
+        console.log('Sample order data:', orders[0]);
         
         // Save all orders to the selected store
         if (typeof getStoreDataPath === 'function') {
             // Save to store-specific orders path
             const ordersPath = getStoreDataPath('orders');
+            console.log('Saving to store path:', ordersPath);
+            
             for (const orderData of orders) {
                 const orderRef = database.ref(ordersPath).push();
                 await orderRef.set(orderData);
+                console.log('Order saved with ID:', orderRef.key);
             }
         } else {
             // Fallback to global orders
+            console.log('Saving to global orders (fallback)');
             for (const orderData of orders) {
                 await addOrder(orderData);
             }
