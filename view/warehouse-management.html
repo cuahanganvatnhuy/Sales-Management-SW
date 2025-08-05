@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Kho - PMQLDH</title>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../style/man.css">
+    <link rel="stylesheet" href="../style/warehouse-management.css">
+
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Loading Overlay -->
+        <div id="loadingOverlay" class="loading-overlay hidden">
+            <div class="loading-spinner">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Đang xử lý...</p>
+            </div>
+        </div>
+
+        <!-- Notification -->
+        <div id="notification" class="notification hidden">
+            <div class="notification-content">
+                <i class="notification-icon"></i>
+                <span class="notification-message"></span>
+            </div>
+        </div>
+
+        <!-- Sidebar Container -->
+        <div id="navbar-container">
+            <!-- Navbar will be loaded here -->
+        </div>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header Component -->
+            <div id="header-container">
+                <!-- Header will be loaded here -->
+            </div>
+
+            <!-- Content -->
+            <div class="content">
+                <!-- Dashboard Overview -->
+        <section class="warehouse-dashboard">
+            <div class="dashboard-cards">
+                <div class="dashboard-card">
+                    <div class="card-icon total">
+                        <i class="fas fa-boxes"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3 id="totalProducts">0</h3>
+                        <p>Tổng Sản Phẩm</p>
+                    </div>
+                </div>
+                <div class="dashboard-card">
+                    <div class="card-icon value">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3 id="totalValue">0 VNĐ</h3>
+                        <p>Giá Trị Kho</p>
+                    </div>
+                </div>
+                <div class="dashboard-card">
+                    <div class="card-icon low">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3 id="lowStockCount">0</h3>
+                        <p>Sắp Hết Hàng</p>
+                    </div>
+                </div>
+                <div class="dashboard-card">
+                    <div class="card-icon out">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3 id="outOfStockCount">0</h3>
+                        <p>Hết Hàng</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Action Buttons -->
+        <section class="warehouse-actions">
+            <div class="action-buttons">
+                <button class="btn btn-primary" onclick="openStockInModal()">
+                    <i class="fas fa-plus-circle"></i>
+                    Nhập Kho
+                </button>
+                <button class="btn btn-secondary" onclick="openStockOutModal()">
+                    <i class="fas fa-minus-circle"></i>
+                    Xuất Kho
+                </button>
+                <button class="btn btn-info" onclick="openAdjustmentModal()">
+                    <i class="fas fa-edit"></i>
+                    Điều Chỉnh
+                </button>
+                <button class="btn btn-success" onclick="exportWarehouseReport()">
+                    <i class="fas fa-file-excel"></i>
+                    Xuất Báo Cáo
+                </button>
+            </div>
+        </section>
+
+        <!-- Filters -->
+        <section class="warehouse-filters">
+            <div class="filter-container">
+                <div class="filter-group">
+                    <label for="categoryFilter">Danh Mục:</label>
+                    <select id="categoryFilter" onchange="applyFilters()">
+                        <option value="">Tất cả danh mục</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="stockStatusFilter">Trạng Thái:</label>
+                    <select id="stockStatusFilter" onchange="applyFilters()">
+                        <option value="">Tất cả</option>
+                        <option value="in_stock">Còn hàng</option>
+                        <option value="low_stock">Sắp hết</option>
+                        <option value="out_of_stock">Hết hàng</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="searchInput">Tìm kiếm:</label>
+                    <input type="text" id="searchInput" placeholder="Tên sản phẩm, SKU..." onkeyup="applyFilters()">
+                </div>
+            </div>
+        </section>
+
+        <!-- Warehouse Table -->
+        <section class="warehouse-table-section">
+            <div class="table-container">
+                <table class="warehouse-table">
+                    <thead>
+                        <tr>
+                            <th>STT</th>
+                            <th>Sản Phẩm</th>
+                            <th>SKU</th>
+                            <th>Danh Mục</th>
+                            <th>Đơn Vị</th>
+                            <th>Tồn Kho</th>
+                            <th>Giá Nhập</th>
+                            <th>Giá Trị</th>
+                            <th>Trạng Thái</th>
+                            <th>Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="warehouseTableBody">
+                        <!-- Data will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Empty State -->
+            <div id="warehouseEmptyState" class="empty-state hidden">
+                <div class="empty-icon">
+                    <i class="fas fa-warehouse"></i>
+                </div>
+                <h3>Chưa có sản phẩm nào trong kho</h3>
+                <p>Hãy thêm sản phẩm đầu tiên vào kho!</p>
+            </div>
+        </section>
+
+        <!-- Charts Section -->
+        <section class="warehouse-charts">
+            <div class="charts-container">
+                <div class="chart-card">
+                    <h3>Phân Bố Theo Danh Mục</h3>
+                    <canvas id="categoryChart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h3>Top Sản Phẩm Theo Giá Trị</h3>
+                    <canvas id="valueChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+    <!-- Stock In Modal -->
+    <div id="stockInModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-plus-circle"></i> Nhập Kho</h2>
+                <button class="close-btn" onclick="closeStockInModal()">&times;</button>
+            </div>
+            <form id="stockInForm" onsubmit="processStockIn(event)">
+                <div class="modal-body">
+                    <div id="stockInItems">
+                        <!-- Stock in items will be added here -->
+                    </div>
+                    <button type="button" class="btn btn-secondary" onclick="addStockInItem()">
+                        <i class="fas fa-plus"></i> Thêm Sản Phẩm
+                    </button>
+                    
+                    <div class="form-group">
+                        <label for="stockInNote">Ghi Chú:</label>
+                        <textarea id="stockInNote" placeholder="Lý do nhập kho..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeStockInModal()">Hủy</button>
+                    <button type="submit" class="btn btn-primary">Nhập Kho</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Stock Out Modal -->
+    <div id="stockOutModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-minus-circle"></i> Xuất Kho</h2>
+                <button class="close-btn" onclick="closeStockOutModal()">&times;</button>
+            </div>
+            <form id="stockOutForm" onsubmit="processStockOut(event)">
+                <div class="modal-body">
+                    <div id="stockOutItems">
+                        <!-- Stock out items will be added here -->
+                    </div>
+                    <button type="button" class="btn btn-secondary" onclick="addStockOutItem()">
+                        <i class="fas fa-plus"></i> Thêm Sản Phẩm
+                    </button>
+                    
+                    <div class="form-group">
+                        <label for="stockOutReason">Lý Do Xuất:</label>
+                        <select id="stockOutReason" required>
+                            <option value="">Chọn lý do</option>
+                            <option value="sale">Bán hàng</option>
+                            <option value="damaged">Hỏng hóc</option>
+                            <option value="expired">Hết hạn</option>
+                            <option value="lost">Mất mát</option>
+                            <option value="promotion">Khuyến mãi</option>
+                            <option value="other">Khác</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="stockOutNote">Ghi Chú:</label>
+                        <textarea id="stockOutNote" placeholder="Ghi chú thêm..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeStockOutModal()">Hủy</button>
+                    <button type="submit" class="btn btn-danger">Xuất Kho</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Adjustment Modal -->
+    <div id="adjustmentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-edit"></i> Điều Chỉnh Kho</h2>
+                <button class="close-btn" onclick="closeAdjustmentModal()">&times;</button>
+            </div>
+            <form id="adjustmentForm" onsubmit="processAdjustment(event)">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="adjustmentProduct">Sản Phẩm:</label>
+                        <select id="adjustmentProduct" required onchange="loadCurrentStock()">
+                            <option value="">Chọn sản phẩm</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="currentStock">Tồn Kho Hiện Tại:</label>
+                        <input type="text" id="currentStock" readonly>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="actualStock">Tồn Kho Thực Tế:</label>
+                        <input type="number" id="actualStock" step="0.01" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="adjustmentReason">Lý Do:</label>
+                        <select id="adjustmentReason" required>
+                            <option value="">Chọn lý do</option>
+                            <option value="inventory">Kiểm kê</option>
+                            <option value="correction">Điều chỉnh</option>
+                            <option value="damage">Hàng hỏng</option>
+                            <option value="found">Tìm thấy hàng</option>
+                            <option value="other">Khác</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="adjustmentNote">Ghi Chú:</label>
+                        <textarea id="adjustmentNote" placeholder="Ghi chú chi tiết..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeAdjustmentModal()">Hủy</button>
+                    <button type="submit" class="btn btn-warning">Điều Chỉnh</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+        </div>
+        </main>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    
+    <!-- Scripts -->
+    <script src="../main/firebase.js"></script>
+    <script src="../main/navbar.js"></script>
+    <script src="../main/warehouse-core.js"></script>
+    <script>
+        // Load navbar and header components
+        document.addEventListener('DOMContentLoaded', function() {
+            // NavbarLoader will automatically load both navbar and header
+            console.log('Loading navbar and header components...');
+        });
+    </script>
+</body>
+</html>
