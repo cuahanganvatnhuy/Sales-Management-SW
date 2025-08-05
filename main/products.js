@@ -3,18 +3,13 @@ let productsData = {};
 // Expose to global scope for other pages to use
 window.productsData = productsData;
 
-// Format currency (135000 -> 135.000)
-function formatCurrency(amount) {
-    return new Intl.NumberFormat('vi-VN').format(amount);
-}
-
 // Format date
 function formatDate(dateString) {
     const date = new Date(dateString);
     return date.toLocaleDateString('vi-VN');
 }
 
-// Override formatCurrency for better large number handling
+// Format currency for better large number handling (135000 -> 135.000)
 function formatCurrency(amount) {
     // Handle both string and number inputs
     const numAmount = typeof amount === 'string' ? Number(amount) : amount;
@@ -92,14 +87,23 @@ window.addEventListener('DOMContentLoaded', function() {
 });
 
 // Load products from Firebase
-async function loadProducts() {
-    console.log('=== Starting loadProducts ===');
+async function loadProducts(forceReload = false) {
+    console.log('=== Starting loadProducts ===', forceReload ? '(Force Reload)' : '');
+    
+    // Prevent multiple load operations (unless force reload)
+    if (isLoadingProducts && !forceReload) {
+        console.log('Load operation already in progress, skipping...');
+        return;
+    }
     
     // Check if Firebase is available first
     if (typeof database === 'undefined' || !database) {
         console.error('Firebase database not available for loadProducts');
         return;
     }
+    
+    // Set loading flag
+    isLoadingProducts = true;
     
     if (typeof getAllProducts !== 'function') {
         console.error('getAllProducts function not available');
@@ -108,6 +112,13 @@ async function loadProducts() {
     
     try {
         console.log('Loading products from Firebase...');
+        
+        // If force reload, clear cache first
+        if (forceReload) {
+            productsData = {};
+            window.productsData = {};
+        }
+        
         const freshProductsData = await getAllProducts();
         
         // Update both local and global references
@@ -119,14 +130,16 @@ async function loadProducts() {
         
         // Force refresh the display
         displayProducts();
-        console.log('Products display refreshed');
+        
+        console.log('=== End loadProducts ===');
         
     } catch (error) {
         console.error('Error loading products:', error);
-        showNotification('Lỗi tải danh sách sản phẩm!', 'error');
+        showNotification('Lỗi tải dữ liệu sản phẩm: ' + error.message, 'error');
+    } finally {
+        // Always reset loading flag
+        isLoadingProducts = false;
     }
-    
-    console.log('=== End loadProducts ===');
 }
 
 // Global variable to store categories data
@@ -314,7 +327,7 @@ function displayProducts() {
     
     for (const [productId, product] of Object.entries(productsData)) {
         productsHTML += `
-            <tr>
+            <tr data-product-id="${productId}">
                 <td class="text-center">
                     <input type="checkbox" class="product-checkbox" value="${productId}" onchange="updateBulkActions()">
                 </td>
@@ -323,13 +336,18 @@ function displayProducts() {
                 <td class="text-center">${product.sku || '<span class="text-muted">-</span>'}</td>
                 <td class="text-center category-col">${getCategoryName(product.categoryId || product.category)}</td>
                 <td class="text-right">${formatCurrency(product.price)}</td>
+                <td class="text-center">${product.stock !== undefined ? product.stock : 0}</td>
+                <td class="text-center">${product.unit || 'cái'}</td>
+                <td class="text-center">${product.conversion !== undefined ? product.conversion : 1}</td>
                 <td class="text-center">
-                    <button class="btn btn-warning btn-small" onclick="editProduct('${productId}')">
+                    <button class="btn btn-warning btn-small product-edit-btn" 
+                            data-product-id="${productId}" data-action="edit">
                         <i class="fas fa-edit"></i>
                     </button>
                 </td>
                 <td class="text-center">
-                    <button class="btn btn-danger btn-small" onclick="deleteProduct('${productId}')">
+                    <button class="btn btn-danger btn-small product-delete-btn" 
+                            data-product-id="${productId}" data-action="delete">
                         <i class="fas fa-trash"></i>
                     </button>
                 </td>
@@ -341,12 +359,50 @@ function displayProducts() {
     container.innerHTML = productsHTML;
     console.log('Products HTML updated in container');
     
+    // Setup event delegation for product actions
+    setupProductEventListeners();
+    
     updateBulkActions();
     console.log('=== End displayProducts ===');
 }
 
 // Flag to prevent multiple submissions
 let isAddingProduct = false;
+
+// Setup event listeners for product actions using event delegation
+function setupProductEventListeners() {
+    const container = document.getElementById('productsContainer');
+    if (!container) return;
+    
+    // Remove existing event listeners to prevent duplicates
+    const existingListener = container._productEventListener;
+    if (existingListener) {
+        container.removeEventListener('click', existingListener);
+    }
+    
+    // Create new event listener
+    const eventListener = function(event) {
+        const target = event.target;
+        const button = target.closest('button[data-product-id]');
+        
+        if (!button) return;
+        
+        const productId = button.getAttribute('data-product-id');
+        const action = button.getAttribute('data-action');
+        
+        if (action === 'delete') {
+            event.preventDefault();
+            deleteProduct(productId, button);
+        } else if (action === 'edit') {
+            event.preventDefault();
+            editProduct(productId);
+        }
+    };
+    
+    // Add event listener and store reference
+    container.addEventListener('click', eventListener);
+    container._productEventListener = eventListener;
+}
 
 // Thêm sản phẩm mới
 async function addNewProduct(event) {
@@ -400,8 +456,11 @@ async function addNewProduct(event) {
     const priceStr = document.getElementById('productPrice').value.trim();
     const categoryId = document.getElementById('productCategory').value.trim();
     const description = document.getElementById('productDescription').value.trim();
+    const stockStr = document.getElementById('productStock').value.trim();
+    const unit = document.getElementById('productUnit').value.trim();
+    const conversion = document.getElementById('productConversion').value.trim();
     
-    console.log('Adding product:', { name, sku, priceStr, categoryId, description });
+    console.log('Adding product:', { name, sku, priceStr, categoryId, description, stockStr, unit, conversion });
     
     if (!name || !priceStr || !categoryId) {
         showNotification('Vui lòng nhập đầy đủ thông tin (tên, giá, danh mục)!', 'error');
@@ -426,54 +485,62 @@ async function addNewProduct(event) {
         return;
     }
     
+    // Parse and validate stock
+    let stock = 0;
+    if (stockStr) {
+        const parsedStock = parseInt(stockStr);
+        if (!isNaN(parsedStock) && parsedStock >= 0) {
+            stock = parsedStock;
+        }
+    }
+    
+    // Parse and validate conversion
+    let conversionValue = 1;
+    if (conversion) {
+        const parsedConversion = parseFloat(conversion);
+        if (!isNaN(parsedConversion) && parsedConversion > 0) {
+            conversionValue = parsedConversion;
+        }
+    }
+    
+    const productData = {
+        name: name,
+        sku: sku,
+        price: price,
+        categoryId: categoryId,
+        description: description,
+        stock: stock,
+        unit: unit || 'cái',
+        conversion: conversionValue,
+        createdAt: firebase.database.ServerValue.TIMESTAMP,
+        updatedAt: firebase.database.ServerValue.TIMESTAMP
+    };
+    
     try {
         showLoading(true);
-        
-        const productData = {
-            name: name,
-            sku: sku || null, // Nếu không nhập SKU thì để null
-            price: price,
-            categoryId: categoryId,
-            description: description || null // Nếu không nhập mô tả thì để null
-        };
         
         console.log('Calling addProduct with:', productData);
         const result = await addProduct(productData);
         console.log('Product added to Firebase:', result);
         
-        // Get the new product ID from Firebase result
-        let newProductId = null;
-        if (result && result.key) {
-            newProductId = result.key;
-        }
-        
-        // Add to local data immediately for instant UI update
-        if (newProductId) {
-            const newProduct = {
-                id: newProductId,
-                ...productData,
-                createdAt: new Date().toISOString()
-            };
-            
-            // Update local data
-            productsData[newProductId] = newProduct;
-            window.productsData[newProductId] = newProduct;
-            
-            console.log('Added to local data:', newProduct);
-        }
-        
-        // Clear form
+        // Clear form first
         document.getElementById('productName').value = '';
         document.getElementById('productSKU').value = '';
         document.getElementById('productPrice').value = '';
         document.getElementById('productCategory').value = '';
         document.getElementById('productDescription').value = '';
+        document.getElementById('productStock').value = '0';
+        document.getElementById('productUnit').value = '';
+        document.getElementById('productConversion').value = '';
         
-        // Refresh UI immediately
-        displayProducts();
-        
+        // Show success message
         showNotification('Thêm sản phẩm thành công!', 'success');
-        console.log('Product added and UI refreshed successfully');
+        
+        // Force reload products from Firebase to ensure consistency
+        setTimeout(async () => {
+            await loadProducts(true); // Force reload from Firebase
+            console.log('Products reloaded from Firebase after add');
+        }, 300);
         
     } catch (error) {
         console.error('Error adding product:', error);
@@ -492,14 +559,35 @@ async function addNewProduct(event) {
     }
 }
 
+// Flag to prevent multiple delete operations
+let isDeletingProduct = false;
+
+// Flag to prevent multiple load operations
+let isLoadingProducts = false;
+
 // Delete single product
-async function deleteProduct(productId) {
+async function deleteProduct(productId, buttonElement) {
+    // Prevent multiple delete operations
+    if (isDeletingProduct) {
+        console.log('Delete operation already in progress, ignoring...');
+        return;
+    }
+    
     if (!confirm('Bạn có chắc muốn xóa sản phẩm này?')) {
         return;
     }
     
-    // Prevent multiple clicks
-    const deleteButton = document.querySelector(`button[onclick="deleteProduct('${productId}')"]`);
+    // Set flag to prevent multiple operations
+    isDeletingProduct = true;
+    
+    // Get button element (either passed directly or find it)
+    let deleteButton = buttonElement;
+    if (!deleteButton) {
+        // Fallback: find button by data attribute (more reliable than onclick)
+        deleteButton = document.querySelector(`button[data-product-id="${productId}"][data-action="delete"]`);
+    }
+    
+    // Disable button and show loading
     if (deleteButton) {
         deleteButton.disabled = true;
         deleteButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
@@ -523,10 +611,14 @@ async function deleteProduct(productId) {
             delete productsData[productId];
         }
         
-        // Refresh UI immediately
-        displayProducts();
-        
+        // Show success message first
         showNotification('Xóa sản phẩm thành công!', 'success');
+        
+        // Force reload data from Firebase to ensure consistency
+        setTimeout(async () => {
+            await loadProducts(true); // Force reload from Firebase
+            console.log('Products reloaded from Firebase after delete');
+        }, 200);
         
     } catch (error) {
         console.error('Error deleting product:', error);
@@ -537,6 +629,11 @@ async function deleteProduct(productId) {
             deleteButton.disabled = false;
             deleteButton.innerHTML = '<i class="fas fa-trash"></i>';
         }
+    } finally {
+        // Always reset the flag after operation completes
+        setTimeout(() => {
+            isDeletingProduct = false;
+        }, 500);
     }
 }
 
@@ -730,13 +827,28 @@ function showLoading(show) {
     }
 }
 
+// Notification debounce to prevent duplicates
+let lastNotification = { message: '', type: '', time: 0 };
+
 // Show notification
 function showNotification(message, type = 'info') {
     console.log(`Notification [${type}]: ${message}`);
     
-    // Try to use existing notification system if available
-    if (typeof window.showNotification === 'function') {
-        window.showNotification(message, type);
+    // Debounce: prevent duplicate notifications within 1 second
+    const now = Date.now();
+    if (lastNotification.message === message && 
+        lastNotification.type === type && 
+        (now - lastNotification.time) < 1000) {
+        console.log('Duplicate notification prevented:', message);
+        return;
+    }
+    
+    // Update last notification info
+    lastNotification = { message, type, time: now };
+    
+    // Check if there's a global notification system (but not this function itself)
+    if (typeof window.globalShowNotification === 'function') {
+        window.globalShowNotification(message, type);
         return;
     }
     

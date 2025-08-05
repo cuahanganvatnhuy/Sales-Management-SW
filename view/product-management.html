@@ -136,6 +136,8 @@
                             <th>Danh mục</th>
                             <th>Giá bán</th>
                             <th>Tồn kho</th>
+                            <th>Đơn vị</th>
+                            <th>Quy đổi</th>
                             <th>Trạng thái</th>
                             <th>Thao tác</th>
                         </tr>
@@ -225,6 +227,16 @@
                                 <option value="inactive">Ngừng bán</option>
                                 <option value="out_of_stock">Hết hàng</option>
                             </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editProductUnit">Đơn vị tính</label>
+                            <input type="text" id="editProductUnit" name="productUnit" placeholder="cái, kg, hộp..." value="cái">
+                        </div>
+                        <div class="form-group">
+                            <label for="editProductConversion">Quy đổi</label>
+                            <input type="number" id="editProductConversion" name="productConversion" min="0" step="0.01" value="1" placeholder="1">
                         </div>
                     </div>
                     <div class="form-group">

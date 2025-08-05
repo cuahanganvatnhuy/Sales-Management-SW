@@ -229,7 +229,9 @@ function generateProductOptions() {
     let options = '';
     for (const [id, product] of Object.entries(window.productsData)) {
         const sku = product.sku ? ` - ${product.sku}` : '';
-        options += `<option value="${id}">${product.name}${sku}</option>`;
+        const unit = product.unit || 'cái';
+        const price = product.price || 0;
+        options += `<option value="${id}" data-unit="${unit}" data-conversion="${product.conversion || 1}" data-price="${price}">${product.name}${sku} - ${formatCurrency(price)}/${unit}</option>`;
     }
     return options;
 }
@@ -301,11 +303,26 @@ function createRetailOrder(event) {
             }
             
             const product = window.productsData[productSelect.value];
+            
+            // Calculate actual quantity for stock deduction based on conversion
+            const unit = product.unit || 'cái';
+            const conversion = product.conversion || 1;
+            const actualQuantityForStock = quantity * conversion;
+            
+            // Check stock availability
+            const currentStock = product.stock || 0;
+            if (currentStock < actualQuantityForStock) {
+                throw new Error(`Không đủ tồn kho cho sản phẩm "${product.name}" trong mục ${index + 1}! Cần: ${actualQuantityForStock} ${unit}, Còn: ${currentStock} ${unit}`);
+            }
+            
             formData.items.push({
                 productId: productSelect.value,
                 productName: product.name,
                 sku: product.sku,
                 quantity: quantity,
+                unit: unit,
+                conversion: conversion,
+                actualQuantityForStock: actualQuantityForStock,
                 price: price,
                 total: quantity * price
             });
@@ -389,10 +406,33 @@ function saveRetailOrderToFirebase(order) {
     
     console.log('Calling Firebase set...');
     ordersRef.set(order)
-        .then(() => {
+        .then(async () => {
             console.log('Firebase save SUCCESS for order:', order.id);
+            
+            // Update stock for all ordered products
+            console.log('=== Updating product stock for retail order ===');
+            try {
+                for (const item of order.items) {
+                    const productRef = window.database.ref(`products/${item.productId}`);
+                    const productSnapshot = await productRef.once('value');
+                    const currentProduct = productSnapshot.val();
+                    
+                    if (currentProduct) {
+                        const newStock = (currentProduct.stock || 0) - item.actualQuantityForStock;
+                        await productRef.update({ 
+                            stock: Math.max(0, newStock), // Ensure stock doesn't go negative
+                            updatedAt: new Date().toISOString()
+                        });
+                        console.log(`Updated stock for ${item.productName}: ${currentProduct.stock} -> ${newStock}`);
+                    }
+                }
+            } catch (stockError) {
+                console.error('Error updating stock:', stockError);
+                // Don't fail the order creation, just log the error
+            }
+            
             hideLoading();
-            showNotification('Tạo đơn hàng bán lẻ thành công!', 'success');
+            showNotification('Tạo đơn hàng bán lẻ thành công và cập nhật tồn kho!', 'success');
             
             // Add to local data (check for duplicates first)
             const existingOrderIndex = retailOrdersData.findIndex(existingOrder => existingOrder.id === order.id);

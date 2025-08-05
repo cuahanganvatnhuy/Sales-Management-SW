@@ -247,14 +247,14 @@ function generateOrderFormsContent(orderCount, container) {
                                placeholder="SKU sẽ tự động cập nhật">
                     </div>
                     <div class="form-group">
-                        <label for="quantity_${i}">Số Lượng (kg):</label>
+                        <label for="quantity_${i}" id="quantityLabel_${i}">Số Lượng:</label>
                         <input type="number" id="quantity_${i}" name="quantity_${i}" 
                                min="0.1" step="0.1" required 
                                oninput="calculateOrderTotal(${i})" 
                                placeholder="Nhập số lượng">
                     </div>
                     <div class="form-group">
-                        <label for="price_${i}">Giá (VNĐ/kg):</label>
+                        <label for="price_${i}" id="priceLabel_${i}">Giá:</label>
                         <input type="text" id="price_${i}" name="price_${i}" readonly 
                                placeholder="Giá sẽ tự động cập nhật">
                     </div>
@@ -332,6 +332,17 @@ function updateOrderPrice(orderIndex, productId = null) {
     const skuInput = document.getElementById(`sku_${orderIndex}`);
     const quantityInput = document.getElementById(`quantity_${orderIndex}`);
     const totalInput = document.getElementById(`total_${orderIndex}`);
+    const quantityLabel = document.getElementById(`quantityLabel_${orderIndex}`);
+    const priceLabel = document.getElementById(`priceLabel_${orderIndex}`);
+    
+    // Get unit and update labels
+    const unit = product.unit || 'cái';
+    if (quantityLabel) {
+        quantityLabel.textContent = `Số Lượng (${unit}):`;
+    }
+    if (priceLabel) {
+        priceLabel.textContent = `Giá (VNĐ/${unit}):`;
+    }
     
     // Set price and SKU
     priceInput.value = formatCurrency(product.price);
@@ -361,9 +372,11 @@ function calculateOrderTotal(orderIndex) {
 function generateProductOptions() {
     if (!productsData) return '';
     
-    return Object.entries(productsData).map(([id, product]) => 
-        `<option value="${id}" data-price="${product.price}">${product.name} - ${formatCurrency(product.price)}/kg</option>`
-    ).join('');
+    return Object.entries(productsData).map(([id, product]) => {
+        const unit = product.unit || 'cái';
+        const price = product.price || 0;
+        return `<option value="${id}" data-price="${price}" data-unit="${unit}" data-conversion="${product.conversion || 1}">${product.name} - ${formatCurrency(price)}/${unit}</option>`;
+    }).join('');
 }
 
 // Update price when product is selected
@@ -419,26 +432,55 @@ async function createOrders(event) {
     for (let i = 1; i <= orderCount; i++) {
         const productId = document.getElementById(`product_${i}`).value;
         const quantity = parseFloat(document.getElementById(`quantity_${i}`).value);
+        const price = parseFloat(document.getElementById(`price_${i}`).value.replace(/[^\d]/g, ''));
         
-        if (!productId || !quantity || quantity <= 0) {
-            showNotification(`Vui lòng điền đầy đủ thông tin cho đơn hàng ${i}!`, 'error');
+        if (!productId) {
+            showNotification(`Vui lòng chọn sản phẩm cho đơn hàng ${i}!`, 'error');
+            hasError = true;
+            break;
+        }
+        
+        if (!quantity || quantity <= 0) {
+            showNotification(`Vui lòng nhập số lượng hợp lệ cho đơn hàng ${i}!`, 'error');
             hasError = true;
             break;
         }
         
         const product = productsData[productId];
-        const total = product.price * quantity;
+        if (!product) {
+            showNotification(`Sản phẩm không tồn tại cho đơn hàng ${i}!`, 'error');
+            hasError = true;
+            break;
+        }
+        
+        // Calculate actual quantity for stock deduction based on conversion
+        const unit = product.unit || 'cái';
+        const conversion = product.conversion || 1;
+        const actualQuantityForStock = quantity * conversion;
+        
+        // Check stock availability
+        const currentStock = product.stock || 0;
+        if (currentStock < actualQuantityForStock) {
+            showNotification(`Không đủ tồn kho cho sản phẩm "${product.name}" trong đơn hàng ${i}! Cần: ${actualQuantityForStock} ${unit}, Còn: ${currentStock} ${unit}`, 'error');
+            hasError = true;
+            break;
+        }
+        
+        const total = price * quantity;
         
         orders.push({
             productId: productId,
             productName: product.name,
             sku: product.sku || 'N/A',
             quantity: quantity,
-            price: product.price,
+            unit: unit,
+            conversion: conversion,
+            actualQuantityForStock: actualQuantityForStock,
+            price: price,
             total: total,
             orderDate: orderDate,
-            createdAt: new Date().toISOString(),
-            type: 'ecommerce' // Mark as TMĐT/ecommerce order
+            type: 'ecommerce',
+            createdAt: firebase.database.ServerValue.TIMESTAMP
         });
     }
     
@@ -469,7 +511,24 @@ async function createOrders(event) {
             }
         }
         
-        showNotification(`Đã tạo thành công ${orders.length} đơn hàng!`, 'success');
+        // Update stock for all ordered products
+        console.log('=== Updating product stock ===');
+        for (const orderData of orders) {
+            const productRef = database.ref(`products/${orderData.productId}`);
+            const productSnapshot = await productRef.once('value');
+            const currentProduct = productSnapshot.val();
+            
+            if (currentProduct) {
+                const newStock = (currentProduct.stock || 0) - orderData.actualQuantityForStock;
+                await productRef.update({ 
+                    stock: Math.max(0, newStock), // Ensure stock doesn't go negative
+                    updatedAt: firebase.database.ServerValue.TIMESTAMP 
+                });
+                console.log(`Updated stock for ${orderData.productName}: ${currentProduct.stock} -> ${newStock}`);
+            }
+        }
+        
+        showNotification(`Đã tạo thành công ${orders.length} đơn hàng và cập nhật tồn kho!`, 'success');
         
         // Reset form with animation
         const form = document.getElementById('addOrderForm');
@@ -530,9 +589,10 @@ function displayOrders() {
     );
     
     for (const [orderId, order] of sortedOrders) {
-        // Lấy thông tin sản phẩm để hiển thị SKU
+        // Lấy thông tin sản phẩm để hiển thị SKU và đơn vị
         const product = productsData[order.productId] || {};
         const productSKU = order.sku || product.sku || 'N/A';
+        const unit = order.unit || product.unit || 'cái';
         
         ordersHTML += `
             <tr>
@@ -542,7 +602,7 @@ function displayOrders() {
                 <td class="text-center">${index}</td>
                 <td>${order.productName}</td>
                 <td class="text-center sku-cell">${productSKU}</td>
-                <td class="text-right">${order.quantity} kg</td>
+                <td class="text-right">${order.quantity} ${unit}</td>
                 <td class="text-right">${formatCurrency(order.price)}</td>
                 <td class="text-right">${formatCurrency(order.total)}</td>
                 <td class="text-center">${formatDate(order.orderDate)}</td>

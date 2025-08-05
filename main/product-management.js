@@ -18,14 +18,27 @@ document.addEventListener('DOMContentLoaded', function() {
 function initializeProductManagement() {
     console.log('Initializing Product Management...');
     
-    // Load data from Firebase
-    loadProducts();
-    loadCategories();
-    
-    // Setup event listeners
+    // Setup event listeners first
     setupEventListeners();
     
-    console.log('Product Management initialized successfully');
+    // Wait for Firebase to be ready, then load data
+    setTimeout(async () => {
+        console.log('Checking Firebase availability...');
+        if (typeof database !== 'undefined' && database) {
+            console.log('Firebase database is available, loading data...');
+            // Load categories first, then products
+            await loadCategories();
+            await loadProducts();
+        } else {
+            console.error('Firebase database not available. Retrying in 2 seconds...');
+            setTimeout(async () => {
+                await loadCategories();
+                await loadProducts();
+            }, 2000);
+        }
+    }, 500);
+    
+    console.log('Product Management initialization started');
 }
 
 // Setup event listeners
@@ -63,7 +76,16 @@ async function loadProducts() {
     try {
         showLoading();
         
-        const productsRef = firebase.database().ref('products');
+        // Check if Firebase database is available
+        if (typeof database === 'undefined' || !database) {
+            console.error('Firebase database not available for loadProducts');
+            hideLoading();
+            setTimeout(() => loadProducts(), 1000); // Retry after 1 second
+            return;
+        }
+        
+        console.log('Loading products from Firebase...');
+        const productsRef = database.ref('products');
         
         productsRef.on('value', (snapshot) => {
             products = [];
@@ -78,7 +100,7 @@ async function loadProducts() {
                 });
             }
             
-            console.log('Products loaded:', products);
+            console.log('Products loaded:', products.length, 'products');
             applyFilters();
             updateStats();
             hideLoading();
@@ -94,7 +116,15 @@ async function loadProducts() {
 // Load categories from Firebase
 async function loadCategories() {
     try {
-        const categoriesRef = firebase.database().ref('categories');
+        // Check if Firebase database is available
+        if (typeof database === 'undefined' || !database) {
+            console.error('Firebase database not available for loadCategories');
+            setTimeout(() => loadCategories(), 1000); // Retry after 1 second
+            return;
+        }
+        
+        console.log('Loading categories from Firebase...');
+        const categoriesRef = database.ref('categories');
         
         categoriesRef.on('value', (snapshot) => {
             categories = [];
@@ -109,12 +139,14 @@ async function loadCategories() {
                 });
             }
             
-            console.log('Categories loaded:', categories);
+            console.log('Categories loaded:', categories.length, 'categories');
+            console.log('Categories data:', categories);
             populateCategoryFilters();
         });
         
     } catch (error) {
         console.error('Error loading categories:', error);
+        showNotification('Lỗi khi tải danh mục: ' + error.message, 'error');
     }
 }
 
@@ -122,6 +154,8 @@ async function loadCategories() {
 function populateCategoryFilters() {
     const categoryFilter = document.getElementById('categoryFilter');
     const editCategorySelect = document.getElementById('editProductCategory');
+    
+    console.log('Populating category filters with', categories.length, 'categories');
     
     if (categoryFilter) {
         // Clear existing options except first one
@@ -132,6 +166,7 @@ function populateCategoryFilters() {
             option.value = category.id;
             option.textContent = category.name;
             categoryFilter.appendChild(option);
+            console.log('Added category to filter:', category.name, 'ID:', category.id);
         });
     }
     
@@ -145,6 +180,12 @@ function populateCategoryFilters() {
             option.textContent = category.name;
             editCategorySelect.appendChild(option);
         });
+    }
+    
+    // Re-render products if they exist to show correct category names
+    if (products.length > 0) {
+        console.log('Re-rendering products with category names...');
+        applyFilters();
     }
 }
 
@@ -195,9 +236,27 @@ function handleFilter() {
 // Update statistics
 function updateStats() {
     const totalProducts = products.length;
-    const activeProducts = products.filter(p => p.status === 'active').length;
+    
+    // Count products by status (matching getStatusText logic)
+    const activeProducts = products.filter(p => {
+        // If no status or status not in ['inactive', 'out_of_stock'], consider as active
+        return !p.status || (p.status !== 'inactive' && p.status !== 'out_of_stock');
+    }).length;
+    
     const inactiveProducts = products.filter(p => p.status === 'inactive').length;
-    const outOfStockProducts = products.filter(p => p.status === 'out_of_stock' || (p.stock && p.stock <= 0)).length;
+    const outOfStockProducts = products.filter(p => p.status === 'out_of_stock' || (p.stock !== undefined && p.stock <= 0)).length;
+    
+    console.log('Stats update:', {
+        total: totalProducts,
+        active: activeProducts,
+        inactive: inactiveProducts,
+        outOfStock: outOfStockProducts,
+        products: products.map(p => ({name: p.name, status: p.status, stock: p.stock}))
+    });
+    
+    // Debug out of stock products specifically
+    const outOfStockList = products.filter(p => p.status === 'out_of_stock' || (p.stock !== undefined && p.stock <= 0));
+    console.log('Out of stock products:', outOfStockList.map(p => ({name: p.name, status: p.status, stock: p.stock})));
     
     document.getElementById('totalProducts').textContent = totalProducts;
     document.getElementById('activeProducts').textContent = activeProducts;
@@ -228,8 +287,13 @@ function renderProducts() {
     const pageProducts = filteredProducts.slice(startIndex, endIndex);
     
     tableBody.innerHTML = pageProducts.map((product, index) => {
+        console.log('Rendering product:', product.name, 'categoryId:', product.categoryId);
+        console.log('Available categories:', categories.map(c => ({id: c.id, name: c.name})));
+        
         const category = categories.find(c => c.id === product.categoryId);
         const categoryName = category ? category.name : 'Chưa phân loại';
+        
+        console.log('Found category:', category, 'categoryName:', categoryName);
         
         const stockClass = product.stock <= 0 ? 'out' : product.stock <= 10 ? 'low' : '';
         
@@ -251,6 +315,12 @@ function renderProducts() {
                 </td>
                 <td>
                     <span class="product-stock ${stockClass}">${product.stock || 0}</span>
+                </td>
+                <td>
+                    <span class="product-unit">${product.unit || 'cái'}</span>
+                </td>
+                <td>
+                    <span class="product-conversion">${product.conversion !== undefined ? product.conversion : 1}</span>
                 </td>
                 <td>
                     <span class="product-status ${product.status || 'active'}">
@@ -357,6 +427,8 @@ function editProduct(productId) {
     document.getElementById('editProductCategory').value = product.categoryId || '';
     document.getElementById('editProductPrice').value = product.price || '';
     document.getElementById('editProductStock').value = product.stock || 0;
+    document.getElementById('editProductUnit').value = product.unit || 'cái';
+    document.getElementById('editProductConversion').value = product.conversion !== undefined ? product.conversion : 1;
     document.getElementById('editProductStatus').value = product.status || 'active';
     document.getElementById('editProductDescription').value = product.description || '';
     
@@ -394,6 +466,8 @@ async function saveProductChanges() {
             categoryId: document.getElementById('editProductCategory').value,
             price: parseFloat(document.getElementById('editProductPrice').value) || 0,
             stock: parseInt(document.getElementById('editProductStock').value) || 0,
+            unit: document.getElementById('editProductUnit').value.trim() || 'cái',
+            conversion: parseFloat(document.getElementById('editProductConversion').value) || 1,
             status: document.getElementById('editProductStatus').value,
             description: document.getElementById('editProductDescription').value.trim(),
             updatedAt: new Date().toISOString()
@@ -460,7 +534,7 @@ async function confirmDeleteProduct() {
 function exportProducts() {
     try {
         // Create CSV content
-        const headers = ['STT', 'Tên sản phẩm', 'SKU', 'Danh mục', 'Giá bán', 'Tồn kho', 'Trạng thái', 'Mô tả'];
+        const headers = ['STT', 'Tên sản phẩm', 'SKU', 'Danh mục', 'Giá bán', 'Tồn kho', 'Đơn vị', 'Quy đổi', 'Trạng thái', 'Mô tả'];
         const csvContent = [
             headers.join(','),
             ...filteredProducts.map((product, index) => {
@@ -469,11 +543,13 @@ function exportProducts() {
                 
                 return [
                     index + 1,
-                    `"${product.name || ''}"`,
-                    `"${product.sku || ''}"`,
+                    `"${product.name}"`,
+                    `"${product.sku || 'N/A'}"`,
                     `"${categoryName}"`,
                     product.price || 0,
                     product.stock || 0,
+                    `"${product.unit || 'cái'}"`,
+                    product.conversion !== undefined ? product.conversion : 1,
                     `"${getStatusText(product.status)}"`,
                     `"${product.description || ''}"`
                 ].join(',');

@@ -212,7 +212,10 @@ function displayWholesaleOrders(searchTerm = '') {
         const row = document.createElement('tr');
         
         // Format items for display
-        const itemsText = order.items.map(item => `${item.productName} (${item.quantity}kg)`).join(', ');
+        const itemsText = order.items.map(item => {
+            const unit = item.unit || 'cái';
+            return `${item.productName} (${item.quantity}${unit})`;
+        }).join(', ');
         const shortItems = itemsText.length > 50 ? itemsText.substring(0, 50) + '...' : itemsText;
         
         // Calculate remaining amount
@@ -337,11 +340,11 @@ function addWholesaleItem() {
                     </select>
                 </div>
                 <div style="position: relative;">
-                    <label style="display: block; font-weight: 600; color: #555; margin-bottom: 8px; font-size: 14px;">⚖️ Số Lượng (kg) *</label>
-                    <input type="number" class="wholesale-quantity" min="0.1" step="0.1" placeholder="Nhập khối lượng" onchange="updateWholesaleItemTotal(${wholesaleItemCounter})" required style="width: 100%; padding: 6px 16px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 14px; transition: all 0.3s ease;">
+                    <label id="quantityLabel${wholesaleItemCounter}" style="display: block; font-weight: 600; color: #555; margin-bottom: 8px; font-size: 14px;">⚖️ Số Lượng *</label>
+                    <input type="number" class="wholesale-quantity" min="0.1" step="0.1" placeholder="Nhập số lượng" onchange="updateWholesaleItemTotal(${wholesaleItemCounter})" required style="width: 100%; padding: 6px 16px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 14px; transition: all 0.3s ease;">
                 </div>
                 <div style="position: relative;">
-                    <label style="display: block; font-weight: 600; color: #555; margin-bottom: 8px; font-size: 14px;">💰 Giá Bán (VNĐ) *</label>
+                    <label id="priceLabel${wholesaleItemCounter}" style="display: block; font-weight: 600; color: #555; margin-bottom: 8px; font-size: 14px;">💰 Giá Bán *</label>
                     <input type="text" class="wholesale-price" placeholder="Ví dụ: 39.000" onchange="updateWholesaleItemTotal(${wholesaleItemCounter})" required style="width: 100%; padding: 6px 16px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 14px; transition: all 0.3s ease;">
                 </div>
             </div>
@@ -380,7 +383,9 @@ function generateProductOptions() {
     
     return Object.keys(window.productsData).map(productId => {
         const product = window.productsData[productId];
-        return `<option value="${productId}" data-price="${product.price}">${product.name} - ${formatCurrency(product.price)} VNĐ</option>`;
+        const unit = product.unit || 'cái';
+        const conversion = product.conversion || 1;
+        return `<option value="${productId}" data-price="${product.price}" data-unit="${unit}" data-conversion="${conversion}">${product.name} - ${formatCurrency(product.price)} VNĐ/${unit}</option>`;
     }).join('');
 }
 
@@ -413,13 +418,33 @@ function updateWholesaleItemPrice(itemId) {
     
     const select = item.querySelector('.wholesale-product-select');
     const priceInput = item.querySelector('.wholesale-price');
+    const quantityLabel = document.getElementById(`quantityLabel${itemId}`);
+    const priceLabel = document.getElementById(`priceLabel${itemId}`);
     
     if (select && priceInput) {
         const selectedOption = select.options[select.selectedIndex];
         if (selectedOption && selectedOption.dataset.price) {
             const price = parseInt(selectedOption.dataset.price);
+            const unit = selectedOption.dataset.unit || 'cái';
+            
+            // Update labels with unit
+            if (quantityLabel) {
+                quantityLabel.innerHTML = `⚖️ Số Lượng (${unit}) *`;
+            }
+            if (priceLabel) {
+                priceLabel.innerHTML = `💰 Giá Bán (VNĐ/${unit}) *`;
+            }
+            
             priceInput.value = formatCurrency(price);
             updateWholesaleItemTotal(itemId);
+        } else {
+            // Reset labels when no product selected
+            if (quantityLabel) {
+                quantityLabel.innerHTML = '⚖️ Số Lượng *';
+            }
+            if (priceLabel) {
+                priceLabel.innerHTML = '💰 Giá Bán *';
+            }
         }
     }
 }
@@ -624,12 +649,25 @@ async function createWholesaleOrder(event) {
             
             const productId = productSelect.value;
             const productName = productSelect.options[productSelect.selectedIndex].text.split(' - ')[0];
+            const selectedOption = productSelect.options[productSelect.selectedIndex];
+            const unit = selectedOption.dataset.unit || 'cái';
+            const conversion = parseFloat(selectedOption.dataset.conversion) || 1;
+            const actualQuantityForStock = quantity * conversion;
             const itemTotal = quantity * price;
+            
+            // Validate stock availability
+            const product = window.productsData[productId];
+            if (product && product.stock < actualQuantityForStock) {
+                throw new Error(`Sản phẩm "${productName}" không đủ tồn kho. Cần: ${actualQuantityForStock}${unit}, Có: ${product.stock}${unit}`);
+            }
             
             items.push({
                 productId,
                 productName,
                 quantity,
+                unit,
+                conversion,
+                actualQuantityForStock,
                 price,
                 total: itemTotal
             });
@@ -671,8 +709,25 @@ async function createWholesaleOrder(event) {
         const orderId = orderRef.key;
         console.log('Order saved with ID:', orderId);
         
+        // Update stock for all ordered products
+        console.log('=== Updating product stock for wholesale order ===');
+        for (const item of items) {
+            const productRef = window.database.ref(`products/${item.productId}`);
+            const productSnapshot = await productRef.once('value');
+            const currentProduct = productSnapshot.val();
+            
+            if (currentProduct) {
+                const newStock = (currentProduct.stock || 0) - item.actualQuantityForStock;
+                await productRef.update({ 
+                    stock: Math.max(0, newStock), // Ensure stock doesn't go negative
+                    updatedAt: new Date().toISOString()
+                });
+                console.log(`Updated stock for ${item.productName}: ${currentProduct.stock} -> ${newStock}`);
+            }
+        }
+        
         // Show success message
-        showNotification(`Đơn hàng bán sỉ đã được tạo thành công! Mã đơn: ${orderId}`, 'success');
+        showNotification(`Đơn hàng bán sỉ đã được tạo thành công và cập nhật tồn kho! Mã đơn: ${orderId}`, 'success');
         
         // Clear form
         clearWholesaleForm();
