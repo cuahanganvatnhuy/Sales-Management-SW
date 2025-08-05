@@ -31,6 +31,7 @@
                     </div>
                     <div class="card-body">
                         <form id="addProductForm" class="simple-form" onsubmit="addNewProduct(event)">
+                            <!-- Hàng 1: Tên sản phẩm, SKU -->
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="productName">Tên sản phẩm:</label>
@@ -42,9 +43,10 @@
                                     <input type="text" id="productSKU" name="productSKU" 
                                            placeholder="Mã SKU (tùy chọn) - Mã SKU để nhận diện sản phẩm (có thể để trống)" 
                                            maxlength="50">
-                                    
                                 </div>
                             </div>
+                            
+                            <!-- Hàng 2: Giá sản phẩm, Chọn danh mục -->
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="productPrice">Giá sản phẩm (đ):</label>
@@ -53,28 +55,55 @@
                                            maxlength="20" inputmode="numeric">
                                 </div>
                                 <div class="form-group">
-                                    <button type="submit" class="btn btn-primary">
+                                    <label for="productCategory">Chọn danh mục:</label>
+                                    <select id="productCategory" name="productCategory" required>
+                                        <option value="">-- Chọn danh mục sản phẩm --</option>
+                                        <!-- Danh mục sẽ được load từ Firebase -->
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <!-- Hàng 3: Mô tả sản phẩm -->
+                            
+                                <div class="form-group" style="width: 100%;">
+                                    <label for="productDescription">Mô tả sản phẩm:</label>
+                                    <textarea id="productDescription" name="productDescription" 
+                                              placeholder="Nhập mô tả chi tiết về sản phẩm (tùy chọn)" 
+                                              rows="3"></textarea>
+                                </div>
+                           
+                            
+                            <!-- Hàng 4: 5 nút nhỏ trên 1 dòng -->
+                            <div class="" style="display: flex; justify-content: end;">
+                                
+                                <div class="form-group" style="margin-top: 10px; margin-left: 15px; ">
+                                    <button type="button" class="btn btn-info btn-sm" onclick="copyFile()" style="padding: 8px;">
+                                        <i class="fas fa-copy"></i> Copy File
+                                    </button>
+                                </div>
+                                <div class="form-group" style="margin-top: 10px; margin-left: 15px; ">
+                                    <button type="button" class="btn btn-secondary btn-sm" onclick="syncFile()" style="padding: 8px;">
+                                        <i class="fas fa-sync"></i> Đồng Bộ File
+                                    </button>
+                                </div>
+                                <div class="form-group" style="margin-top: 10px; margin-left: 15px; ">
+                                    <button type="button" class="btn btn-warning btn-sm" onclick="exportJSON()" style="padding: 8px;">
+                                        <i class="fas fa-download"></i> Export JSON
+                                    </button>
+                                </div>
+                                <div class="form-group" style="margin-top: 10px; margin-left: 15px; ">
+                                    <button type="button" class="btn btn-danger btn-sm" onclick="restoreData()" style="padding: 8px;">
+                                        <i class="fas fa-undo"></i> Khôi Phục
+                                    </button>
+                                </div>
+                                <div class="form-group" style="margin-top: 10px; margin-left: 15px; ">
+                                    <button type="submit" class="btn btn-primary btn-sm" style="padding: 8px;">
                                         <i class="fas fa-plus"></i> Thêm Sản Phẩm
                                     </button>
                                 </div>
                             </div>
 
                         </form>
-                        <!-- Action Buttons -->
-                        <div class="action-buttons">
-                            <button type="button" class="btn btn-info" onclick="copyFile()">
-                                <i class="fas fa-copy"></i> Copy File
-                            </button>
-                            <button type="button" class="btn btn-secondary" onclick="syncFile()">
-                                <i class="fas fa-sync"></i> Đồng Bộ File
-                            </button>
-                            <button type="button" class="btn btn-warning" onclick="exportJSON()">
-                                <i class="fas fa-download"></i> Export JSON
-                            </button>
-                            <button type="button" class="btn btn-danger" onclick="restoreData()">
-                                <i class="fas fa-undo"></i> Khôi Phục
-                            </button>
-                        </div>
                     </div>
                 </div>
 
@@ -102,6 +131,7 @@
                                         <th class="stt-col">STT</th>
                                         <th class="name-col">Tên Sản Phẩm</th>
                                         <th class="sku-col">SKU</th>
+                                        <th class="category-col">Danh Mục</th>
                                         <th class="price-col">Giá (VNĐ)</th>
                                         <th class="action-col">Sửa</th>
                                         <th class="action-col">Xóa</th>

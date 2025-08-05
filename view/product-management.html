@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Sản Phẩm - PMQLDH</title>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="../style/man.css">
+    <link rel="stylesheet" href="../style/product-management.css">
+
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-compat.js"></script>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Đang xử lý...</p>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div id="notification" class="notification hidden">
+        <div class="notification-content">
+            <i class="notification-icon"></i>
+            <span class="notification-message"></span>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Navbar Component -->
+        <div id="navbar-container">
+            <!-- Navbar will be loaded here -->
+        </div>
+
+        <!-- Header Component -->
+        <div id="header-container">
+            <!-- Header will be loaded here -->
+        </div>
+<div class="card">
+
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="page-header">
+                <div class="page-title">
+                    <i class="fas fa-list"></i>
+                    <h1>Quản Lý Sản Phẩm</h1>
+                </div>
+                <div class="page-actions">
+                    <button type="button" class="btn btn-secondary" onclick="exportProducts()">
+                        <i class="fas fa-download"></i>
+                        Xuất Excel
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="window.location.href='products.html'">
+                        <i class="fas fa-plus"></i>
+                        Thêm Sản Phẩm
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search and Filter Section -->
+            <div class="search-filter-section">
+                <div class="search-container">
+                    <div class="search-input-wrapper">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" id="searchInput" placeholder="Tìm kiếm sản phẩm theo tên, SKU..." class="search-input">
+                    </div>
+                </div>
+                <div class="filter-container">
+                    <select id="categoryFilter" class="filter-select" title="Lọc theo danh mục">
+                        <option value="">Tất cả danh mục</option>
+                    </select>
+                    <select id="statusFilter" class="filter-select" title="Lọc theo trạng thái">
+                        <option value="">Tất cả trạng thái</option>
+                        <option value="active">Đang bán</option>
+                        <option value="inactive">Ngừng bán</option>
+                        <option value="out_of_stock">Hết hàng</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Products Stats -->
+            <div class="stats-section">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-box"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="totalProducts">0</h3>
+                        <p>Tổng sản phẩm</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon active">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="activeProducts">0</h3>
+                        <p>Đang bán</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon inactive">
+                        <i class="fas fa-pause-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="inactiveProducts">0</h3>
+                        <p>Ngừng bán</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon out-of-stock">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="outOfStockProducts">0</h3>
+                        <p>Hết hàng</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Products Table -->
+            <div class="table-container">
+                <table class="products-table" id="productsTable">
+                    <thead>
+                        <tr>
+                            <th>STT</th>
+                            <th>Tên sản phẩm</th>
+                            <th>SKU</th>
+                            <th>Danh mục</th>
+                            <th>Giá bán</th>
+                            <th>Tồn kho</th>
+                            <th>Trạng thái</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productsTableBody">
+                        <!-- Products will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Empty State -->
+            <div class="empty-state hidden" id="emptyState">
+                <div class="empty-icon">
+                    <i class="fas fa-box-open"></i>
+                </div>
+                <h3>Chưa có sản phẩm nào</h3>
+                <p>Hãy thêm sản phẩm đầu tiên để bắt đầu bán hàng</p>
+                <button type="button" class="btn btn-primary" onclick="window.location.href='products.html'">
+                    <i class="fas fa-plus"></i>
+                    Thêm Sản Phẩm
+                </button>
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination-container" id="paginationContainer">
+                <div class="pagination-info">
+                    <span id="paginationInfo">Hiển thị 1-10 của 0 sản phẩm</span>
+                </div>
+                <div class="pagination-controls">
+                    <button type="button" class="pagination-btn" id="prevBtn" onclick="changePage(-1)" title="Trang trước">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <div class="pagination-numbers" id="paginationNumbers">
+                        <!-- Page numbers will be generated here -->
+                    </div>
+                    <button type="button" class="pagination-btn" id="nextBtn" onclick="changePage(1)" title="Trang sau">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Product Modal -->
+    <div id="editProductModal" class="modal hidden">
+        <div class="modal-overlay" onclick="closeEditModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Chỉnh Sửa Sản Phẩm</h2>
+                <button type="button" class="modal-close" onclick="closeEditModal()" title="Đóng">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="editProductForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editProductName">Tên sản phẩm <span class="required">*</span></label>
+                            <input type="text" id="editProductName" name="productName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editProductSKU">SKU <span class="required">*</span></label>
+                            <input type="text" id="editProductSKU" name="productSKU" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editProductCategory">Danh mục</label>
+                            <select id="editProductCategory" name="productCategory">
+                                <option value="">Chọn danh mục</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="editProductPrice">Giá bán (đ) <span class="required">*</span></label>
+                            <input type="number" id="editProductPrice" name="productPrice" min="0" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editProductStock">Số lượng tồn kho</label>
+                            <input type="number" id="editProductStock" name="productStock" min="0" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="editProductStatus">Trạng thái</label>
+                            <select id="editProductStatus" name="productStatus">
+                                <option value="active">Đang bán</option>
+                                <option value="inactive">Ngừng bán</option>
+                                <option value="out_of_stock">Hết hàng</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="editProductDescription">Mô tả sản phẩm</label>
+                        <textarea id="editProductDescription" name="productDescription" rows="3" placeholder="Mô tả chi tiết về sản phẩm"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Hủy</button>
+                <button type="button" class="btn btn-primary" onclick="saveProductChanges()">
+                    <i class="fas fa-save"></i>
+                    Lưu thay đổi
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="modal hidden">
+        <div class="modal-overlay" onclick="closeDeleteModal()"></div>
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h2>Xác Nhận Xóa</h2>
+                <button type="button" class="modal-close" onclick="closeDeleteModal()" title="Đóng">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="delete-confirmation">
+                    <i class="fas fa-exclamation-triangle warning-icon"></i>
+                    <p>Bạn có chắc chắn muốn xóa sản phẩm này không?</p>
+                    <p class="warning-text">Hành động này không thể hoàn tác!</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">Hủy</button>
+                <button type="button" class="btn btn-danger" onclick="confirmDeleteProduct()">
+                    <i class="fas fa-trash"></i>
+                    Xóa
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+    <!-- Scripts -->
+    <script src="../main/firebase.js"></script>
+    <script src="../main/navbar.js"></script>
+    <script src="../main/header.js"></script>
+    <script src="../main/product-management.js"></script>
+</body>
+</html>

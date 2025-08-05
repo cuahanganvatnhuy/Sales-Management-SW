@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Danh Mục Sản Phẩm - PMQLDH</title>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="../style/man.css">
+    <link rel="stylesheet" href="../style/product-categories.css">
+
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-compat.js"></script>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Đang xử lý...</p>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div id="notification" class="notification hidden">
+        <div class="notification-content">
+            <i class="notification-icon"></i>
+            <span class="notification-message"></span>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Navbar Component -->
+        <div id="navbar-container">
+            <!-- Navbar will be loaded here -->
+        </div>
+
+        <!-- Header Component -->
+        <div id="header-container">
+            <!-- Header will be loaded here -->
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="card">
+
+           
+            <div class="page-header">
+                <div class="page-title">
+                    <i class="fas fa-tags"></i>
+                    <h1>Quản Lý Danh Mục Sản Phẩm</h1>
+                </div>
+                <div class="page-actions">
+                    <button class="btn btn-primary" onclick="openAddCategoryModal()">
+                        <i class="fas fa-plus"></i>
+                        Thêm Danh Mục
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search and Filter Section -->
+            <div class="search-filter-section">
+                <div class="search-container">
+                    <div class="search-input-wrapper">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" id="searchInput" placeholder="Tìm kiếm danh mục..." class="search-input">
+                    </div>
+                </div>
+                <div class="filter-container">
+                    <select id="statusFilter" class="filter-select">
+                        <option value="">Tất cả trạng thái</option>
+                        <option value="active">Đang hoạt động</option>
+                        <option value="inactive">Tạm dừng</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Categories Grid -->
+            <div class="categories-grid" id="categoriesGrid">
+                <!-- Categories will be loaded here -->
+            </div>
+
+            <!-- Empty State -->
+            <div class="empty-state hidden" id="emptyState">
+                <div class="empty-icon">
+                    <i class="fas fa-tags"></i>
+                </div>
+                <h3>Chưa có danh mục nào</h3>
+                <p>Hãy thêm danh mục đầu tiên để bắt đầu phân loại sản phẩm</p>
+                <button class="btn btn-primary" onclick="openAddCategoryModal()">
+                    <i class="fas fa-plus"></i>
+                    Thêm Danh Mục
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Category Modal -->
+    <div id="categoryModal" class="modal hidden">
+        <div class="modal-overlay" onclick="closeCategoryModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Thêm Danh Mục Mới</h2>
+                <button class="modal-close" onclick="closeCategoryModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="categoryForm">
+                    <div class="form-group">
+                        <label for="categoryName">Tên Danh Mục <span class="required">*</span></label>
+                        <input type="text" id="categoryName" name="categoryName" required placeholder="Nhập tên danh mục">
+                    </div>
+                    <div class="form-group">
+                        <label for="categoryDescription">Mô Tả</label>
+                        <textarea id="categoryDescription" name="categoryDescription" rows="3" placeholder="Mô tả về danh mục này"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="categoryColor">Màu Sắc</label>
+                        <div class="color-picker-container">
+                            <input type="color" id="categoryColor" name="categoryColor" value="#4CAF50">
+                            <span class="color-preview"></span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="categoryIcon">Biểu Tượng</label>
+                        <div class="icon-picker-container">
+                            <input type="text" id="categoryIcon" name="categoryIcon" placeholder="fas fa-tag" value="fas fa-tag">
+                            <div class="icon-preview">
+                                <i class="fas fa-tag"></i>
+                            </div>
+                        </div>
+                        <div class="icon-suggestions">
+                            <span class="icon-suggestion" data-icon="fas fa-tag"><i class="fas fa-tag"></i></span>
+                            <span class="icon-suggestion" data-icon="fas fa-box"><i class="fas fa-box"></i></span>
+                            <span class="icon-suggestion" data-icon="fas fa-shopping-bag"><i class="fas fa-shopping-bag"></i></span>
+                            <span class="icon-suggestion" data-icon="fas fa-tshirt"><i class="fas fa-tshirt"></i></span>
+                            <span class="icon-suggestion" data-icon="fas fa-mobile-alt"><i class="fas fa-mobile-alt"></i></span>
+                            <span class="icon-suggestion" data-icon="fas fa-laptop"><i class="fas fa-laptop"></i></span>
+                            <span class="icon-suggestion" data-icon="fas fa-home"><i class="fas fa-home"></i></span>
+                            <span class="icon-suggestion" data-icon="fas fa-utensils"><i class="fas fa-utensils"></i></span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="categoryStatus">Trạng Thái</label>
+                        <select id="categoryStatus" name="categoryStatus">
+                            <option value="active">Đang hoạt động</option>
+                            <option value="inactive">Tạm dừng</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeCategoryModal()">Hủy</button>
+                <button type="submit" class="btn btn-primary" onclick="saveCategory()">
+                    <i class="fas fa-save"></i>
+                    Lưu Danh Mục
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="modal hidden">
+        <div class="modal-overlay" onclick="closeDeleteModal()"></div>
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h2>Xác Nhận Xóa</h2>
+                <button class="modal-close" onclick="closeDeleteModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="delete-confirmation">
+                    <i class="fas fa-exclamation-triangle warning-icon"></i>
+                    <p>Bạn có chắc chắn muốn xóa danh mục này không?</p>
+                    <p class="warning-text">Hành động này không thể hoàn tác!</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">Hủy</button>
+                <button type="button" class="btn btn-danger" onclick="confirmDeleteCategory()">
+                    <i class="fas fa-trash"></i>
+                    Xóa
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../main/firebase.js"></script>
+    <script src="../main/navbar.js"></script>
+    <script src="../main/header.js"></script>
+    <script src="../main/product-categories.js"></script>
+</body>
+</html>

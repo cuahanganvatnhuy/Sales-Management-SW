@@ -113,7 +113,33 @@
     </div>
     <ul class="sidebar-menu">
         <li id="nav-home"><a href="/index.html"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
-        <li id="nav-products"><a href="/view/products.html" data-page="products.html"><i class="fas fa-box"></i> <span>Sản Phẩm</span></a></li>
+        <li class="has-submenu">
+            <a href="#" onclick="toggleProductSubmenu(event)">
+                <i class="fas fa-box"></i>
+                <span>Sản Phẩm</span>
+                <i class="fas fa-chevron-down submenu-chevron"></i>
+            </a>
+            <ul id="productSubmenu" class="order-submenu">
+                <li class="order-submenu-item">
+                    <a href="/view/products.html" data-page="products.html" class="order-submenu-link">
+                        <i class="fas fa-plus order-submenu-icon"></i>
+                        Thêm Sản Phẩm
+                    </a>
+                </li>
+                <li class="order-submenu-item">
+                    <a href="/view/product-management.html" data-page="product-management.html" class="order-submenu-link">
+                        <i class="fas fa-list order-submenu-icon"></i>
+                        Quản Lý Sản Phẩm
+                    </a>
+                </li>
+                <li class="order-submenu-item">
+                    <a href="/view/product-categories.html" data-page="product-categories.html" class="order-submenu-link">
+                        <i class="fas fa-tags order-submenu-icon"></i>
+                        Danh Mục Sản Phẩm
+                    </a>
+                </li>
+            </ul>
+        </li>
         <li class="has-submenu">
             <a href="#" class="nav-link" onclick="toggleOrderSubmenu(event)">
                 <i class="fas fa-plus-circle"></i>
@@ -214,19 +240,36 @@
             }
         };
         
-        // Order submenu toggle function
-        window.toggleOrderSubmenu = function(event) {
-            event.preventDefault();
-            const submenu = document.getElementById('orderSubmenu');
-            if (submenu) {
-                submenu.classList.toggle('show');
-                window.updateOrderTypeUI();
-                console.log('Order submenu toggled');
-            } else {
-                console.log('Order submenu not found!');
-            }
-        };
+        // Order submenu toggle function - Define immediately
+        if (typeof window.toggleOrderSubmenu === 'undefined') {
+            window.toggleOrderSubmenu = function(event) {
+                event.preventDefault();
+                const submenu = document.getElementById('orderSubmenu');
+                if (submenu) {
+                    submenu.classList.toggle('show');
+                    window.updateOrderTypeUI();
+                    console.log('Order submenu toggled');
+                } else {
+                    console.log('Order submenu not found!');
+                }
+            };
+            console.log('✅ toggleOrderSubmenu function defined');
+        }
         
+        // Product submenu toggle function - Define immediately
+        if (typeof window.toggleProductSubmenu === 'undefined') {
+            window.toggleProductSubmenu = function(event) {
+                event.preventDefault();
+                const submenu = document.getElementById('productSubmenu');
+                if (submenu) {
+                    submenu.classList.toggle('show');
+                    console.log('Product submenu toggled');
+                } else {
+                    console.log('Product submenu not found!');
+                }
+            };
+            console.log('✅ toggleProductSubmenu function defined');
+        }
 
         
         // Dynamic link adjustment based on current path
@@ -254,6 +297,7 @@
             document.addEventListener('click', function(e) {
                 const invoiceSubmenu = document.getElementById('invoiceSubmenu');
                 const orderSubmenu = document.getElementById('orderSubmenu');
+                const productSubmenu = document.getElementById('productSubmenu');
                 const hasSubmenu = e.target.closest('.has-submenu');
                 
                 if (invoiceSubmenu && !hasSubmenu) {
@@ -264,6 +308,11 @@
                 if (orderSubmenu && !hasSubmenu) {
                     orderSubmenu.classList.remove('show');
                     console.log('Order submenu closed by clicking outside');
+                }
+                
+                if (productSubmenu && !hasSubmenu) {
+                    productSubmenu.classList.remove('show');
+                    console.log('Product submenu closed by clicking outside');
                 }
             });
         });

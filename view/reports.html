@@ -369,6 +369,7 @@
     </div>
 
     <!-- Scripts -->
+    <script src="../main/navbar.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script src="../main/firebase.js"></script>
@@ -400,6 +401,34 @@
             xhr.send();
         }
         
+        // Define submenu toggle functions before loading navbar
+        window.toggleProductSubmenu = function(event) {
+            event.preventDefault();
+            const submenu = document.getElementById('productSubmenu');
+            if (submenu) {
+                submenu.classList.toggle('show');
+                console.log('Product submenu toggled');
+            } else {
+                console.log('Product submenu not found!');
+            }
+        };
+        
+        window.toggleOrderSubmenu = function(event) {
+            event.preventDefault();
+            const submenu = document.getElementById('orderSubmenu');
+            if (submenu) {
+                submenu.classList.toggle('show');
+                if (typeof window.updateOrderTypeUI === 'function') {
+                    window.updateOrderTypeUI();
+                }
+                console.log('Order submenu toggled');
+            } else {
+                console.log('Order submenu not found!');
+            }
+        };
+        
+        console.log('✅ Submenu functions defined in reports.html');
+        
         // Load components when DOM is ready
         document.addEventListener('DOMContentLoaded', function() {
             // Load navbar first
@@ -421,7 +450,6 @@
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-    
     <!-- Firebase Configuration -->
     <script>
         // Firebase Configuration

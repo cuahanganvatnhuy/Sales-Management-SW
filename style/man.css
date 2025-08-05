@@ -121,14 +121,14 @@ body {
 }
 
 .sidebar-menu li.active {
-    background: rgba(var(--accent-yellow-rgb), 0.2);
-    border-left: 4px solid var(--accent-yellow);
+    background: rgba(var(--primary-green-rgb), 0.3);
+    border-left: 4px solid var(--primary-green);
 }
 
 .sidebar-menu .active a {
     background-color: rgba(255,255,255,0.15);
     color: white;
-    border-left-color: #ffd700;
+    border-left-color: var(--primary-green);
     font-weight: 600;
 }
 

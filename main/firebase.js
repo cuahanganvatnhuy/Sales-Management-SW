@@ -252,7 +252,7 @@ function createSampleData() {
                 id: "prod_001",
                 name: "Áo thun nam",
                 price: 150000,
-                category: "Thời trang nam",
+                categoryId: "cat_001",
                 description: "Áo thun cotton cao cấp",
                 isActive: true,
                 createdAt: new Date().toISOString()
@@ -261,10 +261,21 @@ function createSampleData() {
                 id: "prod_002",
                 name: "Váy đầm",
                 price: 250000,
-                category: "Thời trang nữ",
+                categoryId: "cat_002",
                 description: "Váy đầm công sở",
                 isActive: true,
                 createdAt: new Date().toISOString()
+            }
+        },
+        
+        categories: {
+            "cat_001": {
+                id: "cat_001",
+                name: "Thời trang nam"
+            },
+            "cat_002": {
+                id: "cat_002",
+                name: "Thời trang nữ"
             }
         },
         
