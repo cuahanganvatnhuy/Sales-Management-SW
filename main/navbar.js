@@ -57,6 +57,19 @@ class NavbarLoader {
             const navbarContainer = document.getElementById('navbar-container');
             if (navbarContainer) {
                 navbarContainer.innerHTML = navbarHTML;
+                
+                // Execute scripts in navbar HTML
+                const scripts = navbarContainer.getElementsByTagName('script');
+                for (let i = 0; i < scripts.length; i++) {
+                    if (scripts[i].src) {
+                        // External script - already loaded by browser
+                        continue;
+                    } else {
+                        // Inline script - execute it
+                        eval(scripts[i].innerHTML);
+                    }
+                }
+                
                 this.setActiveNavItem();
                 this.initializeNavbar();
             }

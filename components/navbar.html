@@ -56,6 +56,53 @@
     justify-content: space-between;
     width: 100%;
 }
+
+/* Order submenu styles */
+.order-submenu {
+    display: none;
+    list-style: none;
+    padding: 0;
+    margin: 8px 0 0 0;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+}
+
+.order-submenu.show {
+    display: block;
+}
+
+.order-submenu-item {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.order-submenu-link {
+    display: block;
+    padding: 12px 20px 12px 40px;
+    color: rgba(255, 255, 255, 0.9);
+    text-decoration: none;
+    font-size: 14px;
+    border-left: 3px solid transparent;
+    cursor: pointer;
+}
+
+.order-submenu-link:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-left-color: #4CAF50;
+    color: #fff;
+}
+
+.order-submenu-icon {
+    margin-right: 8px;
+    width: 16px;
+    text-align: center;
+}
+
+.submenu-chevron {
+    margin-left: auto;
+    font-size: 12px;
+}
 </style>
 <nav class="sidebar">
     <div class="sidebar-header">
@@ -66,12 +113,59 @@
     </div>
     <ul class="sidebar-menu">
         <li id="nav-home"><a href="/index.html"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
-        <li id="nav-products"><a href="/view/products.html" data-page="products.html"><i class="fas fa-box"></i> <span>Sản Phẩm</span></a></li>
-        <li id="nav-orders">
-            <a href="/view/orders.html" data-page="orders.html">
+        <li class="has-submenu">
+            <a href="#" onclick="toggleProductSubmenu(event)">
+                <i class="fas fa-box"></i>
+                <span>Sản Phẩm</span>
+                <i class="fas fa-chevron-down submenu-chevron"></i>
+            </a>
+            <ul id="productSubmenu" class="order-submenu">
+                <li class="order-submenu-item">
+                    <a href="/view/products.html" data-page="products.html" class="order-submenu-link">
+                        <i class="fas fa-plus order-submenu-icon"></i>
+                        Thêm Sản Phẩm
+                    </a>
+                </li>
+                <li class="order-submenu-item">
+                    <a href="/view/product-management.html" data-page="product-management.html" class="order-submenu-link">
+                        <i class="fas fa-list order-submenu-icon"></i>
+                        Quản Lý Sản Phẩm
+                    </a>
+                </li>
+                <li class="order-submenu-item">
+                    <a href="/view/product-categories.html" data-page="product-categories.html" class="order-submenu-link">
+                        <i class="fas fa-tags order-submenu-icon"></i>
+                        Danh Mục Sản Phẩm
+                    </a>
+                </li>
+            </ul>
+        </li>
+        <li class="has-submenu">
+            <a href="#" class="nav-link" onclick="toggleOrderSubmenu(event)">
                 <i class="fas fa-plus-circle"></i>
                 <span>Tạo Đơn Hàng</span>
+                <i class="fas fa-chevron-down submenu-chevron"></i>
             </a>
+            <ul id="orderSubmenu" class="order-submenu">
+                <li class="order-submenu-item">
+                    <a href="/view/orders.html" data-page="orders.html" class="order-submenu-link">
+                        <i class="fas fa-shopping-cart order-submenu-icon"></i>
+                        Đơn Hàng TMĐT
+                    </a>
+                </li>
+                <li class="order-submenu-item">
+                    <a href="/view/retail-orders.html" data-page="retail-orders.html" class="order-submenu-link">
+                        <i class="fas fa-store order-submenu-icon"></i>
+                        Đơn Hàng Bán Lẻ
+                    </a>
+                </li>
+                <li class="order-submenu-item">
+                    <a href="/view/wholesale-orders.html" data-page="wholesale-orders.html" class="order-submenu-link">
+                        <i class="fas fa-warehouse order-submenu-icon"></i>
+                        Đơn Hàng Bán Sỉ
+                    </a>
+                </li>
+            </ul>
         </li>
         <li id="nav-order-management">
             <a href="/view/order-management.html" data-page="order-management.html">
@@ -115,19 +209,19 @@
             <a href="#" class="nav-link" onclick="toggleSubmenu(event)">
                 <i class="fas fa-file-invoice-dollar"></i>
                 <span>Quản Lý Hóa Đơn</span>
-                <i class="fas fa-chevron-down" style="margin-left: auto; font-size: 12px;"></i>
+                <i class="fas fa-chevron-down submenu-chevron"></i>
             </a>
-            <ul id="invoiceSubmenu" style="display: none; list-style: none; padding: 0; margin: 8px 0 0 0; background: rgba(255, 255, 255, 0.1); border-radius: 8px;">
-                <li style="margin: 0; padding: 0;">
-                    <a href="#" onclick="event.preventDefault(); navigateToInvoice('global'); return false;" style="display: block; padding: 12px 20px 12px 40px; color: rgba(255, 255, 255, 0.9); text-decoration: none; font-size: 14px; border-left: 3px solid transparent; cursor: pointer;">
-                        <i class="fas fa-globe" style="margin-right: 8px; width: 16px;"></i> 
+            <ul id="invoiceSubmenu" class="order-submenu">
+                <li class="order-submenu-item">
+                    <a href="#" onclick="event.preventDefault(); navigateToInvoice('global'); return false;" class="order-submenu-link">
+                        <i class="fas fa-globe order-submenu-icon"></i>
                         Hóa Đơn Toàn Bộ
                     </a>
                 </li>
-                <li style="margin: 0; padding: 0;">
-                    <a href="#" onclick="event.preventDefault(); navigateToInvoice('store'); return false;" style="display: block; padding: 12px 20px 12px 40px; color: rgba(255, 255, 255, 0.9); text-decoration: none; font-size: 14px; border-left: 3px solid transparent; cursor: pointer;">
-                        <i class="fas fa-store" style="margin-right: 8px; width: 16px;"></i> 
-                        Hóa Đơn Từng Cửa Hàng
+                <li class="order-submenu-item">
+                    <a href="#" onclick="event.preventDefault(); navigateToInvoice('store'); return false;" class="order-submenu-link">
+                        <i class="fas fa-store order-submenu-icon"></i>
+                        Hóa Đơn Từng Cửa Hàng TMĐT
                     </a>
                 </li>
             </ul>
@@ -139,24 +233,43 @@
         // Global submenu toggle function - works on all pages
         window.toggleSubmenu = function(event) {
             event.preventDefault();
-            console.log('Toggle submenu clicked from navbar component');
-            
             const submenu = document.getElementById('invoiceSubmenu');
             if (submenu) {
-                const isHidden = submenu.style.display === 'none' || submenu.style.display === '';
-                
-                if (isHidden) {
-                    submenu.style.display = 'block';
-                    console.log('Submenu shown');
-                } else {
-                    submenu.style.display = 'none';
-                    console.log('Submenu hidden');
-                }
-            } else {
-                console.log('Submenu not found!');
+                submenu.classList.toggle('show');
+                console.log('Invoice submenu toggled');
             }
         };
         
+        // Order submenu toggle function - Define immediately
+        if (typeof window.toggleOrderSubmenu === 'undefined') {
+            window.toggleOrderSubmenu = function(event) {
+                event.preventDefault();
+                const submenu = document.getElementById('orderSubmenu');
+                if (submenu) {
+                    submenu.classList.toggle('show');
+                    window.updateOrderTypeUI();
+                    console.log('Order submenu toggled');
+                } else {
+                    console.log('Order submenu not found!');
+                }
+            };
+            console.log('✅ toggleOrderSubmenu function defined');
+        }
+        
+        // Product submenu toggle function - Define immediately
+        if (typeof window.toggleProductSubmenu === 'undefined') {
+            window.toggleProductSubmenu = function(event) {
+                event.preventDefault();
+                const submenu = document.getElementById('productSubmenu');
+                if (submenu) {
+                    submenu.classList.toggle('show');
+                    console.log('Product submenu toggled');
+                } else {
+                    console.log('Product submenu not found!');
+                }
+            };
+            console.log('✅ toggleProductSubmenu function defined');
+        }
 
         
         // Dynamic link adjustment based on current path
@@ -182,12 +295,24 @@
             
             // Close submenu when clicking outside
             document.addEventListener('click', function(e) {
-                const submenu = document.getElementById('invoiceSubmenu');
+                const invoiceSubmenu = document.getElementById('invoiceSubmenu');
+                const orderSubmenu = document.getElementById('orderSubmenu');
+                const productSubmenu = document.getElementById('productSubmenu');
                 const hasSubmenu = e.target.closest('.has-submenu');
                 
-                if (submenu && !hasSubmenu) {
-                    submenu.style.display = 'none';
-                    console.log('Submenu closed by clicking outside');
+                if (invoiceSubmenu && !hasSubmenu) {
+                    invoiceSubmenu.classList.remove('show');
+                    console.log('Invoice submenu closed by clicking outside');
+                }
+                
+                if (orderSubmenu && !hasSubmenu) {
+                    orderSubmenu.classList.remove('show');
+                    console.log('Order submenu closed by clicking outside');
+                }
+                
+                if (productSubmenu && !hasSubmenu) {
+                    productSubmenu.classList.remove('show');
+                    console.log('Product submenu closed by clicking outside');
                 }
             });
         });

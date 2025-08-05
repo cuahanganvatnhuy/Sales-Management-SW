@@ -110,15 +110,41 @@ async function loadProducts() {
 // Load orders from Firebase
 async function loadOrders() {
     try {
+        let allOrdersData = {};
+        
         // Check if store is selected
         if (typeof getStoreDataPath === 'function') {
             const ordersPath = getStoreDataPath('orders');
             const snapshot = await database.ref(ordersPath).once('value');
-            ordersData = snapshot.val() || {};
+            allOrdersData = snapshot.val() || {};
         } else {
             // Fallback to global orders
-            ordersData = await getAllOrders();
+            allOrdersData = await getAllOrders();
         }
+        
+        // Filter to show only TMĐT orders (exclude wholesale and retail orders)
+        ordersData = {};
+        for (const [orderId, order] of Object.entries(allOrdersData)) {
+            // Check both 'orderType' and 'type' fields for compatibility
+            const orderType = order.orderType || order.type;
+            
+            // EXCLUDE orders that are explicitly wholesale or retail
+            if (orderType === 'wholesale' || orderType === 'retail') {
+                continue; // Skip this order
+            }
+            
+            // INCLUDE orders that are:
+            // 1. TMĐT/ecommerce orders (orderType/type = 'ecommerce', 'tmdt', 'online')
+            // 2. Orders without any type specified (legacy orders, assume TMĐT)
+            if (!orderType || 
+                orderType === 'ecommerce' || 
+                orderType === 'tmdt' || 
+                orderType === 'online') {
+                ordersData[orderId] = order;
+            }
+        }
+        
+        console.log('Filtered TMĐT orders:', Object.keys(ordersData).length, 'out of', Object.keys(allOrdersData).length, 'total orders');
         displayOrders();
     } catch (error) {
         console.error('Error loading orders:', error);
@@ -221,14 +247,14 @@ function generateOrderFormsContent(orderCount, container) {
                                placeholder="SKU sẽ tự động cập nhật">
                     </div>
                     <div class="form-group">
-                        <label for="quantity_${i}">Số Lượng (kg):</label>
+                        <label for="quantity_${i}" id="quantityLabel_${i}">Số Lượng:</label>
                         <input type="number" id="quantity_${i}" name="quantity_${i}" 
                                min="0.1" step="0.1" required 
                                oninput="calculateOrderTotal(${i})" 
                                placeholder="Nhập số lượng">
                     </div>
                     <div class="form-group">
-                        <label for="price_${i}">Giá (VNĐ/kg):</label>
+                        <label for="price_${i}" id="priceLabel_${i}">Giá:</label>
                         <input type="text" id="price_${i}" name="price_${i}" readonly 
                                placeholder="Giá sẽ tự động cập nhật">
                     </div>
@@ -306,6 +332,17 @@ function updateOrderPrice(orderIndex, productId = null) {
     const skuInput = document.getElementById(`sku_${orderIndex}`);
     const quantityInput = document.getElementById(`quantity_${orderIndex}`);
     const totalInput = document.getElementById(`total_${orderIndex}`);
+    const quantityLabel = document.getElementById(`quantityLabel_${orderIndex}`);
+    const priceLabel = document.getElementById(`priceLabel_${orderIndex}`);
+    
+    // Get unit and update labels
+    const unit = product.unit || 'cái';
+    if (quantityLabel) {
+        quantityLabel.textContent = `Số Lượng (${unit}):`;
+    }
+    if (priceLabel) {
+        priceLabel.textContent = `Giá (VNĐ/${unit}):`;
+    }
     
     // Set price and SKU
     priceInput.value = formatCurrency(product.price);
@@ -335,9 +372,11 @@ function calculateOrderTotal(orderIndex) {
 function generateProductOptions() {
     if (!productsData) return '';
     
-    return Object.entries(productsData).map(([id, product]) => 
-        `<option value="${id}" data-price="${product.price}">${product.name} - ${formatCurrency(product.price)}/kg</option>`
-    ).join('');
+    return Object.entries(productsData).map(([id, product]) => {
+        const unit = product.unit || 'cái';
+        const price = product.price || 0;
+        return `<option value="${id}" data-price="${price}" data-unit="${unit}" data-conversion="${product.conversion || 1}">${product.name} - ${formatCurrency(price)}/${unit}</option>`;
+    }).join('');
 }
 
 // Update price when product is selected
@@ -393,25 +432,55 @@ async function createOrders(event) {
     for (let i = 1; i <= orderCount; i++) {
         const productId = document.getElementById(`product_${i}`).value;
         const quantity = parseFloat(document.getElementById(`quantity_${i}`).value);
+        const price = parseFloat(document.getElementById(`price_${i}`).value.replace(/[^\d]/g, ''));
         
-        if (!productId || !quantity || quantity <= 0) {
-            showNotification(`Vui lòng điền đầy đủ thông tin cho đơn hàng ${i}!`, 'error');
+        if (!productId) {
+            showNotification(`Vui lòng chọn sản phẩm cho đơn hàng ${i}!`, 'error');
+            hasError = true;
+            break;
+        }
+        
+        if (!quantity || quantity <= 0) {
+            showNotification(`Vui lòng nhập số lượng hợp lệ cho đơn hàng ${i}!`, 'error');
             hasError = true;
             break;
         }
         
         const product = productsData[productId];
-        const total = product.price * quantity;
+        if (!product) {
+            showNotification(`Sản phẩm không tồn tại cho đơn hàng ${i}!`, 'error');
+            hasError = true;
+            break;
+        }
+        
+        // Calculate actual quantity for stock deduction based on conversion
+        const unit = product.unit || 'cái';
+        const conversion = product.conversion || 1;
+        const actualQuantityForStock = quantity * conversion;
+        
+        // Check stock availability
+        const currentStock = product.stock || 0;
+        if (currentStock < actualQuantityForStock) {
+            showNotification(`Không đủ tồn kho cho sản phẩm "${product.name}" trong đơn hàng ${i}! Cần: ${actualQuantityForStock} ${unit}, Còn: ${currentStock} ${unit}`, 'error');
+            hasError = true;
+            break;
+        }
+        
+        const total = price * quantity;
         
         orders.push({
             productId: productId,
             productName: product.name,
             sku: product.sku || 'N/A',
             quantity: quantity,
-            price: product.price,
+            unit: unit,
+            conversion: conversion,
+            actualQuantityForStock: actualQuantityForStock,
+            price: price,
             total: total,
             orderDate: orderDate,
-            createdAt: new Date().toISOString()
+            type: 'ecommerce',
+            createdAt: firebase.database.ServerValue.TIMESTAMP
         });
     }
     
@@ -419,23 +488,47 @@ async function createOrders(event) {
     
     try {
         showLoading(true);
+        console.log('=== Creating TMĐT orders ===');
+        console.log('Orders to create:', orders.length);
+        console.log('Sample order data:', orders[0]);
         
         // Save all orders to the selected store
         if (typeof getStoreDataPath === 'function') {
             // Save to store-specific orders path
             const ordersPath = getStoreDataPath('orders');
+            console.log('Saving to store path:', ordersPath);
+            
             for (const orderData of orders) {
                 const orderRef = database.ref(ordersPath).push();
                 await orderRef.set(orderData);
+                console.log('Order saved with ID:', orderRef.key);
             }
         } else {
             // Fallback to global orders
+            console.log('Saving to global orders (fallback)');
             for (const orderData of orders) {
                 await addOrder(orderData);
             }
         }
         
-        showNotification(`Đã tạo thành công ${orders.length} đơn hàng!`, 'success');
+        // Update stock for all ordered products
+        console.log('=== Updating product stock ===');
+        for (const orderData of orders) {
+            const productRef = database.ref(`products/${orderData.productId}`);
+            const productSnapshot = await productRef.once('value');
+            const currentProduct = productSnapshot.val();
+            
+            if (currentProduct) {
+                const newStock = (currentProduct.stock || 0) - orderData.actualQuantityForStock;
+                await productRef.update({ 
+                    stock: Math.max(0, newStock), // Ensure stock doesn't go negative
+                    updatedAt: firebase.database.ServerValue.TIMESTAMP 
+                });
+                console.log(`Updated stock for ${orderData.productName}: ${currentProduct.stock} -> ${newStock}`);
+            }
+        }
+        
+        showNotification(`Đã tạo thành công ${orders.length} đơn hàng và cập nhật tồn kho!`, 'success');
         
         // Reset form with animation
         const form = document.getElementById('addOrderForm');
@@ -496,9 +589,10 @@ function displayOrders() {
     );
     
     for (const [orderId, order] of sortedOrders) {
-        // Lấy thông tin sản phẩm để hiển thị SKU
+        // Lấy thông tin sản phẩm để hiển thị SKU và đơn vị
         const product = productsData[order.productId] || {};
         const productSKU = order.sku || product.sku || 'N/A';
+        const unit = order.unit || product.unit || 'cái';
         
         ordersHTML += `
             <tr>
@@ -508,7 +602,7 @@ function displayOrders() {
                 <td class="text-center">${index}</td>
                 <td>${order.productName}</td>
                 <td class="text-center sku-cell">${productSKU}</td>
-                <td class="text-right">${order.quantity} kg</td>
+                <td class="text-right">${order.quantity} ${unit}</td>
                 <td class="text-right">${formatCurrency(order.price)}</td>
                 <td class="text-right">${formatCurrency(order.total)}</td>
                 <td class="text-center">${formatDate(order.orderDate)}</td>

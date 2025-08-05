@@ -123,9 +123,18 @@
     font-size: 14px;
     color: #999;
 }
-th.sku-col {
+th.sku-col   {
     color: black;
 }
+
+th.category-col {
+    color: black;
+}
+
+td.category-col {
+    color: black;
+}
+
 .action-col{
     color: black;
 }

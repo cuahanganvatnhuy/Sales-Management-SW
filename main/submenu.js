@@ -25,6 +25,34 @@ if (!window.toggleSubmenu) {
     console.log('Global toggleSubmenu function loaded from submenu.js');
 }
 
+// Order submenu toggle function
+if (!window.toggleOrderSubmenu) {
+    window.toggleOrderSubmenu = function(event) {
+        event.preventDefault();
+        const submenu = document.getElementById('orderSubmenu');
+        if (submenu) {
+            submenu.classList.toggle('show');
+            // Removed updateOrderTypeUI call to prevent unnecessary UI updates
+            console.log('Order submenu toggled');
+        } else {
+            console.log('Order submenu not found!');
+        }
+    };
+    
+    console.log('Global toggleOrderSubmenu function loaded from submenu.js');
+}
+
+// Update order type UI function - fallback
+if (!window.updateOrderTypeUI) {
+    window.updateOrderTypeUI = function() {
+        console.log('updateOrderTypeUI function not available on this page');
+        // This is a fallback function that does nothing
+        // The actual implementation is in order-type-selection.js
+    };
+    
+    console.log('Global updateOrderTypeUI function loaded from submenu.js');
+}
+
 // Context-aware navigation function - fallback
 if (!window.navigateToInvoice) {
     window.navigateToInvoice = function(type) {
