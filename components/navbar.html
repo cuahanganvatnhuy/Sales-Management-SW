@@ -24,7 +24,11 @@
     padding: 0;
     list-style: none;
 }
-
+span.titlle {
+    font-size: 30px;
+    margin: 0 auto;
+    font-family: fantasy;
+}
 .sidebar ul li .submenu a {
     display: block !important;
     padding: 12px 20px 12px 40px;
@@ -106,9 +110,9 @@
 </style>
 <nav class="sidebar">
     <div class="sidebar-header">
-        <div class="logo">
-            <i class="fas fa-shopping-cart"></i>
-            <span>PMQLDH</span>
+        <div class="logo" style="text-align: center; margin-top: 15px;">
+            <span class="titlle">Business Management</span> <br>
+            <span class="">Phúc Hoàng Technology</span>
         </div>
     </div>
     <ul class="sidebar-menu">
@@ -175,6 +179,7 @@
         </li>
         <li id="nav-stores"><a href="/view/stores.html" data-page="stores.html"><i class="fas fa-store"></i> <span>Cửa Hàng</span></a></li>
         <li id="nav-reports"><a href="/view/reports.html" data-page="reports.html"><i class="fas fa-chart-bar"></i> <span>Báo Cáo</span></a></li>
+        <li id="nav-warehouse"><a href="/view/warehouse-management.html" data-page="warehouse-management.html"><i class="fas fa-warehouse"></i> <span>Quản Lý Kho</span></a></li>
         <li class="has-submenu">
             <script>
                 // Immediate fallback - ensure function is available right away

@@ -18,6 +18,7 @@ class NavbarLoader {
             'order-management': 'nav-order-management',
             'stores': 'nav-stores',
             'reports': 'nav-reports',
+            'warehouse-management': 'nav-warehouse',
             'settings': 'nav-settings'
         };
         
@@ -37,6 +38,7 @@ class NavbarLoader {
             'order-management': 'Quản Lý Đơn Hàng',
             'stores': 'Quản Lý Cửa Hàng',
             'reports': 'Báo Cáo & Thống Kê',
+            'warehouse-management': 'Quản Lý Kho',
             'settings': 'Cài Đặt Hệ Thống'
         };
         
