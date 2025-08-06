@@ -1,5 +1,13 @@
 /* Warehouse Management Styles */
 
+/* Bulk Delete Button */
+.bulk-delete-btn {
+    margin-bottom: 10px;
+    font-size: 12px;
+    padding: 6px 20px;
+    border-radius: 5px;
+}
+
 /* Dashboard Cards */
 .warehouse-dashboard {
     margin-bottom: 2rem;

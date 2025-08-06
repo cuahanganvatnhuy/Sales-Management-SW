@@ -89,22 +89,23 @@
         <!-- Action Buttons -->
         <section class="warehouse-actions">
             <div class="action-buttons">
-                <button class="btn btn-primary" onclick="openStockInModal()">
+                <button type="button" class="btn btn-primary" onclick="openStockInModal()">
                     <i class="fas fa-plus-circle"></i>
                     Nhập Kho
                 </button>
-                <button class="btn btn-secondary" onclick="openStockOutModal()">
+                <button type="button" class="btn btn-secondary" onclick="openStockOutModal()">
                     <i class="fas fa-minus-circle"></i>
                     Xuất Kho
                 </button>
-                <button class="btn btn-info" onclick="openAdjustmentModal()">
+                <button type="button" class="btn btn-info" onclick="openAdjustmentModal()">
                     <i class="fas fa-edit"></i>
                     Điều Chỉnh
                 </button>
-                <button class="btn btn-success" onclick="exportWarehouseReport()">
+                <button type="button" class="btn btn-success" onclick="exportWarehouseReport()">
                     <i class="fas fa-file-excel"></i>
                     Xuất Báo Cáo
                 </button>
+               
             </div>
         </section>
 
@@ -116,6 +117,7 @@
                     <select id="categoryFilter" onchange="applyFilters()">
                         <option value="">Tất cả danh mục</option>
                     </select>
+                  
                 </div>
                 <div class="filter-group">
                     <label for="stockStatusFilter">Trạng Thái:</label>
@@ -132,13 +134,26 @@
                 </div>
             </div>
         </section>
-
+        <section>
+          <div class="view-toggle-buttons">
+            <button id="currentListViewBtn" class="btn btn-primary active" onclick="switchToCurrentListView()">Danh sách hiện tại</button>
+            <button id="usageReportViewBtn" class="btn btn-secondary" onclick="switchToUsageReportView()">Báo cáo sử dụng</button>
+          </div>
+        </section>
         <!-- Warehouse Table -->
-        <section class="warehouse-table-section">
+
+        <section class="warehouse-table-section" id="warehouseListView">
+            <button type="button" class="btn btn-danger bulk-delete-btn" id="deleteSelectedBtn" onclick="deleteSelectedProducts()" disabled>
+                <i class="fas fa-trash"></i>
+                Xóa Đã Chọn (<span id="selectedCount">0</span>)
+            </button>
             <div class="table-container">
                 <table class="warehouse-table">
                     <thead>
                         <tr>
+                            <th>
+                                <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                            </th>
                             <th>STT</th>
                             <th>Sản Phẩm</th>
                             <th>SKU</th>
@@ -181,25 +196,271 @@
             </div>
         </section>
 
-    <!-- Stock In Modal -->
-    <div id="stockInModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2><i class="fas fa-plus-circle"></i> Nhập Kho</h2>
-                <button class="close-btn" onclick="closeStockInModal()">&times;</button>
-            </div>
-            <form id="stockInForm" onsubmit="processStockIn(event)">
-                <div class="modal-body">
-                    <div id="stockInItems">
-                        <!-- Stock in items will be added here -->
+        <!-- Warehouse Usage Report View -->
+        <section id="warehouseUsageReportView" class="warehouse-usage-report" style="display: none;">
+            <!-- Report Filters -->
+            <div class="report-filters">
+                <div class="filter-row">
+                    <div class="filter-group">
+                        <label for="reportPeriodSelect">📅 Thời gian:</label>
+                        <select id="reportPeriodSelect" onchange="generateUsageReport()">
+                            <option value="today">Hôm nay</option>
+                            <option value="week" selected>Tuần này</option>
+                            <option value="month">Tháng này</option>
+                            <option value="quarter">Quý này</option>
+                            <option value="year">Năm này</option>
+                            <option value="custom">Tùy chỉnh</option>
+                        </select>
                     </div>
-                    <button type="button" class="btn btn-secondary" onclick="addStockInItem()">
-                        <i class="fas fa-plus"></i> Thêm Sản Phẩm
-                    </button>
-                    
+                    <div class="filter-group">
+                        <label for="reportStoreSelect">🏪 Cửa hàng:</label>
+                        <select id="reportStoreSelect" onchange="generateUsageReport()">
+                            <option value="all">Tất cả cửa hàng</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="reportCategorySelect">📦 Danh mục:</label>
+                        <select id="reportCategorySelect" onchange="generateUsageReport()">
+                            <option value="all">Tất cả danh mục</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="filter-row">
+                    <div class="date-range-display">
+                        <span>📊 Báo cáo từ: <strong id="reportDateRange">Loading...</strong></span>
+                    </div>
+                    <div class="report-actions">
+                        <button class="btn btn-primary" onclick="generateUsageReport()">
+                            <i class="fas fa-sync-alt"></i> Làm mới
+                        </button>
+                        <button class="btn btn-success" onclick="exportUsageReport()">
+                            <i class="fas fa-download"></i> Xuất Excel
+                        </button>
+                        <button class="btn btn-info" onclick="printUsageReport()">
+                            <i class="fas fa-print"></i> In báo cáo
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Usage Summary Cards -->
+            <div class="usage-summary-cards">
+                <div class="summary-card total-movements">
+                    <div class="card-icon">
+                        <i class="fas fa-exchange-alt"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3 id="totalMovements">0</h3>
+                        <p>Tổng giao dịch</p>
+                        <small class="card-subtitle">Nhập + Xuất kho</small>
+                    </div>
+                </div>
+                <div class="summary-card stock-in">
+                    <div class="card-icon">
+                        <i class="fas fa-arrow-up"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3 id="totalStockIn">0</h3>
+                        <p>Tổng nhập kho</p>
+                        <small class="card-subtitle">Số lượng sản phẩm</small>
+                    </div>
+                </div>
+                <div class="summary-card stock-out">
+                    <div class="card-icon">
+                        <i class="fas fa-arrow-down"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3 id="totalStockOut">0</h3>
+                        <p>Tổng xuất kho</p>
+                        <small class="card-subtitle">Số lượng sản phẩm</small>
+                    </div>
+                </div>
+                <div class="summary-card usage-value">
+                    <div class="card-icon">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3 id="totalUsageValue">0đ</h3>
+                        <p>Giá trị sử dụng</p>
+                        <small class="card-subtitle">Tổng giá trị xuất kho</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Usage Report Tables -->
+            <div class="usage-report-tables">
+                <!-- Product Usage Table -->
+                <div class="report-table-container">
+                    <div class="table-header">
+                        <h3>📦 Báo cáo sử dụng theo sản phẩm</h3>
+                        <div class="table-controls">
+                            <input type="text" id="productUsageSearch" placeholder="🔍 Tìm kiếm sản phẩm..." onkeyup="filterUsageTable('productUsage')">
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table class="usage-table" id="productUsageTable">
+                            <thead>
+                                <tr>
+                                    <th>STT</th>
+                                    <th>Sản phẩm</th>
+                                    <th>SKU</th>
+                                    <th>Danh mục</th>
+                                    <th>Tồn đầu kỳ</th>
+                                    <th>Nhập kho</th>
+                                    <th>Xuất kho</th>
+                                    <th>Tồn cuối kỳ</th>
+                                    <th>% Sử dụng</th>
+                                    <th>Giá trị xuất</th>
+                                </tr>
+                            </thead>
+                            <tbody id="productUsageTableBody">
+                                <!-- Data will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Transaction History Table -->
+                <div class="report-table-container">
+                    <div class="table-header">
+                        <h3>📋 Lịch sử giao dịch kho</h3>
+                        <div class="table-controls">
+                            <select id="transactionTypeFilter" onchange="filterUsageTable('transactionHistory')">
+                                <option value="all">Tất cả giao dịch</option>
+                                <option value="in">Chỉ nhập kho</option>
+                                <option value="out">Chỉ xuất kho</option>
+                                <option value="adjustment">Chỉ điều chỉnh</option>
+                            </select>
+                            <input type="text" id="transactionSearch" placeholder="🔍 Tìm kiếm giao dịch..." onkeyup="filterUsageTable('transactionHistory')">
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table class="usage-table" id="transactionHistoryTable">
+                            <thead>
+                                <tr>
+                                    <th>STT</th>
+                                    <th>Thời gian</th>
+                                    <th>Loại</th>
+                                    <th>Sản phẩm</th>
+                                    <th>SKU</th>
+                                    <th>Số lượng</th>
+                                    <th>Đơn giá</th>
+                                    <th>Tổng giá trị</th>
+                                    <th>Lý do</th>
+                                    <th>Người thực hiện</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactionHistoryTableBody">
+                                <!-- Data will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Usage Charts -->
+            <div class="usage-charts">
+                <div class="chart-container">
+                    <div class="chart-card">
+                        <h3>📊 Biểu đồ nhập/xuất kho theo thời gian</h3>
+                        <canvas id="usageTimeChart"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <h3>🥧 Top sản phẩm xuất kho nhiều nhất</h3>
+                        <canvas id="topUsageChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div id="usageReportEmptyState" class="empty-state hidden">
+                <div class="empty-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <h3>Chưa có dữ liệu sử dụng kho</h3>
+                <p>Thực hiện các giao dịch nhập/xuất kho để xem báo cáo!</p>
+            </div>
+        </section>
+
+    <!-- Stock In Modal -->
+    <div id="stockInModal" class="modal large-modal">
+        <div class="modal-content">
+            <form id="stockInForm" onsubmit="processStockIn(event)">
+                <div class="modal-header">
+                    <h3>Nhập Kho - Tạo Sản Phẩm Mới</h3>
+                    <span class="close" onclick="closeStockInModal()">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <!-- Thông tin cơ bản -->
                     <div class="form-group">
-                        <label for="stockInNote">Ghi Chú:</label>
-                        <textarea id="stockInNote" placeholder="Lý do nhập kho..."></textarea>
+                        <label for="newProductName">Tên sản phẩm:</label>
+                        <input type="text" id="newProductName" name="newProductName" placeholder="Tên sản phẩm" required>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="newProductSku">SKU:</label>
+                            <input type="text" id="newProductSku" name="newProductSku" placeholder="Mã SKU (tùy chọn)">
+                        </div>
+                        <div class="form-group">
+                            <label for="stockInUnitPrice">Giá sản phẩm (đ):</label>
+                            <input type="number" id="stockInUnitPrice" name="stockInUnitPrice" step="0.01" min="0" placeholder="Nhập giá sản phẩm" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="newProductCategory">Chọn danh mục:</label>
+                            <select id="newProductCategory" name="newProductCategory" required>
+                                <option value="">-- Chọn danh mục sản phẩm --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="newProductUnit">Đơn vị tính:</label>
+                            <select id="newProductUnit" name="newProductUnit" required>
+                                <option value="">-- Chọn đơn vị tính --</option>
+                                
+                                <option value="kg">Kilogram (kg)</option>
+                                <option value="g">Gram (g)</option>
+                                <option value="lít">Lít</option>
+                                <option value="ml">Mililit (ml)</option>
+                                <option value="m">Mét (m)</option>
+                                <option value="cm">Centimet (cm)</option>
+                                <option value="thùng">Thùng</option>
+                                <option value="hộp">Hộp</option>
+                                <option value="chai">Chai</option>
+                                <option value="chiếc">Chiếc</option>
+                                <option value="cái">Cái</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="stockInQuantity">Số lượng tồn kho:</label>
+                            <input type="number" id="stockInQuantity" name="stockInQuantity" step="0.01" required min="0.01" placeholder="Nhập số lượng tồn kho">
+                        </div>
+                        <div class="form-group">
+                            <label for="newProductConversion">Quy đổi (tùy chọn):</label>
+                            <input type="text" id="newProductConversion" name="newProductConversion" placeholder="VD: 1kg = 1000g">
+                        </div>
+                    </div>
+                    
+                    <!-- Thông tin bổ sung -->
+                    <div class="form-group">
+                        <label for="newProductDescription">Mô tả sản phẩm:</label>
+                        <textarea id="newProductDescription" name="newProductDescription" placeholder="Mô tả chi tiết về sản phẩm (tùy chọn)" rows="2"></textarea>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="stockInSupplier">Nhà Cung Cấp:</label>
+                            <input type="text" id="stockInSupplier" name="stockInSupplier" placeholder="Tên nhà cung cấp (tùy chọn)">
+                        </div>
+                        <div class="form-group">
+                            <label for="stockInNote">Ghi Chú:</label>
+                            <input type="text" id="stockInNote" name="stockInNote" placeholder="Ghi chú thêm (tùy chọn)">
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -211,93 +472,248 @@
     </div>
 
     <!-- Stock Out Modal -->
-    <div id="stockOutModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2><i class="fas fa-minus-circle"></i> Xuất Kho</h2>
-                <button class="close-btn" onclick="closeStockOutModal()">&times;</button>
-            </div>
-            <form id="stockOutForm" onsubmit="processStockOut(event)">
-                <div class="modal-body">
-                    <div id="stockOutItems">
-                        <!-- Stock out items will be added here -->
+    <div id="stockOutModal" class="modal modern-modal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content stock-out-modal">
+            <div class="modal-header gradient-header">
+                <div class="header-content">
+                    <div class="header-icon">
+                        <i class="fas fa-minus-circle"></i>
                     </div>
-                    <button type="button" class="btn btn-secondary" onclick="addStockOutItem()">
-                        <i class="fas fa-plus"></i> Thêm Sản Phẩm
-                    </button>
-                    
-                    <div class="form-group">
-                        <label for="stockOutReason">Lý Do Xuất:</label>
-                        <select id="stockOutReason" required>
-                            <option value="">Chọn lý do</option>
-                            <option value="sale">Bán hàng</option>
-                            <option value="damaged">Hỏng hóc</option>
-                            <option value="expired">Hết hạn</option>
-                            <option value="lost">Mất mát</option>
-                            <option value="promotion">Khuyến mãi</option>
-                            <option value="other">Khác</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="stockOutNote">Ghi Chú:</label>
-                        <textarea id="stockOutNote" placeholder="Ghi chú thêm..."></textarea>
+                    <div class="header-text">
+                        <h2>📦 Xuất Kho</h2>
+                        <p>Quản lý xuất hàng khỏi kho</p>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeStockOutModal()">Hủy</button>
-                    <button type="submit" class="btn btn-danger">Xuất Kho</button>
+                <button type="button" class="close-btn modern-close" onclick="closeStockOutModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="stockOutForm" onsubmit="processStockOut(event)">
+                <div class="modal-body modern-body">
+                    <!-- Product Selection Card -->
+                    <div class="info-card product-card">
+                        <div class="card-header">
+                            <i class="fas fa-box"></i>
+                            <h4>Thông Tin Sản Phẩm</h4>
+                        </div>
+                        <div class="card-content">
+                            <div class="form-group">
+                                <label for="stockOutProduct">
+                                    <i class="fas fa-search"></i>
+                                    Chọn Sản Phẩm:
+                                </label>
+                                <select id="stockOutProduct" name="stockOutProduct" required onchange="updateStockOutProductInfo()" class="modern-select">
+                                    <option value="">🔍 Tìm và chọn sản phẩm...</option>
+                                </select>
+                            </div>
+                            
+                            <div class="stock-info-display" id="stockInfoDisplay" style="display: none;">
+                                <div class="stock-info-item">
+                                    <span class="info-label">📊 Tồn kho hiện tại:</span>
+                                    <span class="info-value" id="stockOutCurrentStock">0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Export Details Card -->
+                    <div class="info-card export-card">
+                        <div class="card-header">
+                            <i class="fas fa-shipping-fast"></i>
+                            <h4>Chi Tiết Xuất Kho</h4>
+                        </div>
+                        <div class="card-content">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="stockOutQuantity">
+                                        <i class="fas fa-calculator"></i>
+                                        Số Lượng Xuất:
+                                    </label>
+                                    <input type="number" id="stockOutQuantity" name="stockOutQuantity" 
+                                           step="0.01" required min="0.01" 
+                                           placeholder="Nhập số lượng cần xuất" 
+                                           class="modern-input quantity-input">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="stockOutReason">
+                                        <i class="fas fa-clipboard-list"></i>
+                                        Lý Do Xuất:
+                                    </label>
+                                    <select id="stockOutReason" name="stockOutReason" required onchange="toggleCustomReason()" class="modern-select">
+                                        <option value="">📋 Chọn lý do xuất kho...</option>
+                                        <option value="sale">💰 Bán hàng</option>
+                                        <option value="damaged">🔧 Hỏng hóc</option>
+                                        <option value="expired">⏰ Hết hạn</option>
+                                        <option value="lost">❌ Mất mát</option>
+                                        <option value="promotion">🎁 Khuyến mãi</option>
+                                        <option value="other">✏️ Khác</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <!-- Custom Reason Input (hidden by default) -->
+                            <div class="form-group" id="customReasonGroup" style="display: none;">
+                                <label for="stockOutCustomReason">
+                                    <i class="fas fa-edit"></i>
+                                    Lý do cụ thể:
+                                </label>
+                                <input type="text" id="stockOutCustomReason" name="stockOutCustomReason" 
+                                       placeholder="Nhập lý do cụ thể..." class="modern-input">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notes Card -->
+                    <div class="info-card notes-card">
+                        <div class="card-header">
+                            <i class="fas fa-sticky-note"></i>
+                            <h4>Ghi Chú</h4>
+                        </div>
+                        <div class="card-content">
+                            <div class="form-group">
+                                <label for="stockOutNote">
+                                    <i class="fas fa-comment-alt"></i>
+                                    Ghi chú thêm:
+                                </label>
+                                <textarea id="stockOutNote" name="stockOutNote" 
+                                         placeholder="💬 Thêm ghi chú về việc xuất kho này..." 
+                                         class="modern-textarea" rows="3"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-footer modern-footer">
+                    <button type="button" class="btn btn-cancel" onclick="closeStockOutModal()">
+                        <i class="fas fa-times"></i>
+                        Hủy Bỏ
+                    </button>
+                    <button type="submit" class="btn btn-export">
+                        <i class="fas fa-minus-circle"></i>
+                        Xuất Kho
+                    </button>
+                    <button type="button" class="btn btn-print" id="printReceiptBtn">
+                        <i class="fas fa-print"></i>
+                        In Phiếu
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 
     <!-- Adjustment Modal -->
-    <div id="adjustmentModal" class="modal">
+    <div id="adjustmentModal" class="modal large-modal">
         <div class="modal-content">
-            <div class="modal-header">
-                <h2><i class="fas fa-edit"></i> Điều Chỉnh Kho</h2>
-                <button class="close-btn" onclick="closeAdjustmentModal()">&times;</button>
-            </div>
             <form id="adjustmentForm" onsubmit="processAdjustment(event)">
+                <div class="modal-header">
+                    <h3><i class="fas fa-edit"></i> Điều Chỉnh Sản Phẩm</h3>
+                    <span class="close" onclick="closeAdjustmentModal()">&times;</span>
+                </div>
                 <div class="modal-body">
+                    <!-- Chọn sản phẩm để điều chỉnh -->
                     <div class="form-group">
-                        <label for="adjustmentProduct">Sản Phẩm:</label>
-                        <select id="adjustmentProduct" required onchange="loadCurrentStock()">
-                            <option value="">Chọn sản phẩm</option>
+                        <label for="adjustmentProduct">Chọn Sản Phẩm Cần Điều Chỉnh:</label>
+                        <select id="adjustmentProduct" required onchange="loadProductForAdjustment()">
+                            <option value="">-- Chọn sản phẩm cần điều chỉnh --</option>
                         </select>
                     </div>
                     
+                    <!-- Thông tin cơ bản -->
                     <div class="form-group">
-                        <label for="currentStock">Tồn Kho Hiện Tại:</label>
-                        <input type="text" id="currentStock" readonly>
+                        <label for="adjustProductName">Tên sản phẩm:</label>
+                        <input type="text" id="adjustProductName" name="adjustProductName" placeholder="Tên sản phẩm" required>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="adjustProductSku">SKU:</label>
+                            <input type="text" id="adjustProductSku" name="adjustProductSku" placeholder="Mã SKU (tùy chọn)">
+                        </div>
+                        <div class="form-group">
+                            <label for="adjustUnitPrice">Giá sản phẩm (đ):</label>
+                            <input type="number" id="adjustUnitPrice" name="adjustUnitPrice" step="0.01" min="0" placeholder="Nhập giá sản phẩm" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="adjustProductCategory">Chọn danh mục:</label>
+                            <select id="adjustProductCategory" name="adjustProductCategory" required>
+                                <option value="">-- Chọn danh mục sản phẩm --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="adjustProductUnit">Đơn vị tính:</label>
+                            <select id="adjustProductUnit" name="adjustProductUnit" required>
+                                <option value="">-- Chọn đơn vị tính --</option>
+                                <option value="cái">Cái</option>
+                                <option value="kg">Kilogram (kg)</option>
+                                <option value="g">Gram (g)</option>
+                                <option value="lít">Lít</option>
+                                <option value="ml">Mililit (ml)</option>
+                                <option value="m">Mét (m)</option>
+                                <option value="cm">Centimet (cm)</option>
+                                <option value="thùng">Thùng</option>
+                                <option value="hộp">Hộp</option>
+                                <option value="chai">Chai</option>
+                                <option value="chiếc">Chiếc</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="currentStock">Tồn kho hiện tại:</label>
+                            <input type="text" id="currentStock" readonly style="background-color: #f8f9fa;">
+                        </div>
+                        <div class="form-group">
+                            <label for="adjustQuantity">Số lượng tồn kho mới:</label>
+                            <input type="number" id="adjustQuantity" name="adjustQuantity" step="0.01" required min="0" placeholder="Nhập số lượng tồn kho mới">
+                        </div>
                     </div>
                     
                     <div class="form-group">
-                        <label for="actualStock">Tồn Kho Thực Tế:</label>
-                        <input type="number" id="actualStock" step="0.01" required>
+                        <label for="adjustProductConversion">Quy đổi (tùy chọn):</label>
+                        <input type="text" id="adjustProductConversion" name="adjustProductConversion" placeholder="VD: 1kg = 1000g">
+                    </div>
+                    
+                    <!-- Thông tin bổ sung -->
+                    <div class="form-group">
+                        <label for="adjustProductDescription">Mô tả sản phẩm:</label>
+                        <textarea id="adjustProductDescription" name="adjustProductDescription" placeholder="Mô tả chi tiết về sản phẩm (tùy chọn)" rows="2"></textarea>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="adjustSupplier">Nhà Cung Cấp:</label>
+                            <input type="text" id="adjustSupplier" name="adjustSupplier" placeholder="Tên nhà cung cấp (tùy chọn)">
+                        </div>
+                        <div class="form-group">
+                            <label for="adjustmentReason">Lý do điều chỉnh:</label>
+                            <select id="adjustmentReason" name="adjustmentReason">
+                                <option value="">-- Chọn lý do điều chỉnh --</option>
+                                <option value="inventory">Kiểm kê định kỳ</option>
+                                <option value="correction">Sửa lỗi thông tin</option>
+                                <option value="price_update">Cập nhật giá</option>
+                                <option value="info_update">Cập nhật thông tin</option>
+                                <option value="damage">Hàng hỏng/mất mát</option>
+                                <option value="found">Tìm thấy hàng tồn</option>
+                                <option value="other">Lý do khác</option>
+                            </select>
+                        </div>
                     </div>
                     
                     <div class="form-group">
-                        <label for="adjustmentReason">Lý Do:</label>
-                        <select id="adjustmentReason" required>
-                            <option value="">Chọn lý do</option>
-                            <option value="inventory">Kiểm kê</option>
-                            <option value="correction">Điều chỉnh</option>
-                            <option value="damage">Hàng hỏng</option>
-                            <option value="found">Tìm thấy hàng</option>
-                            <option value="other">Khác</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="adjustmentNote">Ghi Chú:</label>
-                        <textarea id="adjustmentNote" placeholder="Ghi chú chi tiết..."></textarea>
+                        <label for="adjustmentNote">Ghi chú điều chỉnh:</label>
+                        <textarea id="adjustmentNote" name="adjustmentNote" placeholder="Ghi chú chi tiết về việc điều chỉnh..." rows="2"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="closeAdjustmentModal()">Hủy</button>
-                    <button type="submit" class="btn btn-warning">Điều Chỉnh</button>
+                    <button type="submit" class="btn btn-warning"><i class="fas fa-save"></i> Cập Nhật Sản Phẩm</button>
                 </div>
             </form>
         </div>
@@ -305,6 +721,132 @@
 
         </div>
         </main>
+    </div>
+
+    <!-- Print Confirmation Modal -->
+    <div id="printConfirmModal" class="modal modern-modal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content print-confirm-modal">
+            <div class="modal-header gradient-header">
+                <div class="header-content">
+                    <div class="header-icon">
+                        <i class="fas fa-print"></i>
+                    </div>
+                    <div class="header-text">
+                        <h3>🖨️ Xác Nhận In Phiếu</h3>
+                        <p>Xuất kho thành công!</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-body modern-body">
+                <div class="confirmation-content">
+                    <div class="success-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <h4>Xuất kho thành công!</h4>
+                    <p>Bạn có muốn in phiếu xuất kho không?</p>
+                    <div class="transaction-info" id="transactionInfo">
+                        <!-- Transaction details will be populated here -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer modern-footer">
+                <button type="button" class="btn btn-cancel" onclick="closePrintConfirmModal()">
+                    <i class="fas fa-times"></i>
+                    Không in
+                </button>
+                <button type="button" class="btn btn-print" onclick="confirmPrintReceipt()">
+                    <i class="fas fa-print"></i>
+                    In phiếu xuất kho
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Single Product Delete Confirmation Modal -->
+    <div id="deleteConfirmModal" class="modal modern-modal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content delete-confirm-modal">
+            <div class="modal-header gradient-header">
+                <div class="header-content">
+                    <div class="header-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="header-text">
+                        <h3>⚠️ Xác Nhận Xóa Sản Phẩm</h3>
+                        <p>Xóa sản phẩm khỏi kho hàng</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-body modern-body">
+                <div class="confirmation-content">
+                    <div class="warning-icon">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </div>
+                    <h4>Xác nhận xóa sản phẩm</h4>
+                    <p>Bạn có chắc chắn muốn xóa sản phẩm này không? Hành động này không thể hoàn tác.</p>
+                    <div class="product-info" id="deleteProductInfo">
+                        <!-- Product details will be populated here -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer modern-footer">
+                <button type="button" class="btn btn-cancel" onclick="closeDeleteConfirmModal()">
+                    <i class="fas fa-times"></i>
+                    Hủy
+                </button>
+                <button type="button" class="btn btn-danger" onclick="confirmDeleteProduct()">
+                    <i class="fas fa-trash"></i>
+                    Xóa sản phẩm
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Product Delete Confirmation Modal -->
+    <div id="bulkDeleteConfirmModal" class="modal modern-modal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content bulk-delete-confirm-modal">
+            <div class="modal-header gradient-header">
+                <div class="header-content">
+                    <div class="header-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="header-text">
+                        <h3>⚠️ Xác Nhận Xóa Nhiều Sản Phẩm</h3>
+                        <p>Xóa các sản phẩm đã chọn khỏi kho hàng</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-body modern-body">
+                <div class="confirmation-content">
+                    <div class="warning-icon">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </div>
+                    <h4>Xác nhận xóa các sản phẩm đã chọn</h4>
+                    <p>Bạn có chắc chắn muốn xóa <span id="bulkDeleteSelectedCount">0</span> sản phẩm này không? Hành động này không thể hoàn tác.</p>
+                    <div class="product-list" id="bulkDeleteProductList">
+                        <!-- Selected product list will be populated here -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer modern-footer">
+                <button type="button" class="btn btn-cancel" onclick="closeBulkDeleteConfirmModal()">
+                    <i class="fas fa-times"></i>
+                    Hủy
+                </button>
+                <button type="button" class="btn btn-danger" onclick="confirmBulkDeleteProducts()">
+                    <i class="fas fa-trash"></i>
+                    Xóa các sản phẩm
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Firebase SDK -->
@@ -318,12 +860,71 @@
     <script src="../main/firebase.js"></script>
     <script src="../main/navbar.js"></script>
     <script src="../main/warehouse-core.js"></script>
+    <script src="../main/warehouse-view-toggle.js"></script>
+    <script src="../main/warehouse-usage-report-enhanced.js"></script>
     <script>
-        // Load navbar and header components
-        document.addEventListener('DOMContentLoaded', function() {
-            // NavbarLoader will automatically load both navbar and header
-            console.log('Loading navbar and header components...');
-        });
+        // Number formatting functions
+        function formatNumber(num) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        }
+
+        function unformatNumber(str) {
+            return str.replace(/,/g, '');
+        }
+
+        function addNumberFormatting(inputId) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            
+            input.addEventListener('input', function(e) {
+                let value = e.target.value.replace(/,/g, '');
+                if (!isNaN(value) && value !== '') {
+                    e.target.value = formatNumber(value);
+                }
+            });
+            
+            input.addEventListener('blur', function(e) {
+                let value = e.target.value.replace(/,/g, '');
+                if (!isNaN(value) && value !== '') {
+                    e.target.value = formatNumber(value);
+                }
+            });
+            
+            input.addEventListener('focus', function(e) {
+                e.target.value = unformatNumber(e.target.value);
+            });
+        }
+
+        function toggleCustomReason() {
+            const reasonSelect = document.getElementById('stockOutReason');
+            const customReasonDiv = document.getElementById('customReasonDiv');
+            
+            if (reasonSelect && customReasonDiv) {
+                if (reasonSelect.value === 'other') {
+                    customReasonDiv.style.display = 'block';
+                    customReasonDiv.querySelector('input').required = true;
+                } else {
+                    customReasonDiv.style.display = 'none';
+                    customReasonDiv.querySelector('input').required = false;
+                }
+            }
+        }
+        
+        function getReasonText(reason, customReason) {
+            if (reason === 'other' && customReason) {
+                return customReason;
+            }
+            const reasonMap = {
+                'damaged': 'Hàng hỏng',
+                'expired': 'Hết hạn sử dụng',
+                'sold': 'Đã bán',
+                'returned': 'Trả hàng',
+                'other': 'Khác'
+            };
+            return reasonMap[reason] || reason;
+        }
+        
+    
     </script>
 </body>
 </html>
