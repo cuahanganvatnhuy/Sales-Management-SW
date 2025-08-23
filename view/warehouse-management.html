@@ -8,6 +8,7 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="../style/man.css">
     <link rel="stylesheet" href="../style/warehouse-management.css">
+    <link rel="stylesheet" href="../style/warehouse-reports.css">
 
 
     <!-- FontAwesome -->
@@ -110,10 +111,7 @@
                     <i class="fas fa-file-excel"></i>
                     Xuất Báo Cáo
                 </button>
-                <button type="button" class="btn btn-warning" onclick="initializeWarehouseData()" title="Khởi tạo dữ liệu mẫu cho kho hàng">
-                    <i class="fas fa-database"></i>
-                    Khởi Tạo Dữ Liệu
-                </button>
+               
                
             </div>
         </section>
@@ -157,11 +155,10 @@
                     <i class="fas fa-chart-line"></i>
                     Báo cáo sử dụng
                 </button>
-                <button id="exportReportViewBtn" class="btn btn-info" onclick="switchToExportReportView()">
-                    <i class="fas fa-file-export"></i>
-                    Báo cáo xuất kho
+                <button id="transactionReportViewBtn" class="btn btn-info" onclick="switchToTransactionReportView()">
+                    <i class="fas fa-chart-bar"></i>
+                    Báo cáo giao dịch kho
                 </button>
-               
             </div>
         </section>
         
@@ -252,6 +249,393 @@
                 </div>
             </div>
         </section> -->
+        
+        <!-- Transaction Reports View -->
+        <section id="transactionReportView" class="report-container" style="display: none;">
+           
+            
+            <!-- Report Tabs -->
+            <div class="report-tabs">
+                <button class="tab-button active" onclick="switchReportTab('export')">
+                    <i class="fas fa-file-export"></i>
+                    Báo cáo xuất kho
+                </button>
+                <button class="tab-button" onclick="switchReportTab('import')">
+                    <i class="fas fa-file-import"></i>
+                    Báo cáo nhập kho
+                </button>
+                <button class="tab-button" onclick="switchReportTab('adjustment')">
+                    <i class="fas fa-balance-scale"></i>
+                    Báo cáo điều chỉnh
+                </button>
+            </div>
+            
+            <!-- Export Report Tab Content -->
+            <div id="exportReportTab" class="tab-content active">
+                <!-- Statistics Cards -->
+                <div class="stats-container">
+                    <div class="stat-card export-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-shipping-fast text-danger"></i>
+                        </div>
+                        <span class="stat-number" id="totalExportsCount">0</span>
+                        <span class="stat-label">Tổng lần xuất</span>
+                    </div>
+                    <div class="stat-card export-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-boxes text-warning"></i>
+                        </div>
+                        <span class="stat-number" id="totalExportQuantity">0</span>
+                        <span class="stat-label">Số lượng xuất</span>
+                    </div>
+                    <div class="stat-card value-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-dollar-sign text-purple"></i>
+                        </div>
+                        <span class="stat-number" id="totalExportValue">0₫</span>
+                        <span class="stat-label">Giá trị</span>
+                    </div>
+                </div>
+                
+                <!-- Filters -->
+                <div class="filters-section">
+                    <h3 class="filters-title"><i class="fas fa-filter"></i> Bộ Lọc</h3>
+                    <div class="filters-grid">
+                        <div class="filter-group">
+                            <label class="filter-label">Thời gian:</label>
+                            <select id="exportDateRange" class="filter-select">
+                                <option value="all">Tất cả</option>
+                                <option value="today">Hôm nay</option>
+                                <option value="week">Tuần này</option>
+                                <option value="month">Tháng này</option>
+                                <option value="quarter">Quý này</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label class="filter-label">Cửa hàng:</label>
+                            <select id="exportStoreFilter" class="filter-select">
+                                <option value="all">Tất cả cửa hàng</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label class="filter-label">Lý do:</label>
+                            <select id="exportReasonFilter" class="filter-select">
+                                <option value="all">Tất cả lý do</option>
+                                <option value="sale">Bán hàng</option>
+                                <option value="return">Trả hàng</option>
+                                <option value="transfer">Chuyển kho</option>
+                                <option value="damaged">Hàng hỏng</option>
+                                <option value="expired">Hết hạn</option>
+                                <option value="other">Khác</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label class="filter-label">Sản phẩm:</label>
+                            <select id="exportProductFilter" class="filter-select">
+                                <option value="all">Tất cả sản phẩm</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="filters-actions">
+                        <button id="exportToExcelBtn" class="btn-filter btn-success">
+                            <i class="fas fa-file-excel"></i>
+                            Xuất Excel
+                        </button>
+                        <button id="refreshExportReportBtn" class="btn-filter btn-secondary">
+                            <i class="fas fa-sync-alt"></i>
+                            Làm mới
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Export Report Table -->
+                <div class="report-table-container">
+                    <div class="report-table-header">
+                        <h3 class="report-table-title"><i class="fas fa-table"></i> Danh Sách Xuất Kho</h3>
+                    </div>
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th width="40">
+                                    <input type="checkbox" id="selectAllExports" onchange="toggleSelectAllExports(this)">
+                                </th>
+                                <th width="50">STT</th>
+                                <th width="100">Thời gian</th>
+                                <th width="80">Loại</th>
+                                <th>Sản phẩm</th>
+                                <th width="100">SKU</th>
+                                <th width="80">Số lượng</th>
+                                <th width="60">Đơn vị</th>
+                                <th width="100">Đơn giá</th>
+                                <th width="110">Tổng giá trị</th>
+                                <th width="120">Lý do</th>
+                                <th width="100">Loại đơn hàng</th>
+                                <th width="100">Cửa hàng</th>
+                                <th width="120">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="exportReportTableBody">
+                            <!-- Data will be populated here -->
+                        </tbody>
+                    </table>
+                    <div class="pagination-container">
+                        <ul class="pagination" id="exportReportPagination">
+                            <!-- Pagination will be generated here -->
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Import Report Tab Content -->
+            <div id="importReportTab" class="tab-content">
+                <!-- Statistics Cards -->
+                <div class="stats-container">
+                    <div class="stat-card import-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-truck-loading text-success"></i>
+                        </div>
+                        <span class="stat-number" id="totalImportsCount">0</span>
+                        <span class="stat-label">Tổng lần nhập</span>
+                    </div>
+                    <div class="stat-card import-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-boxes text-info"></i>
+                        </div>
+                        <span class="stat-number" id="totalImportQuantity">0</span>
+                        <span class="stat-label">Tổng số lượng</span>
+                    </div>
+                    <div class="stat-card value-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-dollar-sign text-purple"></i>
+                        </div>
+                        <span class="stat-number" id="totalImportValue">0₫</span>
+                        <span class="stat-label">Tổng giá trị</span>
+                    </div>
+                    <div class="stat-card pending-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-clock text-warning"></i>
+                        </div>
+                        <span class="stat-number" id="pendingImportsCount">0</span>
+                        <span class="stat-label">Chờ xử lý</span>
+                    </div>
+                    <div class="stat-card completed-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-check-circle text-success"></i>
+                        </div>
+                        <span class="stat-number" id="completedImportsCount">0</span>
+                        <span class="stat-label">Hoàn thành</span>
+                    </div>
+                </div>
+                
+                <!-- Filters -->
+                <div class="filters-section">
+                    <h3 class="filters-title"><i class="fas fa-filter"></i> Bộ Lọc</h3>
+                    <div class="filters-grid">
+                        <div class="filter-group">
+                            <label class="filter-label">Thời gian:</label>
+                            <select id="importDateRange" class="filter-select">
+                                <option value="all">Tất cả</option>
+                                <option value="today">Hôm nay</option>
+                                <option value="week">Tuần này</option>
+                                <option value="month">Tháng này</option>
+                                <option value="quarter">Quý này</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label class="filter-label">Cửa hàng:</label>
+                            <select id="importStoreFilter" class="filter-select">
+                                <option value="all">Tất cả cửa hàng</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label class="filter-label">Nhà cung cấp:</label>
+                            <select id="importSupplierFilter" class="filter-select">
+                                <option value="all">Tất cả nhà cung cấp</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label class="filter-label">Trạng thái:</label>
+                            <select id="importStatusFilter" class="filter-select">
+                                <option value="all">Tất cả</option>
+                                <option value="pending">Chờ xử lý</option>
+                                <option value="completed">Hoàn thành</option>
+                                <option value="cancelled">Đã hủy</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="filters-actions">
+                        <button id="importExportToExcelBtn" class="btn-filter btn-success">
+                            <i class="fas fa-file-excel"></i>
+                            Xuất Excel
+                        </button>
+                        <button id="refreshImportReportBtn" class="btn-filter btn-secondary">
+                            <i class="fas fa-sync-alt"></i>
+                            Làm mới
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Import Report Table -->
+                <div class="report-table-container">
+                    <div class="report-table-header">
+                        <h3 class="report-table-title"><i class="fas fa-table"></i> Danh Sách Nhập Kho</h3>
+                    </div>
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>STT</th>
+                                <th>Sản phẩm</th>
+                                <th>Nhà cung cấp</th>
+                                <th>Cửa hàng</th>
+                                <th>Số lượng</th>
+                                <th>Đơn giá</th>
+                                <th>Tổng giá trị</th>
+                                <th>Trạng thái</th>
+                                <th>Ngày nhập</th>
+                            </tr>
+                        </thead>
+                        <tbody id="importReportTableBody">
+                            <!-- Data will be populated here -->
+                        </tbody>
+                    </table>
+                    <div class="pagination-container">
+                        <ul class="pagination" id="importReportPagination">
+                            <!-- Pagination will be generated here -->
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Adjustment Report Tab Content -->
+            <div id="adjustmentReportTab" class="tab-content">
+                <!-- Statistics Cards -->
+                <div class="stats-container">
+                    <div class="stat-card adjustment-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-balance-scale text-warning"></i>
+                        </div>
+                        <span class="stat-number" id="totalAdjustmentsCount">0</span>
+                        <span class="stat-label">Tổng điều chỉnh</span>
+                    </div>
+                    <div class="stat-card import-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-arrow-up text-success"></i>
+                        </div>
+                        <span class="stat-number" id="totalIncreasesCount">0</span>
+                        <span class="stat-label">Điều chỉnh tăng</span>
+                    </div>
+                    <div class="stat-card export-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-arrow-down text-danger"></i>
+                        </div>
+                        <span class="stat-number" id="totalDecreasesCount">0</span>
+                        <span class="stat-label">Điều chỉnh giảm</span>
+                    </div>
+                    <div class="stat-card pending-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-clock text-warning"></i>
+                        </div>
+                        <span class="stat-number" id="pendingAdjustmentsCount">0</span>
+                        <span class="stat-label">Chờ xử lý</span>
+                    </div>
+                    <div class="stat-card completed-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-check-circle text-success"></i>
+                        </div>
+                        <span class="stat-number" id="completedAdjustmentsCount">0</span>
+                        <span class="stat-label">Hoàn thành</span>
+                    </div>
+                    <div class="stat-card value-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-dollar-sign text-purple"></i>
+                        </div>
+                        <span class="stat-number" id="totalAdjustmentValue">0₫</span>
+                        <span class="stat-label">Tổng giá trị</span>
+                    </div>
+                </div>
+                
+                <!-- Filters -->
+                <div class="filters-section">
+                    <h3 class="filters-title"><i class="fas fa-filter"></i> Bộ Lọc</h3>
+                    <div class="filters-grid">
+                        <div class="filter-group">
+                            <label class="filter-label">Thời gian:</label>
+                            <select id="adjustmentDateRange" class="filter-select">
+                                <option value="all">Tất cả</option>
+                                <option value="today">Hôm nay</option>
+                                <option value="week">Tuần này</option>
+                                <option value="month">Tháng này</option>
+                                <option value="quarter">Quý này</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label class="filter-label">Cửa hàng:</label>
+                            <select id="adjustmentStoreFilter" class="filter-select">
+                                <option value="all">Tất cả cửa hàng</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label class="filter-label">Loại điều chỉnh:</label>
+                            <select id="adjustmentTypeFilter" class="filter-select">
+                                <option value="all">Tất cả</option>
+                                <option value="adjustment-in">Điều chỉnh tăng</option>
+                                <option value="adjustment-out">Điều chỉnh giảm</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label class="filter-label">Lý do:</label>
+                            <select id="adjustmentReasonFilter" class="filter-select">
+                                <option value="all">Tất cả</option>
+                                <option value="damaged">Hàng hỏng</option>
+                                <option value="expired">Hết hạn</option>
+                                <option value="inventory">Kiểm kê</option>
+                                <option value="other">Khác</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="filters-actions">
+                        <button id="adjustmentExportToExcelBtn" class="btn-filter btn-success">
+                            <i class="fas fa-file-excel"></i>
+                            Xuất Excel
+                        </button>
+                        <button id="refreshAdjustmentReportBtn" class="btn-filter btn-secondary">
+                            <i class="fas fa-sync-alt"></i>
+                            Làm mới
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Adjustment Report Table -->
+                <div class="report-table-container">
+                    <div class="report-table-header">
+                        <h3 class="report-table-title"><i class="fas fa-table"></i> Danh Sách Điều Chỉnh Kho</h3>
+                    </div>
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>STT</th>
+                                <th>Sản phẩm</th>
+                                <th>Cửa hàng</th>
+                                <th>Loại</th>
+                                <th>Số lượng</th>
+                                <th>Đơn giá</th>
+                                <th>Giá trị</th>
+                                <th>Trạng thái</th>
+                                <th>Ngày điều chỉnh</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adjustmentReportTableBody">
+                            <!-- Data will be populated here -->
+                        </tbody>
+                    </table>
+                    <div class="pagination-container">
+                        <ul class="pagination" id="adjustmentReportPagination">
+                            <!-- Pagination will be generated here -->
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
         
         <!-- Warehouse Usage Report View -->
         <section id="warehouseUsageReportView" class="warehouse-usage-report" style="display: none;">
@@ -1200,6 +1584,9 @@
     
     <!-- Chart.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    
+    <!-- XLSX for Excel export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
     <!-- Scripts -->
     <script src="../main/firebase.js"></script>
@@ -2300,5 +2687,322 @@
 
     <!-- Include warehouse usage report enhanced script -->
     <script src="../main/warehouse-usage-report-enhanced.js"></script>
+    
+    <!-- Include warehouse report scripts -->
+    <script src="../main/warehouse-export-report.js"></script>
+    <script src="../main/warehouse-import-report.js"></script>
+    <script src="../main/warehouse-adjustment-report.js"></script>
+ 
+    
+    <script>
+        // Transaction Report View Management
+        let currentActiveTab = 'export';
+        
+        // Switch to transaction report view
+        function switchToTransactionReportView() {
+            hideAllWarehouseViews();
+            const transactionReportView = document.getElementById('transactionReportView');
+            if (transactionReportView) {
+                transactionReportView.style.display = 'block';
+                
+                // Update button states
+                updateViewButtonStates('transactionReportViewBtn');
+                
+                // Initialize the currently active tab
+                initializeCurrentTab();
+            }
+        }
+        
+        // Switch between report tabs
+        function switchReportTab(tabName) {
+            // Hide all tab contents
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Remove active class from all tab buttons
+            const tabButtons = document.querySelectorAll('.tab-button');
+            tabButtons.forEach(button => {
+                button.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            const selectedTab = document.getElementById(`${tabName}ReportTab`);
+            if (selectedTab) {
+                selectedTab.classList.add('active');
+            }
+            
+            // Add active class to selected tab button
+            const selectedButton = document.querySelector(`[onclick="switchReportTab('${tabName}')"]`);
+            if (selectedButton) {
+                selectedButton.classList.add('active');
+            }
+            
+            // Update current active tab
+            currentActiveTab = tabName;
+            
+            // Initialize the selected tab
+            initializeTabReport(tabName);
+        }
+        
+        // Initialize tab report based on tab name
+        function initializeTabReport(tabName) {
+            console.log('🔄 Initializing tab report:', tabName);
+            switch(tabName) {
+                case 'export':
+                    console.log('📊 Checking initExportReport function...');
+                    if (typeof initExportReport === 'function') {
+                        console.log('✅ Function found, calling initExportReport...');
+                        initExportReport();
+                    } else {
+                        console.error('❌ initExportReport function not found!');
+                        console.log('Available functions:', Object.keys(window).filter(key => key.includes('Export')));
+                        // Try to call it directly from window
+                        if (window.initExportReport) {
+                            console.log('🔄 Found in window, calling...');
+                            window.initExportReport();
+                        } else {
+                            console.log('❌ Not found in window either');
+                            // Manual test call
+                            console.log('🧪 Testing manual initialization...');
+                            testExportReportManually();
+                        }
+                    }
+                    break;
+                case 'import':
+                    if (typeof initializeImportReport === 'function') {
+                        initializeImportReport();
+                    }
+                    break;
+                case 'adjustment':
+                    if (typeof initializeAdjustmentReport === 'function') {
+                        initializeAdjustmentReport();
+                    }
+                    break;
+            }
+        }
+        
+        // Initialize current tab
+        function initializeCurrentTab() {
+            initializeTabReport(currentActiveTab);
+        }
+        
+        // Update view button states
+        function updateViewButtonStates(activeButtonId) {
+            const viewButtons = document.querySelectorAll('.view-toggle-buttons .btn');
+            viewButtons.forEach(button => {
+                button.classList.remove('active');
+                button.classList.add('btn-secondary');
+                button.classList.remove('btn-primary');
+            });
+            
+            const activeButton = document.getElementById(activeButtonId);
+            if (activeButton) {
+                activeButton.classList.add('active');
+                activeButton.classList.remove('btn-secondary');
+                activeButton.classList.add('btn-primary');
+            }
+        }
+        
+        // Hide all warehouse views
+        function hideAllWarehouseViews() {
+            const views = [
+                'warehouseListView',
+                'warehouseUsageReportView',
+                'transactionReportView'
+            ];
+            
+            views.forEach(viewId => {
+                const view = document.getElementById(viewId);
+                if (view) {
+                    view.style.display = 'none';
+                }
+            });
+            
+            // Also hide filters for current list view
+            const currentListFilters = document.getElementById('currentListFilters');
+            if (currentListFilters) {
+                currentListFilters.style.display = 'none';
+            }
+        }
+        
+        // Update existing view toggle functions
+        function switchToCurrentListView() {
+            hideAllWarehouseViews();
+            const warehouseListView = document.getElementById('warehouseListView');
+            const currentListFilters = document.getElementById('currentListFilters');
+            
+            if (warehouseListView) {
+                warehouseListView.style.display = 'block';
+            }
+            if (currentListFilters) {
+                currentListFilters.style.display = 'block';
+            }
+            
+            updateViewButtonStates('currentListViewBtn');
+        }
+        
+        function switchToUsageReportView() {
+            hideAllWarehouseViews();
+            const usageReportView = document.getElementById('warehouseUsageReportView');
+            if (usageReportView) {
+                usageReportView.style.display = 'block';
+                
+                // Initialize usage report if function exists
+                if (typeof initWarehouseUsageReport === 'function') {
+                    initWarehouseUsageReport();
+                }
+            }
+            
+            updateViewButtonStates('usageReportViewBtn');
+        }
+        
+        // Test export report manually
+        function testExportReportManually() {
+            console.log('🧪 Manual test: Creating sample export data...');
+            const tbody = document.getElementById('exportReportTableBody');
+            if (tbody) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td><input type="checkbox"></td>
+                        <td>1</td>
+                        <td>23/8/2025 15:00:00</td>
+                        <td><span class="transaction-type export-type">Xuất bán</span></td>
+                        <td>Bánh quy chocolate</td>
+                        <td>BQ001</td>
+                        <td>50</td>
+                        <td>cái</td>
+                        <td>25,000 ₫</td>
+                        <td>1,250,000 ₫</td>
+                        <td>sale</td>
+                        <td><span class="order-type-badge badge-success">Bán lẻ</span></td>
+                        <td>Cửa hàng chính</td>
+                        <td>
+                            <button class="btn btn-sm btn-info"><i class="fas fa-info-circle"></i></button>
+                            <button class="btn btn-sm btn-danger"><i class="fas fa-trash-alt"></i></button>
+                        </td>
+                    </tr>
+                `;
+                console.log('✅ Manual test data added to table');
+                
+                // Update statistics
+                const totalExportsEl = document.querySelector('#exportReportTab .stats-card:nth-child(1) .stats-number');
+                const totalQuantityEl = document.querySelector('#exportReportTab .stats-card:nth-child(2) .stats-number');
+                const totalValueEl = document.querySelector('#exportReportTab .stats-card:nth-child(3) .stats-number');
+                
+                if (totalExportsEl) totalExportsEl.textContent = '1';
+                if (totalQuantityEl) totalQuantityEl.textContent = '50';
+                if (totalValueEl) totalValueEl.textContent = '1,250,000 ₫';
+                
+                console.log('✅ Statistics updated manually');
+            } else {
+                console.error('❌ exportReportTableBody not found');
+            }
+        }
+
+        // Helper functions for modal and notifications
+        function showModal(content) {
+            // Remove existing modal if any
+            const existingModal = document.getElementById('dynamicModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            // Create modal overlay
+            const modalOverlay = document.createElement('div');
+            modalOverlay.id = 'dynamicModal';
+            modalOverlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 9999;
+                backdrop-filter: blur(5px);
+            `;
+            
+            modalOverlay.innerHTML = content;
+            document.body.appendChild(modalOverlay);
+            
+            // Close modal when clicking overlay
+            modalOverlay.addEventListener('click', function(e) {
+                if (e.target === modalOverlay) {
+                    hideModal();
+                }
+            });
+        }
+        
+        function hideModal() {
+            const modal = document.getElementById('dynamicModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+        
+        function showLoadingOverlay() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+                overlay.classList.remove('hidden');
+            }
+        }
+        
+        function hideLoadingOverlay() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+                overlay.classList.add('hidden');
+            }
+        }
+        
+        function showNotification(message, type = 'info') {
+            const notification = document.getElementById('notification');
+            const messageEl = notification.querySelector('.notification-message');
+            const iconEl = notification.querySelector('.notification-icon');
+            
+            if (notification && messageEl && iconEl) {
+                messageEl.textContent = message;
+                
+                // Set icon based on type
+                let iconClass = 'fas fa-info-circle';
+                switch (type) {
+                    case 'success':
+                        iconClass = 'fas fa-check-circle';
+                        break;
+                    case 'error':
+                        iconClass = 'fas fa-exclamation-triangle';
+                        break;
+                    case 'warning':
+                        iconClass = 'fas fa-exclamation-circle';
+                        break;
+                }
+                iconEl.className = `notification-icon ${iconClass}`;
+                
+                // Show notification
+                notification.classList.remove('hidden');
+                notification.className = `notification notification-${type}`;
+                
+                // Auto hide after 3 seconds
+                setTimeout(() => {
+                    notification.classList.add('hidden');
+                }, 3000);
+            }
+        }
+
+        // Expose functions to global scope
+        window.switchToTransactionReportView = switchToTransactionReportView;
+        window.switchReportTab = switchReportTab;
+        window.switchToCurrentListView = switchToCurrentListView;
+        window.switchToUsageReportView = switchToUsageReportView;
+        window.testExportReportManually = testExportReportManually;
+        window.showModal = showModal;
+        window.hideModal = hideModal;
+        window.showLoadingOverlay = showLoadingOverlay;
+        window.hideLoadingOverlay = hideLoadingOverlay;
+        window.showNotification = showNotification;
+    </script>
 </body>
 </html>
