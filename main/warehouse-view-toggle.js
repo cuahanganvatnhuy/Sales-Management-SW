@@ -14,6 +14,17 @@ function switchToCurrentListView() {
         warehouseListView.style.display = 'block';
     }
     
+    // Show/Hide appropriate filters
+    const currentListFilters = document.getElementById('currentListFilters');
+    const usageReportFilters = document.getElementById('usageReportFilters');
+    
+    if (currentListFilters) {
+        currentListFilters.style.display = 'block';
+    }
+    if (usageReportFilters) {
+        usageReportFilters.style.display = 'none';
+    }
+    
     // Update button states
     const currentBtn = document.getElementById('currentListViewBtn');
     const usageBtn = document.getElementById('usageReportViewBtn');
@@ -36,6 +47,17 @@ function switchToUsageReportView() {
     const usageReportView = document.getElementById('warehouseUsageReportView');
     if (usageReportView) {
         usageReportView.style.display = 'block';
+    }
+    
+    // Show/Hide appropriate filters
+    const currentListFilters = document.getElementById('currentListFilters');
+    const usageReportFilters = document.getElementById('usageReportFilters');
+    
+    if (currentListFilters) {
+        currentListFilters.style.display = 'none';
+    }
+    if (usageReportFilters) {
+        usageReportFilters.style.display = 'block';
     }
     
     // Initialize the usage report if the function exists

@@ -1,5 +1,374 @@
 /* Warehouse Management Styles */
 
+/* Pagination Styles */
+.pagination-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 20px;
+    padding: 15px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.pagination-info {
+    font-size: 14px;
+    color: #666;
+}
+
+.pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.pagination-btn {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    background: #fff;
+    color: #333;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 40px;
+    text-align: center;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    background: #f8f9fa;
+    border-color: #007bff;
+}
+
+.pagination-btn.active {
+    background: #007bff;
+    color: #fff;
+    border-color: #007bff;
+}
+
+.pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pagination-numbers {
+    display: flex;
+    gap: 5px;
+}
+
+.pagination-ellipsis {
+    padding: 8px 12px;
+    color: #666;
+    user-select: none;
+}
+
+.pagination-size {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.pagination-size select {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: #fff;
+    cursor: pointer;
+}
+
+/* Stock Status Styles */
+.stock-status {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.stock-status.in-stock {
+    background: #d4edda;
+    color: #155724;
+}
+
+.stock-status.low-stock {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.stock-status.out-of-stock {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+/* Button Styles */
+.btn-sm {
+    padding: 6px 10px;
+    font-size: 12px;
+    margin: 0 2px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .pagination-container {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+    
+    .pagination-controls {
+        justify-content: center;
+    }
+    
+    .pagination-size {
+        justify-content: center;
+    }
+}
+
+/* View Toggle Styles */
+.view-toggle-section {
+    margin: 20px 0;
+    text-align: center;
+}
+
+.view-toggle-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+
+.view-toggle-buttons .btn {
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    min-width: 180px;
+}
+
+.view-toggle-buttons .btn.active {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* Usage Report Styles */
+.warehouse-usage-report {
+    padding: 20px 0;
+}
+
+.report-filters {
+    background: #fff;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-bottom: 25px;
+}
+
+.filter-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.filter-row:last-child {
+    margin-bottom: 0;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 200px;
+}
+
+.filter-group label {
+    font-weight: 600;
+    color: #333;
+    font-size: 14px;
+}
+
+.filter-group select,
+.filter-group input {
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.date-range-display {
+    font-size: 14px;
+    color: #666;
+}
+
+.report-actions {
+    display: flex;
+    gap: 10px;
+}
+
+/* Usage Summary Cards */
+.usage-summary-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.summary-card {
+    background: #fff;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    text-align: center;
+    transition: transform 0.3s ease;
+}
+
+.summary-card:hover {
+    transform: translateY(-5px);
+}
+
+.summary-card .card-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 15px;
+    font-size: 24px;
+    color: #fff;
+}
+
+.summary-card.total-movements .card-icon {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.summary-card.stock-in .card-icon {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.summary-card.stock-out .card-icon {
+    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+}
+
+.summary-card.usage-value .card-icon {
+    background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+}
+
+.summary-card h3 {
+    font-size: 32px;
+    font-weight: 700;
+    margin: 0 0 10px;
+    color: #333;
+}
+
+.summary-card p {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 8px;
+    color: #555;
+}
+
+.summary-card .card-subtitle {
+    font-size: 12px;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Usage Report Tables */
+.usage-report-tables {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.report-table-container {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.table-header {
+    background: #f8f9fa;
+    padding: 20px;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.table-header h3 {
+    margin: 0;
+    color: #333;
+    font-size: 18px;
+}
+
+.table-controls {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.table-controls select,
+.table-controls input {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.usage-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.usage-table th,
+.usage-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.usage-table th {
+    background: #f8f9fa;
+    font-weight: 600;
+    color: #333;
+    font-size: 14px;
+}
+
+.usage-table td {
+    color: #555;
+    font-size: 14px;
+}
+
+.usage-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #666;
+}
+
+.empty-state .empty-icon {
+    font-size: 64px;
+    color: #ddd;
+    margin-bottom: 20px;
+}
+
+.empty-state h3 {
+    margin: 0 0 10px;
+    color: #333;
+}
+
+.empty-state p {
+    margin: 0;
+    font-size: 16px;
+}
+
 /* Dashboard Cards */
 .warehouse-dashboard {
     margin-bottom: 2rem;
@@ -175,7 +544,7 @@
 }
 
 .warehouse-table tbody tr:hover {
-    background-color: #f8f9fa;
+    background-color: inherit;
 }
 
 /* Stock Status */
@@ -274,8 +643,9 @@
     top: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(8px);
+    background-color: rgba(0, 0, 0, 0.5);
+    -webkit-backdrop-filter: blur(5px);
+    backdrop-filter: blur(5px);
     animation: fadeIn 0.3s ease-out;
 }
 
@@ -363,6 +733,60 @@
     border-top: 1px solid #dee2e6;
     background-color: #f8f9fa;
     border-radius: 0 0 12px 12px;
+}
+
+/* Transaction Detail Modal Styles */
+.transaction-detail-content {
+    padding: 1rem 0;
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+
+.detail-card {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border-radius: 10px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.detail-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.detail-card.full-width {
+    grid-column: 1 / -1;
+}
+
+.detail-card h4 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    color: #495057;
+    border-bottom: 2px solid #6c757d;
+    padding-bottom: 0.5rem;
+}
+
+.detail-item {
+    display: flex;
+    margin-bottom: 0.75rem;
+    align-items: center;
+}
+
+.detail-label {
+    font-weight: bold;
+    color: #6c757d;
+    min-width: 120px;
+    display: inline-block;
+}
+
+.detail-value {
+    color: #495057;
+    flex: 1;
 }
 
 /* Stock Items */
@@ -778,7 +1202,7 @@
 /* Usage Summary Cards */
 .usage-summary-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
     gap: 1.5rem;
     margin-bottom: 2rem;
 }
@@ -786,7 +1210,7 @@
 .summary-card {
     background: white;
     border-radius: 12px;
-    padding: 1.5rem;
+    padding: 0.5rem;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     display: flex;
     align-items: center;
@@ -960,9 +1384,9 @@
 }
 
 .usage-table tbody tr:hover {
-    background-color: #e3f2fd;
-    transform: scale(1.01);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    background-color: inherit;
+    transform: none;
+    box-shadow: none;
 }
 
 .usage-table td {
@@ -975,7 +1399,7 @@
     display: inline-block;
     padding: 0.25rem 0.75rem;
     border-radius: 20px;
-    font-size: 0.8rem;
+    font-size: 0.5rem;
     font-weight: 600;
     text-transform: uppercase;
 }
@@ -1056,12 +1480,12 @@
 .view-toggle-buttons {
     display: flex;
     gap: 1rem;
-    margin-bottom: 2rem;
-    justify-content: center;
+    margin-bottom: 0.5rem;
+    justify-content: start;
 }
 
 .view-toggle-buttons .btn {
-    padding: 0.75rem 1.5rem;
+    padding: 0.3rem 1.5rem;
     border-radius: 8px;
     font-weight: 600;
     transition: all 0.3s ease;
@@ -1093,6 +1517,14 @@
     }
     
     .chart-container {
+        padding: 1rem;
+    }
+    
+    .usage-detail-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .detail-grid {
         grid-template-columns: 1fr;
     }
 }
@@ -1148,4 +1580,36 @@
         width: 200px;
         text-align: center;
     }
+    
+    .detail-card {
+        padding: 1rem;
+    }
+    
+    .detail-label {
+        min-width: 100px;
+    }
+}
+
+/* Status classes for warehouse table */
+.status {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.status-in-stock {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-low-stock {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.status-out-of-stock {
+    background: #f8d7da;
+    color: #721c24;
 }

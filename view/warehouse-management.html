@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="../style/man.css">
     <link rel="stylesheet" href="../style/warehouse-management.css">
 
+
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
@@ -89,9 +90,13 @@
         <!-- Action Buttons -->
         <section class="warehouse-actions">
             <div class="action-buttons">
+                <button type="button" class="btn btn-success" onclick="openAddStockModal()">
+                    <i class="fas fa-plus"></i>
+                    Nhập Kho Thêm
+                </button>
                 <button type="button" class="btn btn-primary" onclick="openStockInModal()">
                     <i class="fas fa-plus-circle"></i>
-                    Nhập Kho
+                    Tạo Sản Phẩm Mới vào kho
                 </button>
                 <button type="button" class="btn btn-secondary" onclick="openStockOutModal()">
                     <i class="fas fa-minus-circle"></i>
@@ -105,12 +110,19 @@
                     <i class="fas fa-file-excel"></i>
                     Xuất Báo Cáo
                 </button>
+                <button type="button" class="btn btn-warning" onclick="initializeWarehouseData()" title="Khởi tạo dữ liệu mẫu cho kho hàng">
+                    <i class="fas fa-database"></i>
+                    Khởi Tạo Dữ Liệu
+                </button>
                
             </div>
         </section>
 
-        <!-- Filters -->
-        <section class="warehouse-filters">
+        <!-- Filters for Current List View -->
+       
+
+        <!-- Warehouse Table -->
+        <section class="warehouse-filters" id="currentListFilters">
             <div class="filter-container">
                 <div class="filter-group">
                     <label for="categoryFilter">Danh Mục:</label>
@@ -134,20 +146,33 @@
                 </div>
             </div>
         </section>
-        <section>
-          <div class="view-toggle-buttons">
-            <button id="currentListViewBtn" class="btn btn-primary active" onclick="switchToCurrentListView()">Danh sách hiện tại</button>
-            <button id="usageReportViewBtn" class="btn btn-secondary" onclick="switchToUsageReportView()">Báo cáo sử dụng</button>
-          </div>
+        <!-- View Toggle Buttons -->
+        <section class="view-toggle-section">
+            <div class="view-toggle-buttons">
+                <button id="currentListViewBtn" class="btn btn-primary active" onclick="switchToCurrentListView()">
+                    <i class="fas fa-list"></i>
+                    Danh sách hiện tại
+                </button>
+                <button id="usageReportViewBtn" class="btn btn-secondary" onclick="switchToUsageReportView()">
+                    <i class="fas fa-chart-line"></i>
+                    Báo cáo sử dụng
+                </button>
+                <button id="exportReportViewBtn" class="btn btn-info" onclick="switchToExportReportView()">
+                    <i class="fas fa-file-export"></i>
+                    Báo cáo xuất kho
+                </button>
+               
+            </div>
         </section>
-        <!-- Warehouse Table -->
-
+        
+        <h3 style="margin-bottom: 10px;">Danh sách sản phẩm kho</h3>
         <section class="warehouse-table-section" id="warehouseListView">
-            <button type="button" class="btn btn-danger bulk-delete-btn" id="deleteSelectedBtn" onclick="deleteSelectedProducts()" disabled>
+            <button style="margin-bottom: 10px;" type="button" class="btn btn-danger bulk-delete-btn" id="deleteSelectedBtn" onclick="deleteSelectedProducts()" disabled>
                 <i class="fas fa-trash"></i>
                 Xóa Đã Chọn (<span id="selectedCount">0</span>)
             </button>
             <div class="table-container">
+           
                 <table class="warehouse-table">
                     <thead>
                         <tr>
@@ -171,6 +196,38 @@
                     </tbody>
                 </table>
             </div>
+            
+            <!-- Pagination for Warehouse Table -->
+            <div class="pagination-container" id="warehousePagination">
+                <div class="pagination-info">
+                    <span>Hiển thị <strong id="warehouseShowingStart">1</strong> - <strong id="warehouseShowingEnd">10</strong> trong tổng số <strong id="warehouseTotal">0</strong> sản phẩm</span>
+                </div>
+                <div class="pagination-controls">
+                    <button class="pagination-btn" id="warehouseFirstBtn" onclick="goToWarehousePage(1)">
+                        <i class="fas fa-angle-double-left"></i>
+                    </button>
+                    <button class="pagination-btn" id="warehousePrevBtn" onclick="previousWarehousePage()">
+                        <i class="fas fa-angle-left"></i>
+                    </button>
+                    <div class="pagination-numbers" id="warehousePageNumbers">
+                        <!-- Page numbers will be generated here -->
+                    </div>
+                    <button class="pagination-btn" id="warehouseNextBtn" onclick="nextWarehousePage()">
+                        <i class="fas fa-angle-right"></i>
+                    </button>
+                    <button class="pagination-btn" id="warehouseLastBtn" onclick="goToWarehousePage('last')">
+                        <i class="fas fa-angle-double-right"></i>
+                    </button>
+                </div>
+                <div class="pagination-size">
+                    <select id="warehousePageSize" onchange="changeWarehousePageSize()">
+                        <option value="10" selected>10</option>
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                </div>
+            </div>
 
             <!-- Empty State -->
             <div id="warehouseEmptyState" class="empty-state hidden">
@@ -183,7 +240,7 @@
         </section>
 
         <!-- Charts Section -->
-        <section class="warehouse-charts">
+        <!-- <section class="warehouse-charts">
             <div class="charts-container">
                 <div class="chart-card">
                     <h3>Phân Bố Theo Danh Mục</h3>
@@ -194,8 +251,8 @@
                     <canvas id="valueChart"></canvas>
                 </div>
             </div>
-        </section>
-
+        </section> -->
+        
         <!-- Warehouse Usage Report View -->
         <section id="warehouseUsageReportView" class="warehouse-usage-report" style="display: none;">
             <!-- Report Filters -->
@@ -280,7 +337,7 @@
                         <i class="fas fa-dollar-sign"></i>
                     </div>
                     <div class="card-content">
-                        <h3 id="totalUsageValue">0đ</h3>
+                        <h3 id="totalUsageValue">0₫</h3>
                         <p>Giá trị sử dụng</p>
                         <small class="card-subtitle">Tổng giá trị xuất kho</small>
                     </div>
@@ -294,7 +351,20 @@
                     <div class="table-header">
                         <h3>📦 Báo cáo sử dụng theo sản phẩm</h3>
                         <div class="table-controls">
-                            <input type="text" id="productUsageSearch" placeholder="🔍 Tìm kiếm sản phẩm..." onkeyup="filterUsageTable('productUsage')">
+                            <select id="productUsagePeriodFilter" onchange="handlePeriodFilterChange()">
+                                <option value="month" selected>Tháng này</option>
+                                <option value="week">Tuần này</option>
+                                <option value="quarter">Quý này</option>
+                                <option value="year">Năm này</option>
+                                <option value="custom">📅 Tùy chỉnh</option>
+                            </select>
+                            <div id="customDateRange" class="custom-date-range" style="display: none;">
+                                <input type="date" id="startDate" placeholder="Từ ngày">
+                                <span>đến</span>
+                                <input type="date" id="endDate" placeholder="Đến ngày">
+                                <button type="button" onclick="applyCustomDateRange()" class="apply-date-btn">📅 Áp dụng</button>
+                            </div>
+                            <input type="text" id="productUsageSearch" placeholder="🔍 Tìm kiếm sản phẩm..." onkeyup="filterUsageTable()">
                         </div>
                     </div>
                     <div class="table-container">
@@ -309,6 +379,7 @@
                                     <th>Nhập kho</th>
                                     <th>Xuất kho</th>
                                     <th>Tồn cuối kỳ</th>
+                                    <th>Tồn hiện tại</th>
                                     <th>% Sử dụng</th>
                                     <th>Giá trị xuất</th>
                                 </tr>
@@ -318,26 +389,89 @@
                             </tbody>
                         </table>
                     </div>
+                    
+                    <!-- Pagination for Product Usage Table -->
+                    <div class="pagination-container" id="productUsagePagination">
+                        <div class="pagination-info">
+                            <span>Hiển thị <strong id="productUsageShowingStart">1</strong> - <strong id="productUsageShowingEnd">10</strong> trong tổng số <strong id="productUsageTotal">0</strong> sản phẩm</span>
+                        </div>
+                        <div class="pagination-controls">
+                            <button class="pagination-btn" id="productUsageFirstBtn" onclick="goToProductUsagePage(1)">
+                                <i class="fas fa-angle-double-left"></i>
+                            </button>
+                            <button class="pagination-btn" id="productUsagePrevBtn" onclick="previousProductUsagePage()">
+                                <i class="fas fa-angle-left"></i>
+                            </button>
+                            <div class="pagination-numbers" id="productUsagePageNumbers">
+                                <!-- Page numbers will be generated here -->
+                            </div>
+                            <button class="pagination-btn" id="productUsageNextBtn" onclick="nextProductUsagePage()">
+                                <i class="fas fa-angle-right"></i>
+                            </button>
+                            <button class="pagination-btn" id="productUsageLastBtn" onclick="goToProductUsagePage('last')">
+                                <i class="fas fa-angle-double-right"></i>
+                            </button>
+                        </div>
+                        <div class="pagination-size">
+                            <select id="productUsagePageSize" onchange="changeProductUsagePageSize()">
+                                <option value="10" selected>10</option>
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Transaction History Table -->
                 <div class="report-table-container">
+                    
                     <div class="table-header">
                         <h3>📋 Lịch sử giao dịch kho</h3>
-                        <div class="table-controls">
-                            <select id="transactionTypeFilter" onchange="filterUsageTable('transactionHistory')">
+                    </div>
+                    
+                    <div class="filter-controls">
+                        <div class="filter-row">
+                            <select id="transactionTypeFilter" onchange="filterTransactionTable()">
                                 <option value="all">Tất cả giao dịch</option>
-                                <option value="in">Chỉ nhập kho</option>
-                                <option value="out">Chỉ xuất kho</option>
-                                <option value="adjustment">Chỉ điều chỉnh</option>
+                                <option value="in">Nhập kho</option>
+                                <option value="out">Xuất kho</option>
+                                <option value="adjustment">Điều chỉnh</option>
                             </select>
-                            <input type="text" id="transactionSearch" placeholder="🔍 Tìm kiếm giao dịch..." onkeyup="filterUsageTable('transactionHistory')">
+                            
+                            <select id="categoryFilter" onchange="filterTransactionTable()">
+                                <option value="all">Tất cả ngành hàng</option>
+                                <!-- Categories will be populated dynamically -->
+                            </select>
+                            
+                            <select id="storeFilter" onchange="filterTransactionTable()">
+                                <option value="all">Tất cả cửa hàng</option>
+                                <!-- Stores will be populated dynamically -->
+                            </select>
+                            
+                            <input type="date" id="dateFromFilter" onchange="filterTransactionTable()" title="Từ ngày">
+                            <input type="date" id="dateToFilter" onchange="filterTransactionTable()" title="Đến ngày">
+                            
+                            <input type="text" id="transactionSearch" placeholder="🔍 Tìm kiếm sản phẩm, SKU, lý do..." onkeyup="filterTransactionTable()">
+                            
+                            <button class="btn btn-secondary" onclick="clearAllFilters()" title="Xóa tất cả bộ lọc">
+                                <i class="fas fa-times"></i> Xóa lọc
+                            </button>
                         </div>
+                    </div>
+                    <div class="bulk-actions">
+                        <button class="btn btn-danger" id="deleteSelectedBtn" onclick="deleteSelectedTransactions()" disabled>
+                            <i class="fas fa-trash"></i> Xóa đã chọn
+                        </button>
+                        <span class="selected-count" id="selectedCount">0 mục đã chọn</span>
                     </div>
                     <div class="table-container">
                         <table class="usage-table" id="transactionHistoryTable">
                             <thead>
                                 <tr>
+                                    <th>
+                                        <input type="checkbox" id="selectAllTransactions" onchange="toggleSelectAllTransactions(this)">
+                                    </th>
                                     <th>STT</th>
                                     <th>Thời gian</th>
                                     <th>Loại</th>
@@ -347,7 +481,9 @@
                                     <th>Đơn giá</th>
                                     <th>Tổng giá trị</th>
                                     <th>Lý do</th>
-                                    <th>Người thực hiện</th>
+                                    <th>Loại đơn hàng</th>
+                                    <th>Cửa hàng</th>
+                                    <th>Thao tác</th>
                                 </tr>
                             </thead>
                             <tbody id="transactionHistoryTableBody">
@@ -355,19 +491,37 @@
                             </tbody>
                         </table>
                     </div>
-                </div>
-            </div>
-
-            <!-- Usage Charts -->
-            <div class="usage-charts">
-                <div class="chart-container">
-                    <div class="chart-card">
-                        <h3>📊 Biểu đồ nhập/xuất kho theo thời gian</h3>
-                        <canvas id="usageTimeChart"></canvas>
-                    </div>
-                    <div class="chart-card">
-                        <h3>🥧 Top sản phẩm xuất kho nhiều nhất</h3>
-                        <canvas id="topUsageChart"></canvas>
+                    
+                    <!-- Pagination Controls -->
+                    <div class="pagination-container">
+                        <div class="pagination-info">
+                            Hiển thị <span id="transactionHistoryShowingStart">1</span> - <span id="transactionHistoryShowingEnd">10</span> trong tổng số <span id="transactionHistoryTotal">0</span> giao dịch
+                        </div>
+                        <div class="pagination-controls">
+                            <button class="pagination-btn" id="transactionHistoryFirstBtn" onclick="goToTransactionHistoryPage(1)" disabled>
+                                <i class="fas fa-angle-double-left"></i>
+                            </button>
+                            <button class="pagination-btn" id="transactionHistoryPrevBtn" onclick="previousTransactionHistoryPage()" disabled>
+                                <i class="fas fa-angle-left"></i>
+                            </button>
+                            <div class="pagination-numbers" id="transactionHistoryPageNumbers">
+                                <!-- Page numbers will be generated here -->
+                            </div>
+                            <button class="pagination-btn" id="transactionHistoryNextBtn" onclick="nextTransactionHistoryPage()">
+                                <i class="fas fa-angle-right"></i>
+                            </button>
+                            <button class="pagination-btn" id="transactionHistoryLastBtn" onclick="goToTransactionHistoryPage(-1)">
+                                <i class="fas fa-angle-double-right"></i>
+                            </button>
+                            <div class="pagination-size">
+                                <select id="transactionHistoryPageSize" onchange="changeTransactionHistoryPageSize(this.value)">
+                                    <option value="10" selected>10</option>
+                                    <option value="25">25</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -381,6 +535,30 @@
                 <p>Thực hiện các giao dịch nhập/xuất kho để xem báo cáo!</p>
             </div>
         </section>
+
+
+
+
+
+
+
+
+
+
+
+
+    <!-- Warehouse Detail Modal -->
+    <div id="warehouseDetailModal" class="modal" aria-hidden="true">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="warehouseDetailModalTitle">Chi tiết</h3>
+                <span class="close" onclick="closeWarehouseDetailModal()">&times;</span>
+            </div>
+            <div class="modal-body" id="warehouseDetailModalBody">
+                <!-- Dynamic content will be inserted here -->
+            </div>
+        </div>
+    </div>
 
     <!-- Stock In Modal -->
     <div id="stockInModal" class="modal large-modal">
@@ -419,25 +597,23 @@
                             <label for="newProductUnit">Đơn vị tính:</label>
                             <select id="newProductUnit" name="newProductUnit" required>
                                 <option value="">-- Chọn đơn vị tính --</option>
-                                
-                                <option value="kg">Kilogram (kg)</option>
-                                <option value="g">Gram (g)</option>
-                                <option value="lít">Lít</option>
-                                <option value="ml">Mililit (ml)</option>
-                                <option value="m">Mét (m)</option>
-                                <option value="cm">Centimet (cm)</option>
-                                <option value="thùng">Thùng</option>
-                                <option value="hộp">Hộp</option>
-                                <option value="chai">Chai</option>
-                                <option value="chiếc">Chiếc</option>
                                 <option value="cái">Cái</option>
+                                <option value="chiếc">Chiếc</option>
+                                <option value="kg">Kg</option>
+                                <option value="gram">Gram</option>
+                                <option value="lít">Lít</option>
+                                <option value="ml">ML</option>
+                                <option value="hộp">Hộp</option>
+                                <option value="thùng">Thùng</option>
+                                <option value="bộ">Bộ</option>
+                                <option value="gói">Gói</option>
                             </select>
                         </div>
                     </div>
                     
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="stockInQuantity">Số lượng tồn kho:</label>
+                            <label for="stockInQuantity">Số Lượng Nhập:</label>
                             <input type="number" id="stockInQuantity" name="stockInQuantity" step="0.01" required min="0.01" placeholder="Nhập số lượng tồn kho">
                         </div>
                         <div class="form-group">
@@ -598,6 +774,140 @@
                     <button type="button" class="btn btn-print" id="printReceiptBtn">
                         <i class="fas fa-print"></i>
                         In Phiếu
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Stock Modal (Nhập Kho Thêm) -->
+    <div id="addStockModal" class="modal modern-modal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content add-stock-modal">
+            <div class="modal-header gradient-header">
+                <div class="header-content">
+                    <div class="header-icon">
+                        <i class="fas fa-plus"></i>
+                    </div>
+                    <div class="header-text">
+                        <h2>📦 Nhập Kho Thêm</h2>
+                        <p>Thêm số lượng cho sản phẩm có sẵn</p>
+                    </div>
+                </div>
+                <button type="button" class="close-btn modern-close" onclick="closeAddStockModal()" title="Đóng modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="addStockForm" onsubmit="processAddStock(event)">
+                <div class="modal-body modern-body">
+                    <!-- Product Selection Card -->
+                    <div class="info-card product-card">
+                        <div class="card-header">
+                            <i class="fas fa-box"></i>
+                            <h4>Chọn Sản Phẩm</h4>
+                        </div>
+                        <div class="card-content">
+                            <div class="form-group">
+                                <label for="addStockProduct">
+                                    <i class="fas fa-search"></i>
+                                    Sản phẩm cần nhập thêm:
+                                </label>
+                                <select id="addStockProduct" name="addStockProduct" required onchange="updateAddStockProductInfo()" class="modern-select">
+                                    <option value="">🔍 Chọn sản phẩm từ kho...</option>
+                                </select>
+                            </div>
+                            
+                            <div class="stock-info-display hidden" id="addStockInfoDisplay">
+                                <div class="stock-info-grid">
+                                    <div class="stock-info-item">
+                                        <span class="info-label">📊 Tồn kho hiện tại:</span>
+                                        <span class="info-value" id="addStockCurrentStock">0</span>
+                                    </div>
+                                    <div class="stock-info-item">
+                                        <span class="info-label">💰 Giá nhập:</span>
+                                        <span class="info-value" id="addStockCurrentPrice">0đ</span>
+                                    </div>
+                                    <div class="stock-info-item">
+                                        <span class="info-label">📦 Đơn vị:</span>
+                                        <span class="info-value" id="addStockCurrentUnit">-</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Add Stock Details Card -->
+                    <div class="info-card import-card">
+                        <div class="card-header">
+                            <i class="fas fa-plus-circle"></i>
+                            <h4>Chi Tiết Nhập Kho</h4>
+                        </div>
+                        <div class="card-content">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="addStockQuantity">
+                                        <i class="fas fa-calculator"></i>
+                                        Số lượng nhập thêm:
+                                    </label>
+                                    <input type="number" id="addStockQuantity" name="addStockQuantity" 
+                                           step="0.01" required min="0.01" 
+                                           placeholder="Nhập số lượng cần thêm" 
+                                           class="modern-input quantity-input">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="addStockUnitPrice">
+                                        <i class="fas fa-dollar-sign"></i>
+                                        Giá nhập (đ):
+                                    </label>
+                                    <input type="number" id="addStockUnitPrice" name="addStockUnitPrice" 
+                                           step="0.01" required min="0" 
+                                           placeholder="Giá nhập của lô hàng này" 
+                                           class="modern-input price-input">
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="addStockSupplier">
+                                    <i class="fas fa-truck"></i>
+                                    Nhà cung cấp:
+                                </label>
+                                <input type="text" id="addStockSupplier" name="addStockSupplier" 
+                                       placeholder="Tên nhà cung cấp (tùy chọn)" 
+                                       class="modern-input">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notes Card -->
+                    <div class="info-card notes-card">
+                        <div class="card-header">
+                            <i class="fas fa-sticky-note"></i>
+                            <h4>Ghi Chú</h4>
+                        </div>
+                        <div class="card-content">
+                            <div class="form-group">
+                                <label for="addStockNote">
+                                    <i class="fas fa-comment-alt"></i>
+                                    Ghi chú về lô hàng:
+                                </label>
+                                <textarea id="addStockNote" name="addStockNote" 
+                                         placeholder="💬 Ghi chú về việc nhập kho này..." 
+                                         class="modern-textarea" rows="3"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-footer modern-footer">
+                    <button type="button" class="btn btn-cancel" onclick="closeAddStockModal()">
+                        <i class="fas fa-times"></i>
+                        Hủy Bỏ
+                    </button>
+                    <button type="submit" class="btn btn-import">
+                        <i class="fas fa-plus-circle"></i>
+                        Nhập Kho
                     </button>
                 </div>
             </form>
@@ -809,7 +1119,7 @@
 
     <!-- Bulk Product Delete Confirmation Modal -->
     <div id="bulkDeleteConfirmModal" class="modal modern-modal">
-        <div class="modal-overlay"></div>
+        <div class="modal-overlay" onclick="closeBulkDeleteConfirmModal()"></div>
         <div class="modal-content bulk-delete-confirm-modal">
             <div class="modal-header gradient-header">
                 <div class="header-content">
@@ -817,10 +1127,13 @@
                         <i class="fas fa-exclamation-triangle"></i>
                     </div>
                     <div class="header-text">
-                        <h3>⚠️ Xác Nhận Xóa Nhiều Sản Phẩm</h3>
-                        <p>Xóa các sản phẩm đã chọn khỏi kho hàng</p>
+                        <h3>Xác Nhận Xóa</h3>
+                        <p>Xóa nhiều sản phẩm cùng lúc</p>
                     </div>
                 </div>
+                <button type="button" class="close-btn modern-close" onclick="closeBulkDeleteConfirmModal()" title="Đóng modal">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
             
             <div class="modal-body modern-body">
@@ -828,10 +1141,9 @@
                     <div class="warning-icon">
                         <i class="fas fa-exclamation-circle"></i>
                     </div>
-                    <h4>Xác nhận xóa các sản phẩm đã chọn</h4>
-                    <p>Bạn có chắc chắn muốn xóa <span id="bulkDeleteSelectedCount">0</span> sản phẩm này không? Hành động này không thể hoàn tác.</p>
-                    <div class="product-list" id="bulkDeleteProductList">
-                        <!-- Selected product list will be populated here -->
+                    <p>Bạn có chắc chắn muốn xóa <strong id="bulkDeleteSelectedCount">0</strong> sản phẩm đã chọn?</p>
+                    <div id="bulkDeleteProductList" class="selected-products-list">
+                        <!-- Product list will be populated here -->
                     </div>
                 </div>
             </div>
@@ -841,9 +1153,42 @@
                     <i class="fas fa-times"></i>
                     Hủy
                 </button>
-                <button type="button" class="btn btn-danger" onclick="confirmBulkDeleteProducts()">
-                    <i class="fas fa-trash"></i>
-                    Xóa các sản phẩm
+                <button type="button" class="btn btn-danger" onclick="confirmBulkDelete()">
+                    <i class="fas fa-trash-alt"></i>
+                    Xóa
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transaction Detail Modal -->
+    <div id="warehouseDetailModal" class="modal modern-modal">
+        <div class="modal-overlay" onclick="closeWarehouseDetailModal()"></div>
+        <div class="modal-content detail-modal">
+            <div class="modal-header gradient-header">
+                <div class="header-content">
+                    <div class="header-icon">
+                        <i class="fas fa-info-circle"></i>
+                    </div>
+                    <div class="header-text">
+                        <h3 id="warehouseDetailModalTitle">Chi tiết giao dịch</h3>
+                    </div>
+                </div>
+                <button type="button" class="close-btn modern-close" onclick="closeWarehouseDetailModal()" title="Đóng modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="modal-body modern-body">
+                <div id="warehouseDetailModalBody">
+                    <!-- Detail content will be populated here -->
+                </div>
+            </div>
+            
+            <div class="modal-footer modern-footer">
+                <button type="button" class="btn btn-cancel" onclick="closeWarehouseDetailModal()">
+                    <i class="fas fa-times"></i>
+                    Đóng
                 </button>
             </div>
         </div>
@@ -858,11 +1203,1037 @@
     
     <!-- Scripts -->
     <script src="../main/firebase.js"></script>
+    <script src="../main/dashboard.js"></script>
     <script src="../main/navbar.js"></script>
+    <script src="../main/warehouse-data-initializer.js"></script>
     <script src="../main/warehouse-core.js"></script>
     <script src="../main/warehouse-view-toggle.js"></script>
-    <script src="../main/warehouse-usage-report-enhanced.js"></script>
+
     <script>
+        // Initialize store selector after components load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Wait for navbar to load, then initialize store functionality
+            setTimeout(() => {
+                initializeStoreSelector();
+                testDatabaseConnection();
+                
+                // Ensure current list view is shown by default
+                if (typeof switchToCurrentListView === 'function') {
+                    switchToCurrentListView();
+                }
+                
+                // Force show warehouse list view
+                const warehouseListView = document.getElementById('warehouseListView');
+                if (warehouseListView) {
+                    warehouseListView.style.display = 'block';
+                    warehouseListView.style.visibility = 'visible';
+                    console.log('Forced warehouseListView to be visible');
+                }
+                
+            }, 500);
+        });
+
+        // Test database connection and stores data
+        async function testDatabaseConnection() {
+            try {
+                console.log('=== TESTING DATABASE CONNECTION ===');
+                console.log('Firebase database:', database);
+                
+                // Test stores data
+                const stores = await getAllStores();
+                console.log('Stores from database:', stores);
+                console.log('Number of stores:', Object.keys(stores || {}).length);
+                
+                if (!stores || Object.keys(stores).length === 0) {
+                    console.log('⚠️ No stores found, creating sample data...');
+                    await createSampleData();
+                    
+                    // Try again after creating sample data
+                    const newStores = await getAllStores();
+                    console.log('Stores after creating sample data:', newStores);
+                }
+                
+                console.log('=== DATABASE TEST COMPLETE ===');
+                
+                // Initialize warehouse table with pagination after database is ready
+                setTimeout(() => {
+                    if (typeof displayWarehouseTable === 'function') {
+                        console.log('Initializing warehouse table with pagination...');
+                        displayWarehouseTable();
+                    }
+                }, 1000);
+                
+            } catch (error) {
+                console.error('❌ Database connection error:', error);
+                showNotification('Lỗi kết nối database!', 'error');
+            }
+        }
+
+        // Initialize store selector functionality
+        function initializeStoreSelector() {
+            // Load stores and populate dropdown
+            loadStoresIntoDropdown();
+            
+            // Set current store if already selected
+            const selectedStoreData = localStorage.getItem('selectedStoreData');
+            if (selectedStoreData) {
+                try {
+                    const storeData = JSON.parse(selectedStoreData);
+                    const currentStoreName = document.getElementById('currentStoreName');
+                    if (currentStoreName) {
+                        currentStoreName.textContent = storeData.name;
+                    }
+                } catch (error) {
+                    console.error('Error parsing store data:', error);
+                }
+            }
+        }
+
+        // Load stores into dropdown
+        async function loadStoresIntoDropdown() {
+            try {
+                const stores = await getAllStores();
+                const storeList = document.getElementById('storeList');
+                
+                if (!storeList || !stores) return;
+                
+                let storesHTML = '';
+                Object.entries(stores).forEach(([storeId, store]) => {
+                    storesHTML += `
+                        <div class="store-item" onclick="selectStore('${storeId}', '${store.name}')">
+                            <i class="fas fa-store"></i>
+                            <span>${store.name}</span>
+                        </div>
+                    `;
+                });
+                
+                storeList.innerHTML = storesHTML;
+            } catch (error) {
+                console.error('Error loading stores:', error);
+            }
+        }
+
+        // Toggle store dropdown
+        function toggleStoreDropdown() {
+            const dropdown = document.getElementById('storeDropdown');
+            if (dropdown) {
+                dropdown.classList.toggle('hidden');
+            }
+        }
+
+        // Select store
+        function selectStore(storeId, storeName) {
+            // Update localStorage
+            localStorage.setItem('selectedStoreId', storeId);
+            
+            // Get full store data
+            getAllStores().then(stores => {
+                const storeData = stores[storeId];
+                if (storeData) {
+                    localStorage.setItem('selectedStoreData', JSON.stringify(storeData));
+                    
+                    // Update header
+                    const currentStoreName = document.getElementById('currentStoreName');
+                    if (currentStoreName) {
+                        currentStoreName.textContent = storeData.name;
+                    }
+                    
+                    // Hide dropdown
+                    const dropdown = document.getElementById('storeDropdown');
+                    if (dropdown) {
+                        dropdown.classList.add('hidden');
+                    }
+                    
+                    // Reload warehouse data for selected store
+                    if (typeof loadWarehouseData === 'function') {
+                        loadWarehouseData();
+                    }
+                    
+                    showNotification(`Đã chọn cửa hàng: ${storeData.name}`, 'success');
+                }
+            });
+        }
+
+        // Make functions global
+        window.toggleStoreDropdown = toggleStoreDropdown;
+        window.selectStore = selectStore;
+        
+        // Pagination variables for warehouse table
+        let warehouseCurrentPage = 1;
+        let warehousePageSize = 10;
+        let warehouseAllData = [];
+        
+        // Pagination functions for warehouse table
+        function goToWarehousePage(page) {
+            if (page === 'last') {
+                const totalPages = Math.ceil(warehouseAllData.length / warehousePageSize);
+                page = totalPages;
+            }
+            
+            if (page < 1 || page > Math.ceil(warehouseAllData.length / warehousePageSize)) {
+                return;
+            }
+            
+            warehouseCurrentPage = page;
+            displayWarehouseTable();
+            updateWarehousePagination();
+        }
+        
+        function previousWarehousePage() {
+            if (warehouseCurrentPage > 1) {
+                goToWarehousePage(warehouseCurrentPage - 1);
+            }
+        }
+        
+        function nextWarehousePage() {
+            const totalPages = Math.ceil(warehouseAllData.length / warehousePageSize);
+            if (warehouseCurrentPage < totalPages) {
+                goToWarehousePage(warehouseCurrentPage + 1);
+            }
+        }
+        
+        function changeWarehousePageSize() {
+            const pageSizeSelect = document.getElementById('warehousePageSize');
+            if (pageSizeSelect) {
+                warehousePageSize = parseInt(pageSizeSelect.value);
+                warehouseCurrentPage = 1; // Reset to first page
+                displayWarehouseTable();
+                updateWarehousePagination();
+            }
+        }
+        
+        function updateWarehousePagination() {
+            const totalItems = warehouseAllData.length;
+            const totalPages = Math.ceil(totalItems / warehousePageSize);
+            const startItem = (warehouseCurrentPage - 1) * warehousePageSize + 1;
+            const endItem = Math.min(warehouseCurrentPage * warehousePageSize, totalItems);
+            
+            // Update info
+            const showingStartEl = document.getElementById('warehouseShowingStart');
+            const showingEndEl = document.getElementById('warehouseShowingEnd');
+            const totalEl = document.getElementById('warehouseTotal');
+            
+            if (showingStartEl) showingStartEl.textContent = startItem;
+            if (showingEndEl) showingEndEl.textContent = endItem;
+            if (totalEl) totalEl.textContent = totalItems;
+            
+            // Update button states
+            const firstBtn = document.getElementById('warehouseFirstBtn');
+            const prevBtn = document.getElementById('warehousePrevBtn');
+            const nextBtn = document.getElementById('warehouseNextBtn');
+            const lastBtn = document.getElementById('warehouseLastBtn');
+            
+            if (firstBtn) firstBtn.disabled = warehouseCurrentPage === 1;
+            if (prevBtn) prevBtn.disabled = warehouseCurrentPage === 1;
+            if (nextBtn) nextBtn.disabled = warehouseCurrentPage === totalPages;
+            if (lastBtn) lastBtn.disabled = warehouseCurrentPage === totalPages;
+            
+            // Generate page numbers
+            generateWarehousePageNumbers(totalPages);
+        }
+        
+        function generateWarehousePageNumbers(totalPages) {
+            const pageNumbersEl = document.getElementById('warehousePageNumbers');
+            if (!pageNumbersEl) return;
+            
+            let pageNumbersHTML = '';
+            const maxVisiblePages = 5;
+            
+            if (totalPages <= maxVisiblePages) {
+                // Show all pages
+                for (let i = 1; i <= totalPages; i++) {
+                    pageNumbersHTML += `
+                        <button class="pagination-btn ${i === warehouseCurrentPage ? 'active' : ''}" 
+                                onclick="goToWarehousePage(${i})" 
+                                title="Trang ${i}">
+                            ${i}
+                        </button>
+                    `;
+                }
+            } else {
+                // Show limited pages with ellipsis
+                let startPage = Math.max(1, warehouseCurrentPage - Math.floor(maxVisiblePages / 2));
+                let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+                
+                if (endPage - startPage + 1 < maxVisiblePages) {
+                    startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                }
+                
+                if (startPage > 1) {
+                    pageNumbersHTML += `
+                        <button class="pagination-btn" onclick="goToWarehousePage(1)" title="Trang 1">1</button>
+                        <span class="pagination-ellipsis">...</span>
+                    `;
+                }
+                
+                for (let i = startPage; i <= endPage; i++) {
+                    pageNumbersHTML += `
+                        <button class="pagination-btn ${i === warehouseCurrentPage ? 'active' : ''}" 
+                                onclick="goToWarehousePage(${i})" 
+                                title="Trang ${i}">
+                            ${i}
+                        </button>
+                    `;
+                }
+                
+                if (endPage < totalPages) {
+                    pageNumbersHTML += `
+                        <span class="pagination-ellipsis">...</span>
+                        <button class="pagination-btn" onclick="goToWarehousePage(${totalPages})" title="Trang ${totalPages}">${totalPages}</button>
+                    `;
+                }
+            }
+            
+            pageNumbersEl.innerHTML = pageNumbersHTML;
+        }
+        
+        // Override displayWarehouseTable function to support pagination
+        function displayWarehouseTable() {
+            const tableBody = document.getElementById('warehouseTableBody');
+            if (!tableBody) return;
+            
+            // Apply filters first
+            const filteredData = applyWarehouseFilters();
+            warehouseAllData = filteredData;
+            
+            // Calculate pagination
+            const totalItems = warehouseAllData.length;
+            const totalPages = Math.ceil(totalItems / warehousePageSize);
+            
+            // Adjust current page if it's out of bounds
+            if (warehouseCurrentPage > totalPages && totalPages > 0) {
+                warehouseCurrentPage = totalPages;
+            }
+            if (warehouseCurrentPage < 1) {
+                warehouseCurrentPage = 1;
+            }
+            
+            // Get current page data
+            const startIndex = (warehouseCurrentPage - 1) * warehousePageSize;
+            const endIndex = Math.min(startIndex + warehousePageSize, totalItems);
+            const currentPageData = warehouseAllData.slice(startIndex, endIndex);
+            
+            // Generate table rows
+            let tableHTML = '';
+            currentPageData.forEach((product, index) => {
+                const rowNumber = startIndex + index + 1;
+                const stockStatus = getStockStatus(product.stock, product.minStock);
+                const stockStatusClass = getStockStatusClass(stockStatus);
+                
+                tableHTML += `
+                    <tr>
+                        <td>
+                            <input type="checkbox" class="product-checkbox" value="${product.id}" onchange="updateSelectedCount()">
+                        </td>
+                        <td>${rowNumber}</td>
+                        <td>${product.name || 'N/A'}</td>
+                        <td>${product.sku || 'N/A'}</td>
+                        <td>${product.category || 'N/A'}</td>
+                        <td>${product.unit || 'N/A'}</td>
+                        <td>${product.stock || 0}</td>
+                        <td>${formatCurrency(product.costPrice || 0)}</td>
+                        <td>${formatCurrency((product.costPrice || 0) * (product.stock || 0))}</td>
+                        <td>
+                            <span class="stock-status ${stockStatusClass}">${stockStatus}</span>
+                        </td>
+                        <td>
+                            <button class="btn btn-warning btn-sm" onclick="openAddStockModal('${product.id}')" title="Nhập thêm">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            <button class="btn btn-info btn-sm" onclick="openAdjustmentModal('${product.id}')" title="Điều chỉnh">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteProduct('${product.id}')" title="Xóa">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tableBody.innerHTML = tableHTML;
+            
+            // Update pagination
+            updateWarehousePagination();
+            
+            // Show/hide empty state
+            const emptyState = document.getElementById('warehouseEmptyState');
+            if (emptyState) {
+                if (totalItems === 0) {
+                    emptyState.classList.remove('hidden');
+                } else {
+                    emptyState.classList.add('hidden');
+                }
+            }
+        }
+        
+        // Helper functions
+        function getStockStatus(stock, minStock) {
+            if (stock <= 0) return 'Hết hàng';
+            if (stock <= (minStock || 10)) return 'Sắp hết';
+            return 'Còn hàng';
+        }
+        
+        function getStockStatusClass(status) {
+            switch (status) {
+                case 'Hết hàng': return 'out-of-stock';
+                case 'Sắp hết': return 'low-stock';
+                case 'Còn hàng': return 'in-stock';
+                default: return '';
+            }
+        }
+        
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('vi-VN', {
+                style: 'currency',
+                currency: 'VND'
+            }).format(amount);
+        }
+        
+        // Apply filters to warehouse data
+        function applyWarehouseFilters() {
+            const categoryFilter = document.getElementById('categoryFilter')?.value || '';
+            const stockStatusFilter = document.getElementById('stockStatusFilter')?.value || '';
+            const searchInput = document.getElementById('searchInput')?.value || '';
+            
+            console.log('=== applyWarehouseFilters Debug ===');
+            console.log('window.warehouseData:', window.warehouseData);
+            console.log('window.warehouseData keys:', Object.keys(window.warehouseData || {}));
+            console.log('Filter values:', { categoryFilter, stockStatusFilter, searchInput });
+            
+            let filteredData = Object.values(window.warehouseData || {});
+            console.log('Initial filteredData length:', filteredData.length);
+            
+            // Filter by category
+            if (categoryFilter) {
+                filteredData = filteredData.filter(product => 
+                    product.category === categoryFilter
+                );
+            }
+            
+            // Filter by stock status
+            if (stockStatusFilter) {
+                filteredData = filteredData.filter(product => {
+                    const status = getStockStatus(product.stock, product.minStock);
+                    return status === stockStatusFilter;
+                });
+            }
+            
+            // Filter by search
+            if (searchInput) {
+                const searchLower = searchInput.toLowerCase();
+                filteredData = filteredData.filter(product =>
+                    product.name?.toLowerCase().includes(searchLower) ||
+                    product.sku?.toLowerCase().includes(searchLower)
+                );
+            }
+            
+            return filteredData;
+        }
+        
+        // Update selected count for bulk actions
+        function updateSelectedCount() {
+            const checkboxes = document.querySelectorAll('.product-checkbox:checked');
+            const selectedCount = checkboxes.length;
+            const selectedCountEl = document.getElementById('selectedCount');
+            const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+            
+            if (selectedCountEl) {
+                selectedCountEl.textContent = selectedCount;
+            }
+            
+            if (deleteSelectedBtn) {
+                deleteSelectedBtn.disabled = selectedCount === 0;
+            }
+        }
+        
+        // Toggle select all products
+        function toggleSelectAll() {
+            const selectAllCheckbox = document.getElementById('selectAll');
+            const productCheckboxes = document.querySelectorAll('.product-checkbox');
+            
+            if (selectAllCheckbox) {
+                productCheckboxes.forEach(checkbox => {
+                    checkbox.checked = selectAllCheckbox.checked;
+                });
+                updateSelectedCount();
+            }
+        }
+        
+        // Export pagination functions to global scope
+        window.goToWarehousePage = goToWarehousePage;
+        window.previousWarehousePage = previousWarehousePage;
+        window.nextWarehousePage = nextWarehousePage;
+        window.changeWarehousePageSize = changeWarehousePageSize;
+        window.updateSelectedCount = updateSelectedCount;
+        window.toggleSelectAll = toggleSelectAll;
+        
+        // View toggle functions
+        function switchToCurrentListView() {
+            // Hide usage report view
+            const usageReportView = document.getElementById('warehouseUsageReportView');
+            if (usageReportView) {
+                usageReportView.style.display = 'none';
+            }
+            
+            // Show current list view
+            const currentListView = document.getElementById('warehouseListView');
+            if (currentListView) {
+                currentListView.style.display = 'block';
+            }
+            
+            // Update button states
+            const currentListBtn = document.getElementById('currentListViewBtn');
+            const usageReportBtn = document.getElementById('usageReportViewBtn');
+            
+            if (currentListBtn) currentListBtn.classList.add('active');
+            if (currentListBtn) currentListBtn.classList.remove('btn-secondary');
+            if (currentListBtn) currentListBtn.classList.add('btn-primary');
+            
+            if (usageReportBtn) usageReportBtn.classList.remove('active');
+            if (usageReportBtn) usageReportBtn.classList.remove('btn-primary');
+            if (usageReportBtn) usageReportBtn.classList.add('btn-secondary');
+            
+            // Refresh current list view
+            if (typeof displayWarehouseTable === 'function') {
+                displayWarehouseTable();
+            }
+        }
+        
+        function switchToUsageReportView() {
+            // Hide current list view
+            const currentListView = document.getElementById('warehouseListView');
+            if (currentListView) {
+                currentListView.style.display = 'none';
+            }
+            
+            // Show usage report view
+            const usageReportView = document.getElementById('warehouseUsageReportView');
+            if (usageReportView) {
+                usageReportView.style.display = 'block';
+            }
+            
+            // Update button states
+            const currentListBtn = document.getElementById('currentListViewBtn');
+            const usageReportBtn = document.getElementById('usageReportViewBtn');
+            
+            if (currentListBtn) currentListBtn.classList.remove('active');
+            if (currentListBtn) currentListBtn.classList.remove('btn-primary');
+            if (currentListBtn) currentListBtn.classList.add('btn-secondary');
+            
+            if (usageReportBtn) usageReportBtn.classList.add('active');
+            if (usageReportBtn) usageReportBtn.classList.remove('btn-secondary');
+            if (usageReportBtn) usageReportBtn.classList.add('btn-primary');
+            
+            // Initialize usage report
+            if (typeof initWarehouseUsageReport === 'function') {
+                initWarehouseUsageReport();
+            } else if (typeof generateUsageReport === 'function') {
+                generateUsageReport();
+            }
+        }
+        
+        // Export view toggle functions
+        window.switchToCurrentListView = switchToCurrentListView;
+        window.switchToUsageReportView = switchToUsageReportView;
+        
+        // Handle period filter change
+        function handlePeriodFilterChange() {
+            const periodFilter = document.getElementById('productUsagePeriodFilter');
+            const customDateRange = document.getElementById('customDateRange');
+            
+            if (periodFilter.value === 'custom') {
+                customDateRange.style.display = 'flex';
+                // Set default dates (last 30 days)
+                const endDate = new Date();
+                const startDate = new Date();
+                startDate.setDate(startDate.getDate() - 30);
+                
+                document.getElementById('startDate').value = startDate.toISOString().split('T')[0];
+                document.getElementById('endDate').value = endDate.toISOString().split('T')[0];
+            } else {
+                customDateRange.style.display = 'none';
+                // Update filters for enhanced report
+                if (typeof window.currentFilters !== 'undefined') {
+                    window.currentFilters.period = periodFilter.value;
+                }
+                // Call enhanced generateUsageReport if available
+                if (typeof window.initWarehouseUsageReport === 'function') {
+                    window.generateUsageReport();
+                } else {
+                    generateUsageReport();
+                }
+            }
+        }
+        
+        // Apply custom date range
+        function applyCustomDateRange() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            
+            if (!startDate || !endDate) {
+                showNotification('Vui lòng chọn đầy đủ ngày bắt đầu và kết thúc', 'error');
+                return;
+            }
+            
+            if (new Date(startDate) > new Date(endDate)) {
+                showNotification('Ngày bắt đầu không thể lớn hơn ngày kết thúc', 'error');
+                return;
+            }
+            
+            console.log('Applying custom date range:', startDate, 'to', endDate);
+            
+            // Update current filters with custom dates
+            if (typeof window.currentFilters !== 'undefined') {
+                window.currentFilters.period = 'custom';
+                window.currentFilters.startDate = startDate;
+                window.currentFilters.endDate = endDate;
+                console.log('Updated currentFilters:', window.currentFilters);
+            } else {
+                console.log('currentFilters not available, creating temporary filters');
+                window.currentFilters = {
+                    period: 'custom',
+                    startDate: startDate,
+                    endDate: endDate,
+                    store: localStorage.getItem('selectedStoreId') || 'all',
+                    category: 'all'
+                };
+            }
+            
+            // Call the enhanced generateUsageReport if available
+            if (typeof window.generateUsageReport === 'function' && typeof window.initWarehouseUsageReport === 'function') {
+                console.log('Calling enhanced generateUsageReport');
+                window.generateUsageReport();
+            } else {
+                console.log('Enhanced report not available, calling basic generateUsageReport');
+                generateUsageReport();
+            }
+            
+            showNotification(`Đã áp dụng lọc từ ${new Date(startDate).toLocaleDateString('vi-VN')} đến ${new Date(endDate).toLocaleDateString('vi-VN')}`, 'success');
+        }
+
+        // Basic usage report functions (placeholder implementations)
+        function generateUsageReport() {
+            const periodFilter = document.getElementById('productUsagePeriodFilter');
+            const startDate = document.getElementById('startDate');
+            const endDate = document.getElementById('endDate');
+            
+            let dateRangeText = '';
+            
+            if (periodFilter.value === 'custom' && startDate.value && endDate.value) {
+                const start = new Date(startDate.value);
+                const end = new Date(endDate.value);
+                dateRangeText = `từ ${start.toLocaleDateString('vi-VN')} đến ${end.toLocaleDateString('vi-VN')}`;
+            } else {
+                switch(periodFilter.value) {
+                    case 'week': dateRangeText = 'tuần này'; break;
+                    case 'month': dateRangeText = 'tháng này'; break;
+                    case 'quarter': dateRangeText = 'quý này'; break;
+                    case 'year': dateRangeText = 'năm này'; break;
+                    default: dateRangeText = 'tháng này';
+                }
+            }
+            
+            console.log('Generating usage report for:', dateRangeText);
+            showNotification(`Đang tạo báo cáo sử dụng ${dateRangeText}...`, 'info');
+        }
+        
+        function exportUsageReport() {
+            console.log('Exporting usage report...');
+            showNotification('Đang xuất báo cáo Excel...', 'info');
+        }
+        
+        function printUsageReport() {
+            console.log('Printing usage report...');
+            showNotification('Đang chuẩn bị in báo cáo...', 'info');
+        }
+        
+        function filterUsageTable() {
+            console.log('=== filterUsageTable called ===');
+            
+            const searchInput = document.getElementById('productUsageSearch');
+            const table = document.getElementById('productUsageTable');
+            
+            console.log('Search input element:', searchInput);
+            console.log('Table element:', table);
+            
+            if (!searchInput || !table) {
+                console.log('ERROR: Search input or table not found');
+                alert('Lỗi: Không tìm thấy ô tìm kiếm hoặc bảng dữ liệu');
+                return;
+            }
+            
+            const searchTerm = searchInput.value.toLowerCase().trim();
+            console.log('Search term:', searchTerm);
+            
+            const tbody = table.querySelector('tbody');
+            console.log('Table tbody:', tbody);
+            
+            if (!tbody) {
+                console.log('ERROR: Table tbody not found');
+                alert('Lỗi: Không tìm thấy nội dung bảng');
+                return;
+            }
+            
+            const rows = tbody.querySelectorAll('tr');
+            console.log('Number of rows found:', rows.length);
+            
+            let visibleCount = 0;
+            
+            rows.forEach((row, index) => {
+                const cells = row.querySelectorAll('td');
+                console.log(`Row ${index} has ${cells.length} cells`);
+                
+                let shouldShow = false;
+                
+                if (searchTerm === '') {
+                    shouldShow = true;
+                } else {
+                    // Search in product name (column 1), SKU (column 2), and category (column 3)
+                    const productName = cells[1] ? cells[1].textContent.toLowerCase().trim() : '';
+                    const sku = cells[2] ? cells[2].textContent.toLowerCase().trim() : '';
+                    const category = cells[3] ? cells[3].textContent.toLowerCase().trim() : '';
+                    
+                    console.log(`Row ${index}: Product="${productName}", SKU="${sku}", Category="${category}"`);
+                    
+                    const matchProduct = productName.includes(searchTerm);
+                    const matchSku = sku.includes(searchTerm);
+                    const matchCategory = category.includes(searchTerm);
+                    
+                    console.log(`  Matches - Product: ${matchProduct}, SKU: ${matchSku}, Category: ${matchCategory}`);
+                    
+                    shouldShow = matchProduct || matchSku || matchCategory;
+                }
+                
+                console.log(`Row ${index} shouldShow: ${shouldShow}`);
+                
+                if (shouldShow) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            console.log(`=== RESULT: ${visibleCount} rows visible for search term: "${searchTerm}" ===`);
+            
+            // Show message if no results found
+            if (visibleCount === 0 && searchTerm !== '') {
+                showNotification(`Không tìm thấy sản phẩm nào với từ khóa "${searchTerm}"`, 'info');
+            }
+        }
+        
+        // Transaction History Pagination Variables
+        let transactionCurrentPage = 1;
+        let transactionPageSize = 10;
+        let transactionTotalItems = 0;
+        let transactionFilteredData = [];
+        let selectedTransactions = new Set();
+
+        // Transaction History Functions
+        function filterTransactionTable() {
+            const typeFilter = document.getElementById('transactionTypeFilter');
+            const searchInput = document.getElementById('transactionSearch');
+            
+            if (!typeFilter || !searchInput) return;
+            
+            const typeValue = typeFilter.value;
+            const searchTerm = searchInput.value.toLowerCase().trim();
+            
+            // Get all transaction data (this would come from your data source)
+            const allTransactions = getTransactionData();
+            
+            // Filter by type
+            let filtered = allTransactions;
+            if (typeValue !== 'all') {
+                filtered = filtered.filter(transaction => transaction.type === typeValue);
+            }
+            
+            // Filter by search term
+            if (searchTerm) {
+                filtered = filtered.filter(transaction => 
+                    transaction.product.toLowerCase().includes(searchTerm) ||
+                    transaction.sku.toLowerCase().includes(searchTerm) ||
+                    transaction.reason.toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            transactionFilteredData = filtered;
+            transactionTotalItems = filtered.length;
+            transactionCurrentPage = 1;
+            
+            renderTransactionTable();
+            renderTransactionPagination();
+        }
+
+        function renderTransactionTable() {
+            const tbody = document.getElementById('transactionHistoryTableBody');
+            if (!tbody) return;
+            
+            const startIndex = (transactionCurrentPage - 1) * transactionPageSize;
+            const endIndex = startIndex + transactionPageSize;
+            const pageData = transactionFilteredData.slice(startIndex, endIndex);
+            
+            tbody.innerHTML = '';
+            
+            pageData.forEach((transaction, index) => {
+                const globalIndex = startIndex + index;
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <input type="checkbox" class="transaction-checkbox" 
+                               data-id="${transaction.id}" 
+                               onchange="updateSelectedCount()">
+                    </td>
+                    <td>${globalIndex + 1}</td>
+                    <td>${formatDateTime(transaction.timestamp)}</td>
+                    <td><span class="badge ${transaction.type === 'in' ? 'badge-success' : 'badge-danger'}">${transaction.type === 'in' ? 'Nhập' : 'Xuất'}</span></td>
+                    <td>${transaction.product}</td>
+                    <td>${transaction.sku}</td>
+                    <td>${transaction.quantity}</td>
+                    <td>${formatCurrency(transaction.unitPrice)}</td>
+                    <td>${formatCurrency(transaction.totalValue)}</td>
+                    <td>${transaction.reason}</td>
+                    <td>${transaction.orderType}</td>
+                    <td>${transaction.user}</td>
+                    <td>
+                        <button class="btn btn-sm btn-danger" onclick="deleteTransaction('${transaction.id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            updatePaginationInfo();
+        }
+
+        function renderTransactionPagination() {
+            const totalPages = Math.ceil(transactionTotalItems / transactionPageSize);
+            const pageNumbers = document.getElementById('transactionHistoryPageNumbers');
+            
+            if (!pageNumbers) return;
+            
+            pageNumbers.innerHTML = '';
+            
+            for (let i = 1; i <= totalPages; i++) {
+                const button = document.createElement('button');
+                button.className = `pagination-btn ${i === transactionCurrentPage ? 'active' : ''}`;
+                button.textContent = i;
+                button.onclick = () => goToTransactionPage(i);
+                pageNumbers.appendChild(button);
+            }
+            
+            // Update navigation buttons
+            const firstBtn = document.getElementById('transactionHistoryFirstBtn');
+            const prevBtn = document.getElementById('transactionHistoryPrevBtn');
+            const nextBtn = document.getElementById('transactionHistoryNextBtn');
+            const lastBtn = document.getElementById('transactionHistoryLastBtn');
+            
+            if (firstBtn) firstBtn.disabled = transactionCurrentPage === 1;
+            if (prevBtn) prevBtn.disabled = transactionCurrentPage === 1;
+            if (nextBtn) nextBtn.disabled = transactionCurrentPage === totalPages;
+            if (lastBtn) lastBtn.disabled = transactionCurrentPage === totalPages;
+        }
+
+        function goToTransactionPage(page) {
+            const totalPages = Math.ceil(transactionTotalItems / transactionPageSize);
+            
+            if (page === 'last') {
+                transactionCurrentPage = totalPages;
+            } else if (page >= 1 && page <= totalPages) {
+                transactionCurrentPage = page;
+            }
+            
+            renderTransactionTable();
+            renderTransactionPagination();
+        }
+
+        function previousTransactionPage() {
+            if (transactionCurrentPage > 1) {
+                goToTransactionPage(transactionCurrentPage - 1);
+            }
+        }
+
+        function nextTransactionPage() {
+            const totalPages = Math.ceil(transactionTotalItems / transactionPageSize);
+            if (transactionCurrentPage < totalPages) {
+                goToTransactionPage(transactionCurrentPage + 1);
+            }
+        }
+
+        function changeTransactionPageSize() {
+            const pageSizeSelect = document.getElementById('transactionHistoryPageSize');
+            if (pageSizeSelect) {
+                transactionPageSize = parseInt(pageSizeSelect.value);
+                transactionCurrentPage = 1;
+                renderTransactionTable();
+                renderTransactionPagination();
+            }
+        }
+
+        function toggleSelectAllTransactions() {
+            const selectAll = document.getElementById('selectAllTransactions');
+            const checkboxes = document.querySelectorAll('.transaction-checkbox');
+            
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = selectAll.checked;
+                if (selectAll.checked) {
+                    selectedTransactions.add(checkbox.dataset.id);
+                } else {
+                    selectedTransactions.delete(checkbox.dataset.id);
+                }
+            });
+            
+            updateSelectedCount();
+        }
+
+        function updateSelectedCount() {
+            const checkboxes = document.querySelectorAll('.transaction-checkbox:checked');
+            const count = checkboxes.length;
+            
+            selectedTransactions.clear();
+            checkboxes.forEach(checkbox => {
+                selectedTransactions.add(checkbox.dataset.id);
+            });
+            
+            const selectedCountSpan = document.getElementById('selectedCount');
+            const deleteBtn = document.getElementById('deleteSelectedBtn');
+            
+            if (selectedCountSpan) {
+                selectedCountSpan.textContent = `${count} mục đã chọn`;
+            }
+            
+            if (deleteBtn) {
+                deleteBtn.disabled = count === 0;
+            }
+            
+            // Update select all checkbox
+            const selectAll = document.getElementById('selectAllTransactions');
+            const allCheckboxes = document.querySelectorAll('.transaction-checkbox');
+            if (selectAll && allCheckboxes.length > 0) {
+                selectAll.checked = count === allCheckboxes.length;
+                selectAll.indeterminate = count > 0 && count < allCheckboxes.length;
+            }
+        }
+
+        function deleteSelectedTransactions() {
+            if (selectedTransactions.size === 0) return;
+            
+            const confirmed = confirm(`Bạn có chắc chắn muốn xóa ${selectedTransactions.size} giao dịch đã chọn?`);
+            if (!confirmed) return;
+            
+            // Delete transactions (implement your delete logic here)
+            selectedTransactions.forEach(id => {
+                deleteTransactionById(id);
+            });
+            
+            selectedTransactions.clear();
+            filterTransactionTable(); // Refresh table
+            showNotification(`Đã xóa ${selectedTransactions.size} giao dịch thành công`, 'success');
+        }
+
+        function deleteTransaction(id) {
+            const confirmed = confirm('Bạn có chắc chắn muốn xóa giao dịch này?');
+            if (!confirmed) return;
+            
+            deleteTransactionById(id);
+            filterTransactionTable(); // Refresh table
+            showNotification('Đã xóa giao dịch thành công', 'success');
+        }
+
+        function deleteTransactionById(id) {
+            // Implement actual delete logic here
+            console.log('Deleting transaction:', id);
+            // This would typically involve Firebase delete operation
+        }
+
+        function getTransactionData() {
+            // Mock data - replace with actual data source
+            return [
+                {
+                    id: '1',
+                    timestamp: new Date('2025-08-23T11:04:37'),
+                    type: 'out',
+                    product: 'phô mai',
+                    sku: '123',
+                    quantity: 80,
+                    unitPrice: 12312,
+                    totalValue: 984960,
+                    reason: 'sale',
+                    orderType: 'Khác',
+                    user: 'cửa hàng test'
+                },
+                {
+                    id: '2',
+                    timestamp: new Date('2025-08-23T10:40:40'),
+                    type: 'out',
+                    product: 'phô mai',
+                    sku: '123',
+                    quantity: 20,
+                    unitPrice: 12312,
+                    totalValue: 246240,
+                    reason: 'sale',
+                    orderType: 'Khác',
+                    user: 'cửa hàng test'
+                }
+            ];
+        }
+
+        function formatDateTime(date) {
+            return date.toLocaleString('vi-VN');
+        }
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('vi-VN', {
+                style: 'currency',
+                currency: 'VND'
+            }).format(amount);
+        }
+
+        function updatePaginationInfo() {
+            const startIndex = (transactionCurrentPage - 1) * transactionPageSize + 1;
+            const endIndex = Math.min(transactionCurrentPage * transactionPageSize, transactionTotalItems);
+            
+            const startSpan = document.getElementById('productUsageShowingStart');
+            const endSpan = document.getElementById('productUsageShowingEnd');
+            const totalSpan = document.getElementById('productUsageTotal');
+            
+            if (startSpan) startSpan.textContent = startIndex;
+            if (endSpan) endSpan.textContent = endIndex;
+            if (totalSpan) totalSpan.textContent = transactionTotalItems;
+        }
+
+        // Initialize transaction table on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            filterTransactionTable();
+        });
+
+        // Export usage report functions
+        window.handlePeriodFilterChange = handlePeriodFilterChange;
+        window.applyCustomDateRange = applyCustomDateRange;
+        window.generateUsageReport = generateUsageReport;
+        window.exportUsageReport = exportUsageReport;
+        window.printUsageReport = printUsageReport;
+        window.filterUsageTable = filterUsageTable;
+        
+        // Export transaction functions
+        window.filterTransactionTable = filterTransactionTable;
+        window.toggleSelectAllTransactions = toggleSelectAllTransactions;
+        window.updateSelectedCount = updateSelectedCount;
+        window.deleteSelectedTransactions = deleteSelectedTransactions;
+        window.deleteTransaction = deleteTransaction;
+        window.goToTransactionPage = goToTransactionPage;
+        window.previousTransactionPage = previousTransactionPage;
+        window.nextTransactionPage = nextTransactionPage;
+        window.changeTransactionPageSize = changeTransactionPageSize;
+        
+        // Expose view toggle functions to global scope
+        window.switchToCurrentListView = switchToCurrentListView;
+        window.switchToUsageReportView = switchToUsageReportView;
+        
+
+
         // Number formatting functions
         function formatNumber(num) {
             return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
@@ -926,5 +2297,8 @@
         
     
     </script>
+
+    <!-- Include warehouse usage report enhanced script -->
+    <script src="../main/warehouse-usage-report-enhanced.js"></script>
 </body>
 </html>

@@ -175,7 +175,7 @@ class TikTokOrderProcessor {
         const customerInfo = this.findCustomerInfo(text);
         
         // Tìm Order ID
-        const orderId = this.findOrderId(text);
+        const orderId = this.findOrderId(text) || `ORDER_${Date.now()}`;
         
         if (productMatches.length > 0) {
             const extractedOrder = {
@@ -186,31 +186,8 @@ class TikTokOrderProcessor {
                 extractedAt: new Date().toISOString()
             };
             
-            const orderText = text.substring(startIndex, endIndex);
-            console.log(`Processing order ${orderId}:`, orderText.substring(0, 200));
-            
-            // Trích xuất thông tin sản phẩm
-            const productInfo = this.extractProductInfo(orderText);
-            
-            if (productInfo) {
-                console.log(`Extracted product for order ${orderId}:`, productInfo);
-                orders.push({
-                    orderId: orderId,
-                    productName: productInfo.name,
-                    quantity: productInfo.quantity,
-                    weight: productInfo.weight,
-                    customerInfo: this.extractCustomerInfo(orderText),
-                    fileName: fileName,
-                    rawText: orderText
-                });
-            } else {
-                console.warn(`No product info found for order ${orderId}`);
-            }
-        }
-        
-        if (orders.length > 0) {
-            console.log(`Successfully extracted ${orders.length} orders`);
-            this.extractedOrders = orders;
+            console.log(`Successfully extracted order ${orderId} with ${productMatches.length} products`);
+            this.extractedOrders = [extractedOrder];
             this.matchProductsWithDatabase();
         } else {
             showNotification('Không trích xuất được thông tin sản phẩm nào', 'warning');
@@ -740,26 +717,108 @@ class TikTokOrderProcessor {
                 }
             }
             
-            if (orders.length === 0) {
+            // Lưu đơn hàng vào Firebase
+            if (orders.length > 0) {
+                const selectedStoreId = localStorage.getItem('selectedStoreId');
+                if (!selectedStoreId) {
+                    throw new Error('Vui lòng chọn cửa hàng trước khi tạo đơn hàng!');
+                }
+                
+                for (let order of orders) {
+                    const orderId = database.ref('orders').push().key;
+                    const orderData = {
+                        id: orderId,
+                        storeId: selectedStoreId,
+                        date: order.date,
+                        type: 'tmdt_order', // Đánh dấu là đơn hàng TMĐT
+                        source: order.source,
+                        originalOrderId: order.originalOrderId,
+                        customerName: order.customerName,
+                        fileName: order.fileName,
+                        products: [{
+                            id: order.productId,
+                            name: order.productName,
+                            sku: order.sku,
+                            quantity: order.quantity,
+                            price: order.price,
+                            total: order.total
+                        }],
+                        totalAmount: order.total,
+                        status: 'completed',
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString()
+                    };
+                    
+                    await database.ref(`orders/${orderId}`).set(orderData);
+                    
+                    // Tạo warehouse transaction để trừ kho - LUÔN TẠO cho mọi đơn hàng
+                    const transactionId = database.ref('warehouseTransactions').push().key;
+                    const transaction = {
+                        id: transactionId,
+                        type: 'out',
+                        orderType: 'tmdt_order', // Đánh dấu loại đơn hàng
+                        orderId: orderId,
+                        productId: order.productId,
+                        productName: order.productName,
+                        productSku: order.sku,
+                        productCategory: 'TMĐT',
+                        quantity: order.quantity,
+                        unitPrice: order.price,
+                        totalValue: order.total,
+                        reason: 'sale',
+                        note: `Đơn hàng TMĐT #${order.originalOrderId} từ ${order.fileName}`,
+                        timestamp: Date.now(),
+                        date: new Date().toISOString(),
+                        userId: 'admin',
+                        storeId: selectedStoreId
+                    };
+                    
+                    console.log('Creating warehouse transaction:', transaction);
+                    await database.ref(`warehouseTransactions/${transactionId}`).set(transaction);
+                    
+                    // Cập nhật tồn kho chỉ nếu có productId thật
+                    if (order.productId && !order.productId.startsWith('manual_')) {
+                        const productRef = database.ref(`products/${order.productId}/stock`);
+                        const currentStock = await productRef.once('value');
+                        const newStock = (currentStock.val() || 0) - order.quantity;
+                        await productRef.set(Math.max(0, newStock));
+                        console.log(`Updated stock for ${order.productName}: ${currentStock.val()} -> ${newStock}`);
+                    }
+                }
+                
+                showNotification(`Đã tạo thành công ${orders.length} đơn hàng TMĐT!`, 'success');
+                this.cancelExtraction();
+                
+                // Reload dữ liệu
+                if (typeof loadOrders === 'function') {
+                    await loadOrders();
+                }
+                
+                // Refresh warehouse usage report if it's currently visible
+                if (typeof generateUsageReport === 'function') {
+                    setTimeout(() => {
+                        console.log('Auto-refreshing warehouse usage report...');
+                        generateUsageReport();
+                    }, 1500);
+                }
+                
+                // Force refresh warehouse data
+                if (typeof loadTransactionHistory === 'function') {
+                    setTimeout(() => {
+                        console.log('Auto-refreshing transaction history...');
+                        loadTransactionHistory();
+                    }, 2000);
+                }
+                
+                // Refresh warehouse data if available
+                if (typeof loadWarehouseData === 'function') {
+                    await loadWarehouseData();
+                }
+                if (typeof displayWarehouseTable === 'function') {
+                    displayWarehouseTable();
+                }
+            } else {
                 showNotification('Không có đơn hàng nào để tạo!', 'warning');
-                return;
-            }
-            
-            // Lưu vào Firebase
-            for (let order of orders) {
-                const orderId = Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-                await database.ref(`orders/${orderId}`).set({
-                    ...order,
-                    createdAt: new Date().toISOString()
-                });
-            }
-            
-            showNotification(`Đã tạo thành công ${orders.length} đơn hàng từ PDF!`, 'success');
-            
-            // Reset và reload
-            this.cancelExtraction();
-            if (typeof loadOrders === 'function') {
-                await loadOrders();
             }
             
         } catch (error) {
