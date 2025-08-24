@@ -668,6 +668,10 @@ async function processStockIn(event) {
         // Add to local warehouseData
         warehouseData[productId] = product;
         
+        // Get current store information from store context
+        const currentStoreId = getCurrentStoreId();
+        const currentStoreData = getCurrentStoreData();
+        
         const transactionId = database.ref('warehouseTransactions').push().key;
         const transaction = {
             id: transactionId,
@@ -683,7 +687,10 @@ async function processStockIn(event) {
             note: note,
             timestamp: Date.now(),
             date: new Date().toISOString(),
-            userId: 'admin'
+            userId: 'admin',
+            storeId: currentStoreId || '',
+            storeName: currentStoreData?.name || 'Không xác định',
+            performedBy: currentStoreData?.name || 'admin'
         };
         
         await database.ref(`warehouseTransactions/${transactionId}`).set(transaction);
@@ -792,6 +799,10 @@ async function processStockOut(event) {
         
         await database.ref(`products/${productId}/stock`).set(newStock);
         
+        // Get current store information from store context
+        const currentStoreId = getCurrentStoreId();
+        const currentStoreData = getCurrentStoreData();
+        
         const transactionId = database.ref('warehouseTransactions').push().key;
         const transaction = {
             id: transactionId,
@@ -808,7 +819,10 @@ async function processStockOut(event) {
             note: note,
             timestamp: Date.now(),
             date: new Date().toISOString(),
-            userId: 'admin'
+            userId: 'admin',
+            storeId: currentStoreId || '',
+            storeName: currentStoreData?.name || 'Không xác định',
+            performedBy: currentStoreData?.name || 'admin'
         };
         
         await database.ref(`warehouseTransactions/${transactionId}`).set(transaction);
@@ -1088,8 +1102,12 @@ async function processAdjustment(event) {
         // Update product in Firebase
         await database.ref(`products/${productId}`).set(updatedProduct);
         
+        // Get current store information from store context
+        const currentStoreId = getCurrentStoreId();
+        const currentStoreData = getCurrentStoreData();
+        
         // Create adjustment transaction
-        const transactionId = database.ref('warehouse_transactions').push().key;
+        const transactionId = database.ref('warehouseTransactions').push().key;
         const transaction = {
             id: transactionId,
             type: 'adjustment',
@@ -1110,7 +1128,10 @@ async function processAdjustment(event) {
             note: note,
             timestamp: Date.now(),
             date: new Date().toISOString(),
-            userId: 'admin'
+            userId: 'admin',
+            storeId: currentStoreId || '',
+            storeName: currentStoreData?.name || 'Không xác định',
+            performedBy: currentStoreData?.name || 'admin'
         };
         
         await database.ref(`warehouse_transactions/${transactionId}`).set(transaction);

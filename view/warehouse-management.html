@@ -13,6 +13,283 @@
 
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Bootstrap Select for searchable dropdown -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.14/dist/css/bootstrap-select.min.css">
+    <style>
+        /* Bootstrap Select Styling */
+        .bootstrap-select {
+            width: 100% !important;
+        }
+        
+        .bootstrap-select .dropdown-toggle {
+            width: 100% !important;
+            text-align: left !important;
+            padding-right: 25px !important;
+        }
+        
+        .bootstrap-select .dropdown-toggle .filter-option {
+            width: 100% !important;
+            text-align: left !important;
+        }
+        
+        .filter-group:has(#exportProductFilter) {
+            flex: 1;
+        }
+        
+        /* Custom styling for Bootstrap Select dropdown */
+        .bootstrap-select .dropdown-toggle {
+            border: 1px solid #e0e6ed;
+            border-radius: 4px;
+            background: white;
+            padding: 6px 8px;
+            font-size: 13px;
+            color: #495057;
+            transition: all 0.3s ease;
+            width: 100% !important;
+            display: block !important;
+            cursor: pointer !important;
+        }
+        
+        .bootstrap-select .dropdown-toggle:hover {
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.1);
+        }
+        
+        .bootstrap-select .dropdown-toggle:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+            outline: none;
+        }
+        
+        .bootstrap-select .dropdown-menu {
+            border: 1px solid #e0e6ed;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin-top: 4px;
+            padding: 8px 0;
+        }
+        
+        .bootstrap-select .dropdown-menu .bs-searchbox input {
+            border: 1px solid #e0e6ed;
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin: 8px 12px 12px 12px;
+            font-size: 14px;
+            width: calc(100% - 24px);
+        }
+        
+        .bootstrap-select .dropdown-menu .bs-searchbox input:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+            outline: none;
+        }
+        
+        .bootstrap-select .dropdown-menu li a {
+            padding: 10px 16px;
+            font-size: 14px;
+            color: #495057;
+            transition: all 0.2s ease;
+            border-radius: 0;
+        }
+        
+        .bootstrap-select .dropdown-menu li a:hover {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            color: #007bff;
+        }
+        
+        .bootstrap-select .dropdown-menu li.selected a {
+            background: #f8f9fa;
+            color: #007bff;
+            font-weight: 500;
+            border-left: 3px solid #007bff;
+        }
+        
+        .bootstrap-select .dropdown-menu li.active a {
+            background: #e3f2fd;
+            color: #007bff;
+            border-left: 3px solid #007bff;
+        }
+        
+        .bootstrap-select .dropdown-menu .no-results {
+            padding: 12px 16px;
+            color: #6c757d;
+            font-style: italic;
+            text-align: center;
+        }
+        
+        /* Custom caret styling */
+        .bootstrap-select .dropdown-toggle::after {
+            border-top: 0.3em solid #6c757d;
+            border-right: 0.3em solid transparent;
+            border-bottom: 0;
+            border-left: 0.3em solid transparent;
+            margin-left: 0.255em;
+            vertical-align: 0.255em;
+        }
+        
+        .bootstrap-select.show .dropdown-toggle::after {
+            transform: rotate(180deg);
+        }
+        
+        /* Inline Filter Layout */
+        .filters-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: transparent;
+            padding: 0;
+            border: none;
+            box-shadow: none;
+            position: relative;
+        }
+        
+        .filter-group:hover {
+            box-shadow: none;
+            transform: none;
+        }
+        
+        .filter-group:last-child {
+            grid-column: unset;
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .filter-label {
+            display: block;
+            font-weight: 500;
+            color: #495057;
+            margin-bottom: 0;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+        
+        .filter-select {
+            min-width: 120px;
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid #e0e6ed;
+            border-radius: 4px;
+            background: white;
+            font-size: 13px;
+            color: #495057;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .filter-select:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+            outline: none;
+        }
+        
+        /* Custom Date Range Styling */
+        .custom-date-range {
+            display: flex !important;
+            align-items: center;
+            gap: 10px;
+            background: transparent;
+            padding: 0;
+            border: none;
+            box-shadow: none;
+        }
+        
+        .custom-date-range .filter-label {
+            color: #495057;
+            font-weight: 500;
+            margin-bottom: 0;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+        
+        .filter-input {
+            border: 1px solid #e0e6ed;
+            border-radius: 4px;
+            padding: 6px 8px;
+            font-size: 13px;
+            color: #495057;
+            transition: all 0.3s ease;
+            min-width: 120px;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .filter-input[type="date"]::-webkit-calendar-picker-indicator {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: auto;
+            height: auto;
+            color: transparent;
+            background: transparent;
+            cursor: pointer;
+        }
+        
+        .filter-input[type="date"]::-webkit-inner-spin-button,
+        .filter-input[type="date"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        
+        .filter-input:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+            outline: none;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .filters-grid {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
+            
+            .filter-group {
+                justify-content: space-between;
+            }
+            
+            .filter-select, .filter-input {
+                min-width: unset;
+                flex: 1;
+            }
+        }
+        
+        /* Filters Section Header */
+        .filters-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e9ecef;
+        }
+        
+        .filters-title {
+            color: #495057;
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .filters-title i {
+            color: #007bff;
+            font-size: 1.2rem;
+        }
+    </style>
 </head>
 <body>
     <div class="app-container">
@@ -272,6 +549,63 @@
             
             <!-- Export Report Tab Content -->
             <div id="exportReportTab" class="tab-content active">
+                <!-- Statistics Filters -->
+                <div class="stats-filters-section">
+                    <h3 class="stats-filters-title">
+                        <i class="fas fa-chart-bar"></i> Bộ Lọc Thống Kê
+                    </h3>
+                    <div class="stats-filters-grid">
+                        <div class="stats-filter-group">
+                            <label class="stats-filter-label">📅 Thời gian:</label>
+                            <select id="statsExportDateRange" class="stats-filter-select">
+                                <option value="all">Tất cả</option>
+                                <option value="today">Hôm nay</option>
+                                <option value="week">7 ngày qua</option>
+                                <option value="month">30 ngày qua</option>
+                                <option value="quarter">3 tháng qua</option>
+                                <option value="custom">Tùy chọn</option>
+                            </select>
+                        </div>
+                        <div class="stats-filter-group">
+                            <label class="stats-filter-label">🏪 Cửa hàng:</label>
+                            <select id="statsExportStoreFilter" class="stats-filter-select">
+                                <option value="all">Tất cả cửa hàng</option>
+                            </select>
+                        </div>
+                        <div class="stats-filter-group">
+                            <label class="stats-filter-label">📦 Sản phẩm:</label>
+                            <select id="statsExportProductFilter" class="stats-filter-select">
+                                <option value="all">Tất cả sản phẩm</option>
+                            </select>
+                        </div>
+                        <div class="stats-filter-actions">
+                            <button id="applyStatsFiltersBtn" class="btn btn-primary stats-filter-btn">
+                                <i class="fas fa-filter"></i> Áp dụng
+                            </button>
+                            <button id="resetStatsFiltersBtn" class="btn btn-secondary stats-filter-btn">
+                                <i class="fas fa-undo"></i> Đặt lại
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Custom Date Range (appears below when selected) -->
+                    <div id="statsCustomDateRange" class="stats-filter-group custom-date-range hidden">
+                        <label class="stats-filter-label">Từ ngày:</label>
+                        <input type="date" id="statsStartDate" class="stats-filter-input">
+                        <label class="stats-filter-label">Đến ngày:</label>
+                        <input type="date" id="statsEndDate" class="stats-filter-input">
+                    </div>
+                    
+                    <!-- Filter Status Display -->
+                    <div class="stats-filter-status" id="statsFilterStatus" style="display: none;">
+                        <div class="filter-active-indicator">
+                            <i class="fas fa-info-circle text-info"></i>
+                            <span class="filter-status-text">Thống kê đã được lọc</span>
+                        </div>
+                        <div class="filter-summary" id="statsFilterSummary"></div>
+                    </div>
+                </div>
+                
                 <!-- Statistics Cards -->
                 <div class="stats-container">
                     <div class="stat-card export-card">
@@ -299,7 +633,7 @@
                 
                 <!-- Filters -->
                 <div class="filters-section">
-                    <h3 class="filters-title"><i class="fas fa-filter"></i> Bộ Lọc</h3>
+                    <h3 class="filters-title"><i class="fas fa-filter"></i> Bộ Lọc Danh sách kho</h3>
                     <div class="filters-grid">
                         <div class="filter-group">
                             <label class="filter-label">Thời gian:</label>
@@ -309,6 +643,7 @@
                                 <option value="week">Tuần này</option>
                                 <option value="month">Tháng này</option>
                                 <option value="quarter">Quý này</option>
+                                <option value="custom">Tùy chọn thời gian</option>
                             </select>
                         </div>
                         <div class="filter-group">
@@ -329,23 +664,47 @@
                                 <option value="other">Khác</option>
                             </select>
                         </div>
-                        <div class="filter-group">
+                        <div class="filter-group" style="width: 100%;">
                             <label class="filter-label">Sản phẩm:</label>
-                            <select id="exportProductFilter" class="filter-select">
-                                <option value="all">Tất cả sản phẩm</option>
-                            </select>
+                            <div class="product-search-container">
+                                <div class="product-search-wrapper">
+                                    <input type="text" 
+                                           id="exportProductSearch" 
+                                           class="product-search-input" 
+                                           placeholder="Tìm kiếm sản phẩm..."
+                                           autocomplete="off">
+                                    
+                                    <button type="button" class="product-clear-btn" id="clearProductSearch" style="display: none;">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                <div class="product-suggestions" id="productSuggestions" style="display: none;">
+                                    <div class="suggestion-item all-products" data-value="all">
+                                        <i class="fas fa-list"></i>
+                                        <span>Tất cả sản phẩm</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="exportProductFilter" value="all">
+                        </div>
+                        <div class="filters-actions">
+                            <button id="applyFiltersBtn" class="btn btn-primary filter-btn">
+                                <i class="fas fa-filter"></i> Áp dụng
+                            </button>
+                            <button id="resetFiltersBtn" class="btn btn-secondary filter-btn">
+                                <i class="fas fa-undo"></i> Đặt lại
+                            </button>
                         </div>
                     </div>
-                    <div class="filters-actions">
-                        <button id="exportToExcelBtn" class="btn-filter btn-success">
-                            <i class="fas fa-file-excel"></i>
-                            Xuất Excel
-                        </button>
-                        <button id="refreshExportReportBtn" class="btn-filter btn-secondary">
-                            <i class="fas fa-sync-alt"></i>
-                            Làm mới
-                        </button>
+                    
+                    <!-- Custom Date Range (appears below when selected) -->
+                    <div id="customDateRange" class="filter-group custom-date-range hidden">
+                        <label class="filter-label">Từ ngày:</label>
+                        <input type="date" id="startDate" class="filter-input">
+                        <label class="filter-label">Đến ngày:</label>
+                        <input type="date" id="endDate" class="filter-input">
                     </div>
+                    
                 </div>
                 
                 <!-- Export Report Table -->
@@ -1588,8 +1947,14 @@
     <!-- XLSX for Excel export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
+    <!-- Bootstrap and Bootstrap Select JS -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.14/dist/js/bootstrap-select.min.js"></script>
+    
     <!-- Scripts -->
     <script src="../main/firebase.js"></script>
+    <script src="../main/store-context.js"></script>
     <script src="../main/dashboard.js"></script>
     <script src="../main/navbar.js"></script>
     <script src="../main/warehouse-data-initializer.js"></script>
