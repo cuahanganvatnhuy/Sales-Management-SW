@@ -1004,8 +1004,9 @@
                     <div class="filter-group">
                         <label for="reportPeriodSelect">📅 Thời gian:</label>
                         <select id="reportPeriodSelect" onchange="generateUsageReport()">
+                            <option value="all" selected>Tất cả</option>
                             <option value="today">Hôm nay</option>
-                            <option value="week" selected>Tuần này</option>
+                            <option value="week">Tuần này</option>
                             <option value="month">Tháng này</option>
                             <option value="quarter">Quý này</option>
                             <option value="year">Năm này</option>
@@ -1957,8 +1958,9 @@
     <script src="../main/store-context.js"></script>
     <script src="../main/dashboard.js"></script>
     <script src="../main/navbar.js"></script>
-    <script src="../main/warehouse-data-initializer.js"></script>
+    <script src="../main/warehouse-view-toggle.js"></script>
     <script src="../main/warehouse-core.js"></script>
+    <script src="../main/cleanup-test-data.js"></script>
     <script src="../main/warehouse-view-toggle.js"></script>
 
     <script>
@@ -1997,12 +1999,7 @@
                 console.log('Number of stores:', Object.keys(stores || {}).length);
                 
                 if (!stores || Object.keys(stores).length === 0) {
-                    console.log('⚠️ No stores found, creating sample data...');
-                    await createSampleData();
-                    
-                    // Try again after creating sample data
-                    const newStores = await getAllStores();
-                    console.log('Stores after creating sample data:', newStores);
+                    console.log('⚠️ No stores found in Firebase database');
                 }
                 
                 console.log('=== DATABASE TEST COMPLETE ===');
@@ -2025,6 +2022,9 @@
         function initializeStoreSelector() {
             // Load stores and populate dropdown
             loadStoresIntoDropdown();
+            
+            // Also populate store filter independently in case loadStoresIntoDropdown fails
+            populateStoreFilterIndependently();
             
             // Set current store if already selected
             const selectedStoreData = localStorage.getItem('selectedStoreData');
@@ -2060,8 +2060,40 @@
                 });
                 
                 storeList.innerHTML = storesHTML;
+                
+                // Also populate store filter dropdown
+                populateStoreFilter(stores);
+                
             } catch (error) {
                 console.error('Error loading stores:', error);
+            }
+        }
+
+        // Populate store filter dropdown
+        function populateStoreFilter(stores) {
+            const storeFilter = document.getElementById('storeFilter');
+            if (!storeFilter || !stores) return;
+            
+            // Keep the "Tất cả cửa hàng" option and add all stores
+            let optionsHTML = '<option value="all">Tất cả cửa hàng</option>';
+            
+            Object.entries(stores).forEach(([storeId, store]) => {
+                optionsHTML += `<option value="${storeId}">${store.name}</option>`;
+            });
+            
+            storeFilter.innerHTML = optionsHTML;
+            console.log('Store filter populated with', Object.keys(stores).length, 'stores');
+        }
+
+        // Populate store filter independently
+        async function populateStoreFilterIndependently() {
+            try {
+                const stores = await getAllStores();
+                if (stores) {
+                    populateStoreFilter(stores);
+                }
+            } catch (error) {
+                console.error('Error populating store filter:', error);
             }
         }
 
@@ -2686,13 +2718,21 @@
         function filterTransactionTable() {
             const typeFilter = document.getElementById('transactionTypeFilter');
             const searchInput = document.getElementById('transactionSearch');
+            const dateFromFilter = document.getElementById('dateFromFilter');
+            const dateToFilter = document.getElementById('dateToFilter');
+            const storeFilter = document.getElementById('storeFilter');
+            const categoryFilter = document.getElementById('categoryFilter');
             
             if (!typeFilter || !searchInput) return;
             
             const typeValue = typeFilter.value;
             const searchTerm = searchInput.value.toLowerCase().trim();
+            const dateFrom = dateFromFilter ? dateFromFilter.value : '';
+            const dateTo = dateToFilter ? dateToFilter.value : '';
+            const storeValue = storeFilter ? storeFilter.value : 'all';
+            const categoryValue = categoryFilter ? categoryFilter.value : 'all';
             
-            // Get all transaction data (this would come from your data source)
+            // Get all transaction data from enhanced usage report system
             const allTransactions = getTransactionData();
             
             // Filter by type
@@ -2701,12 +2741,40 @@
                 filtered = filtered.filter(transaction => transaction.type === typeValue);
             }
             
+            // Filter by date range
+            if (dateFrom) {
+                const fromDate = new Date(dateFrom);
+                fromDate.setHours(0, 0, 0, 0);
+                filtered = filtered.filter(transaction => 
+                    new Date(transaction.timestamp) >= fromDate
+                );
+            }
+            
+            if (dateTo) {
+                const toDate = new Date(dateTo);
+                toDate.setHours(23, 59, 59, 999);
+                filtered = filtered.filter(transaction => 
+                    new Date(transaction.timestamp) <= toDate
+                );
+            }
+            
+            // Filter by store
+            if (storeValue !== 'all') {
+                filtered = filtered.filter(transaction => {
+                    // Check both storeId and storeName for compatibility
+                    return (transaction.storeId && transaction.storeId === storeValue) ||
+                           (transaction.storeName && transaction.storeName.toLowerCase().includes(storeValue.toLowerCase())) ||
+                           (transaction.user && transaction.user.toLowerCase().includes(storeValue.toLowerCase()));
+                });
+            }
+            
             // Filter by search term
             if (searchTerm) {
                 filtered = filtered.filter(transaction => 
                     transaction.product.toLowerCase().includes(searchTerm) ||
                     transaction.sku.toLowerCase().includes(searchTerm) ||
-                    transaction.reason.toLowerCase().includes(searchTerm)
+                    transaction.reason.toLowerCase().includes(searchTerm) ||
+                    transaction.user.toLowerCase().includes(searchTerm)
                 );
             }
             
@@ -2869,67 +2937,91 @@
             }
         }
 
-        function deleteSelectedTransactions() {
+        async function deleteSelectedTransactions() {
             if (selectedTransactions.size === 0) return;
             
-            const confirmed = confirm(`Bạn có chắc chắn muốn xóa ${selectedTransactions.size} giao dịch đã chọn?`);
+            const count = selectedTransactions.size;
+            const confirmed = confirm(`Bạn có chắc chắn muốn xóa ${count} giao dịch đã chọn?`);
             if (!confirmed) return;
             
-            // Delete transactions (implement your delete logic here)
-            selectedTransactions.forEach(id => {
-                deleteTransactionById(id);
-            });
-            
-            selectedTransactions.clear();
-            filterTransactionTable(); // Refresh table
-            showNotification(`Đã xóa ${selectedTransactions.size} giao dịch thành công`, 'success');
+            try {
+                // Delete all selected transactions
+                const deletePromises = Array.from(selectedTransactions).map(id => deleteTransactionById(id));
+                await Promise.all(deletePromises);
+                
+                selectedTransactions.clear();
+                filterTransactionTable(); // Refresh table
+                showNotification(`Đã xóa ${count} giao dịch thành công`, 'success');
+            } catch (error) {
+                showNotification('Có lỗi xảy ra khi xóa giao dịch', 'error');
+            }
         }
 
-        function deleteTransaction(id) {
+        async function deleteTransaction(id) {
             const confirmed = confirm('Bạn có chắc chắn muốn xóa giao dịch này?');
             if (!confirmed) return;
             
-            deleteTransactionById(id);
-            filterTransactionTable(); // Refresh table
-            showNotification('Đã xóa giao dịch thành công', 'success');
+            try {
+                await deleteTransactionById(id);
+                filterTransactionTable(); // Refresh table
+                showNotification('Đã xóa giao dịch thành công', 'success');
+            } catch (error) {
+                // Error already handled in deleteTransactionById
+            }
         }
 
-        function deleteTransactionById(id) {
-            // Implement actual delete logic here
-            console.log('Deleting transaction:', id);
-            // This would typically involve Firebase delete operation
+        async function deleteTransactionById(id) {
+            try {
+                console.log('Deleting transaction:', id);
+                
+                // Delete from Firebase
+                await firebase.database().ref(`warehouseTransactions/${id}`).remove();
+                
+                // Remove from local transactionHistory array
+                if (window.transactionHistory) {
+                    window.transactionHistory = window.transactionHistory.filter(t => t.id !== id);
+                }
+                
+                // Refresh warehouse data if function exists
+                if (typeof refreshWarehouseData === 'function') {
+                    await refreshWarehouseData();
+                }
+                
+                console.log('Transaction deleted successfully:', id);
+                
+            } catch (error) {
+                console.error('Error deleting transaction:', error);
+                showNotification('Lỗi khi xóa giao dịch: ' + error.message, 'error');
+                throw error;
+            }
+        }
+
+        // Refresh transaction table data
+        function refreshTransactionTable() {
+            console.log('Refreshing transaction table...');
+            filterTransactionTable();
         }
 
         function getTransactionData() {
-            // Mock data - replace with actual data source
-            return [
-                {
-                    id: '1',
-                    timestamp: new Date('2025-08-23T11:04:37'),
-                    type: 'out',
-                    product: 'phô mai',
-                    sku: '123',
-                    quantity: 80,
-                    unitPrice: 12312,
-                    totalValue: 984960,
-                    reason: 'sale',
-                    orderType: 'Khác',
-                    user: 'cửa hàng test'
-                },
-                {
-                    id: '2',
-                    timestamp: new Date('2025-08-23T10:40:40'),
-                    type: 'out',
-                    product: 'phô mai',
-                    sku: '123',
-                    quantity: 20,
-                    unitPrice: 12312,
-                    totalValue: 246240,
-                    reason: 'sale',
-                    orderType: 'Khác',
-                    user: 'cửa hàng test'
-                }
-            ];
+            // Use real transaction data from enhanced usage report system
+            if (window.transactionHistory && Array.isArray(window.transactionHistory)) {
+                return window.transactionHistory.map(transaction => ({
+                    id: transaction.id || transaction.transactionId,
+                    timestamp: new Date(transaction.timestamp),
+                    type: transaction.type,
+                    product: transaction.productName || transaction.product || 'Không xác định',
+                    sku: transaction.productSku || transaction.sku || '-',
+                    quantity: parseInt(transaction.quantity) || 0,
+                    unitPrice: parseFloat(transaction.unitPrice) || 0,
+                    totalValue: (parseInt(transaction.quantity) || 0) * (parseFloat(transaction.unitPrice) || 0),
+                    reason: transaction.reason || transaction.notes || 'Không xác định',
+                    orderType: transaction.orderType || 'Khác',
+                    user: transaction.storeName || transaction.performedBy || 'Không xác định'
+                }));
+            }
+            
+            // Fallback to empty array if no data available
+            return [];
         }
 
         function formatDateTime(date) {
@@ -2969,15 +3061,19 @@
         window.printUsageReport = printUsageReport;
         window.filterUsageTable = filterUsageTable;
         
-        // Export transaction functions
+        // Export functions to global scope
         window.filterTransactionTable = filterTransactionTable;
-        window.toggleSelectAllTransactions = toggleSelectAllTransactions;
-        window.updateSelectedCount = updateSelectedCount;
+        window.renderTransactionTable = renderTransactionTable;
+        window.renderTransactionPagination = renderTransactionPagination;
+        window.goToPage = goToPage;
+        window.previousPage = previousPage;
+        window.nextPage = nextPage;
+        window.changePageSize = changePageSize;
+        window.toggleSelectAll = toggleSelectAll;
+        window.toggleTransactionSelect = toggleTransactionSelect;
         window.deleteSelectedTransactions = deleteSelectedTransactions;
         window.deleteTransaction = deleteTransaction;
-        window.goToTransactionPage = goToTransactionPage;
-        window.previousTransactionPage = previousTransactionPage;
-        window.nextTransactionPage = nextTransactionPage;
+        window.refreshTransactionTable = refreshTransactionTable;
         window.changeTransactionPageSize = changeTransactionPageSize;
         
         // Expose view toggle functions to global scope
@@ -3223,48 +3319,7 @@
             updateViewButtonStates('usageReportViewBtn');
         }
         
-        // Test export report manually
-        function testExportReportManually() {
-            console.log('🧪 Manual test: Creating sample export data...');
-            const tbody = document.getElementById('exportReportTableBody');
-            if (tbody) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td><input type="checkbox"></td>
-                        <td>1</td>
-                        <td>23/8/2025 15:00:00</td>
-                        <td><span class="transaction-type export-type">Xuất bán</span></td>
-                        <td>Bánh quy chocolate</td>
-                        <td>BQ001</td>
-                        <td>50</td>
-                        <td>cái</td>
-                        <td>25,000 ₫</td>
-                        <td>1,250,000 ₫</td>
-                        <td>sale</td>
-                        <td><span class="order-type-badge badge-success">Bán lẻ</span></td>
-                        <td>Cửa hàng chính</td>
-                        <td>
-                            <button class="btn btn-sm btn-info"><i class="fas fa-info-circle"></i></button>
-                            <button class="btn btn-sm btn-danger"><i class="fas fa-trash-alt"></i></button>
-                        </td>
-                    </tr>
-                `;
-                console.log('✅ Manual test data added to table');
-                
-                // Update statistics
-                const totalExportsEl = document.querySelector('#exportReportTab .stats-card:nth-child(1) .stats-number');
-                const totalQuantityEl = document.querySelector('#exportReportTab .stats-card:nth-child(2) .stats-number');
-                const totalValueEl = document.querySelector('#exportReportTab .stats-card:nth-child(3) .stats-number');
-                
-                if (totalExportsEl) totalExportsEl.textContent = '1';
-                if (totalQuantityEl) totalQuantityEl.textContent = '50';
-                if (totalValueEl) totalValueEl.textContent = '1,250,000 ₫';
-                
-                console.log('✅ Statistics updated manually');
-            } else {
-                console.error('❌ exportReportTableBody not found');
-            }
-        }
+        // REMOVED: Manual test function - using only real Firebase data
 
         // Helper functions for modal and notifications
         function showModal(content) {

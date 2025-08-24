@@ -30,10 +30,8 @@ async function initializeWarehouseManagement() {
             }
         }
         
-        // Initialize sample data if needed
-        if (typeof window.initializeWarehouseData === 'function') {
-            await window.initializeWarehouseData();
-        }
+        // Initialize warehouse data from Firebase only
+        console.log('✅ Warehouse core initialized - using real Firebase data only');
         
         // Load data
         await loadWarehouseData();
@@ -212,26 +210,52 @@ function showNotification(message, type = 'info') {
     const notification = document.getElementById('notification');
     if (!notification) return;
     
-    const icon = notification.querySelector('.notification-icon');
-    const messageSpan = notification.querySelector('.notification-message');
-    
-    // Set icon based on type
-    let iconClass = 'fas fa-info-circle';
-    if (type === 'success') iconClass = 'fas fa-check-circle';
-    else if (type === 'error') iconClass = 'fas fa-exclamation-circle';
-    else if (type === 'warning') iconClass = 'fas fa-exclamation-triangle';
-    
-    if (icon) icon.className = `notification-icon ${iconClass}`;
-    if (messageSpan) messageSpan.textContent = message;
-    
-    // Set notification type class
+    notification.textContent = message;
     notification.className = `notification ${type}`;
-    notification.classList.remove('hidden');
+    notification.style.display = 'block';
     
-    // Auto hide after 5 seconds
     setTimeout(() => {
-        notification.classList.add('hidden');
-    }, 5000);
+        notification.style.display = 'none';
+    }, 3000);
+}
+
+// Refresh all warehouse data and UI components
+async function refreshWarehouseData() {
+    try {
+        console.log('Refreshing warehouse data...');
+        
+        // Reload warehouse data from Firebase
+        await loadWarehouseData();
+        
+        // Update main warehouse table
+        displayWarehouseTable();
+        
+        // Update dashboard
+        updateDashboard();
+        
+        // Refresh product selects in modals
+        populateProductSelects();
+        
+        // Refresh transaction history if the function exists
+        if (typeof loadTransactionHistory === 'function') {
+            await loadTransactionHistory();
+        }
+        
+        // Refresh usage report if the function exists
+        if (typeof refreshUsageReport === 'function') {
+            refreshUsageReport();
+        }
+        
+        // Refresh transaction table if the function exists
+        if (typeof refreshTransactionTable === 'function') {
+            refreshTransactionTable();
+        }
+        
+        console.log('Warehouse data refreshed successfully');
+        
+    } catch (error) {
+        console.error('Error refreshing warehouse data:', error);
+    }
 }
 
 // Populate category filter
@@ -699,9 +723,11 @@ async function processStockIn(event) {
         warehouseTransactions.unshift(transaction);
         
         // Refresh UI components
-        updateDashboard();
         populateProductSelects(); // Refresh product selects in case new product was added
         displayWarehouseTable();
+        
+        // Auto refresh all warehouse data
+        await refreshWarehouseData();
         
         showNotification(`Đã tạo sản phẩm mới "${product.name}" và nhập ${quantity} ${product.unit} vào kho!`, 'success');
         closeStockInModal();
@@ -832,6 +858,9 @@ async function processStockOut(event) {
         
         updateDashboard();
         displayWarehouseTable();
+        
+        // Auto refresh all warehouse data
+        await refreshWarehouseData();
         
         showNotification(`Đã xuất ${formatCurrency(quantity)} ${product.unit} ${product.name}`, 'success');
         
@@ -1142,6 +1171,9 @@ async function processAdjustment(event) {
         
         updateDashboard();
         displayWarehouseTable();
+        
+        // Auto refresh all warehouse data
+        await refreshWarehouseData();
         
         let message = `Đã cập nhật sản phẩm "${productName}" thành công!`;
         if (stockDifference !== 0) {
@@ -2473,31 +2505,34 @@ async function processAddStock(event) {
             costPrice: unitPrice, // Update cost price with new import price
             lastUpdated: new Date().toISOString()
         };
-        
+
         await database.ref(`products/${productId}`).update(updateData);
-        
+
+        // Get store information from localStorage
+        const selectedStoreData = JSON.parse(localStorage.getItem('selectedStoreData') || '{}');
+        const currentStoreId = localStorage.getItem('selectedStoreId') || '';
+
         // Create transaction record
-        const transactionId = `add_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const transactionId = `stock_in_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         const transaction = {
             id: transactionId,
             type: 'in',
-            subType: 'add_stock',
-            productId: productId,
+            productId: product.id,
             productName: product.name,
             productSku: product.sku || '',
             quantity: quantity,
             unitPrice: unitPrice,
             totalValue: quantity * unitPrice,
-            supplier: supplier,
+            reason: 'Nhập hàng mới',
             note: note,
             timestamp: new Date().toISOString(),
-            date: new Date().toLocaleDateString('vi-VN'),
-            time: new Date().toLocaleTimeString('vi-VN'),
-            user: 'Admin' // You can get this from current user session
+            storeId: currentStoreId,
+            storeName: selectedStoreData.name || 'Không xác định',
+            performedBy: selectedStoreData.name || 'admin'
         };
-        
+
         await database.ref(`warehouseTransactions/${transactionId}`).set(transaction);
-        
+
         // Update local data
         warehouseData[productId].stock = newStock;
         warehouseData[productId].costPrice = unitPrice;
@@ -2506,6 +2541,9 @@ async function processAddStock(event) {
         displayWarehouseTable();
         updateDashboard();
         populateProductSelects(); // Update all product selects
+        
+        // Auto refresh all warehouse data
+        await refreshWarehouseData();
         
         // Close modal and show success
         closeAddStockModal();
@@ -2544,6 +2582,7 @@ window.confirmDeleteProduct = confirmDeleteProduct;
 window.showBulkDeleteConfirmModal = showBulkDeleteConfirmModal;
 window.closeBulkDeleteConfirmModal = closeBulkDeleteConfirmModal;
 window.confirmBulkDeleteProducts = confirmBulkDeleteProducts;
+window.refreshWarehouseData = refreshWarehouseData;
 
 // Export Add Stock functions
 window.openAddStockModal = openAddStockModal;

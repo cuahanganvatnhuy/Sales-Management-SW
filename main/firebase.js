@@ -199,180 +199,33 @@ function showNotification(message, type = 'info') {
     }, 3000);
 }
 
-// ===== TẠO DỮ LIỆU MẪU TỰ ĐỘNG =====
+// ===== DATABASE INITIALIZATION =====
 
-// Tạo dữ liệu mẫu
-function createSampleData() {
-    const sampleData = {
-        orders: {
-            "order_001": {
-                id: "order_001",
-                date: "2025-01-01",
-                customerName: "Nguyễn Văn A",
-                customerPhone: "0123456789",
-                products: [
-                    {
-                        productName: "Áo thun nam",
-                        quantity: 2,
-                        price: 150000,
-                        total: 300000
-                    }
-                ],
-                totalAmount: 300000,
-                status: "completed",
-                storeId: "store_001",
-                notes: "Khách hàng VIP",
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
-            },
-            "order_002": {
-                id: "order_002",
-                date: "2025-01-01",
-                customerName: "Trần Thị B",
-                customerPhone: "0987654321",
-                products: [
-                    {
-                        productName: "Váy đầm",
-                        quantity: 1,
-                        price: 250000,
-                        total: 250000
-                    }
-                ],
-                totalAmount: 250000,
-                status: "pending",
-                storeId: "store_001",
-                notes: "",
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
-            }
-        },
-        
-        products: {
-            "prod_001": {
-                id: "prod_001",
-                name: "Áo thun nam",
-                price: 150000,
-                categoryId: "cat_001",
-                description: "Áo thun cotton cao cấp",
-                isActive: true,
-                createdAt: new Date().toISOString()
-            },
-            "prod_002": {
-                id: "prod_002",
-                name: "Váy đầm",
-                price: 250000,
-                categoryId: "cat_002",
-                description: "Váy đầm công sở",
-                isActive: true,
-                createdAt: new Date().toISOString()
-            }
-        },
-        
-        categories: {
-            "cat_001": {
-                id: "cat_001",
-                name: "Thời trang nam"
-            },
-            "cat_002": {
-                id: "cat_002",
-                name: "Thời trang nữ"
-            }
-        },
-        
-        stores: {
-            "store_001": {
-                id: "store_001",
-                name: "Cửa hàng chính",
-                address: "123 Đường ABC, Quận 1, TP.HCM",
-                phone: "0123456789",
-                status: "active",
-                createdAt: new Date().toISOString()
-            }
-        },
-        
-        statistics: {
-            daily: {
-                "2025-01-01": {
-                    date: "2025-01-01",
-                    totalOrders: 2,
-                    totalRevenue: 550000,
-                    completedOrders: 1,
-                    pendingOrders: 1
-                }
-            },
-            monthly: {
-                "2025-01": {
-                    month: "2025-01",
-                    totalOrders: 2,
-                    totalRevenue: 550000,
-                    topProducts: ["prod_001", "prod_002"],
-                    topCustomers: ["Nguyễn Văn A", "Trần Thị B"]
-                }
-            }
-        },
-        
-        settings: {
-            general: {
-                businessName: "Cửa Hàng Thời Trang ABC",
-                currency: "VND",
-                timezone: "Asia/Ho_Chi_Minh",
-                dateFormat: "DD/MM/YYYY"
-            },
-            firebase: {
-                apiKey: firebaseConfig.apiKey,
-                databaseURL: firebaseConfig.databaseURL,
-                lastSync: new Date().toISOString()
-            }
-        }
-    };
-    
-    // Upload dữ liệu lên Firebase
-    return database.ref().set(sampleData)
-        .then(() => {
-            console.log('✅ Tạo dữ liệu mẫu thành công!');
-            showNotification('Tạo dữ liệu mẫu thành công!', 'success');
-            return true;
-        })
-        .catch(error => {
-            console.error('❌ Lỗi tạo dữ liệu mẫu:', error);
-            showNotification('Lỗi tạo dữ liệu mẫu!', 'error');
-            return false;
-        });
-}
-
-// Kiểm tra và tạo dữ liệu mẫu nếu chưa có
+// Check database connection
 function initializeDatabase() {
     return database.ref().once('value')
         .then(snapshot => {
             const data = snapshot.val();
             if (!data || Object.keys(data).length === 0) {
-                console.log('📄 Database trống, tạo dữ liệu mẫu...');
-                return createSampleData();
+                console.log('📄 Database is empty - using real data only');
+                return true;
             } else {
-                console.log('✅ Database đã có dữ liệu!');
+                console.log('✅ Database has existing data!');
                 return true;
             }
         })
         .catch(error => {
-            console.error('❌ Lỗi kiểm tra database:', error);
+            console.error('❌ Database connection error:', error);
             return false;
         });
-}
-
-// Tạo dữ liệu mẫu thủ công (gọi từ console hoặc button)
-function resetDatabase() {
-    if (confirm('Bạn có chắc muốn xóa toàn bộ dữ liệu và tạo lại?')) {
-        return createSampleData();
-    }
-    return Promise.resolve(false);
 }
 
 console.log('Firebase initialized successfully!');
 console.log('Database URL:', firebaseConfig.databaseURL);
 
-// Tự động kiểm tra và tạo dữ liệu mẫu khi load trang
+// Auto-check database connection when page loads
 window.addEventListener('load', () => {
     setTimeout(() => {
         initializeDatabase();
-    }, 1000); // Đợi 1 giây để Firebase khởi tạo xong
+    }, 1000); // Wait 1 second for Firebase to initialize
 });

@@ -9,7 +9,7 @@ let usageCharts = {
     topUsageChart: null
 };
 let currentFilters = {
-    period: 'week',
+    period: 'all',
     store: 'all',
     category: 'all'
 };
@@ -246,12 +246,12 @@ async function generateUsageReport() {
         console.log('Transactions:', window.transactionHistory.length);
         console.log('Warehouse items:', Object.keys(window.warehouseData).length);
         
-        // Debug: Log sample data
+        // Debug: Log transaction data
         if (window.transactionHistory.length > 0) {
-            console.log('Sample transaction:', window.transactionHistory[0]);
+            console.log('First transaction:', window.transactionHistory[0]);
         }
         if (Object.keys(window.warehouseData).length > 0) {
-            console.log('Sample warehouse item:', Object.values(window.warehouseData)[0]);
+            console.log('First warehouse item:', Object.values(window.warehouseData)[0]);
         }
         
         // Process and display the data
@@ -411,10 +411,9 @@ async function loadUsageReportData() {
             warehouseProducts: Object.keys(window.warehouseData).length
         });
         
-        // If no data found, create sample data for testing
+        // Log if no data found - using real Firebase data only
         if (filteredTransactions.length === 0 && Object.keys(window.warehouseData).length === 0) {
-            console.log('No data found, creating sample data for testing...');
-            createSampleUsageData();
+            console.log('No data found in Firebase database - using real data only');
         }
         
         // Debug logging
@@ -441,6 +440,18 @@ function filterTransactionsByPeriod(transactions) {
     
     // Calculate date range based on selected period
     switch (currentFilters.period) {
+        case 'all':
+            // Return all transactions without date filtering
+            const allTransactions = [];
+            Object.keys(transactions).forEach(transactionId => {
+                const transaction = transactions[transactionId];
+                allTransactions.push({
+                    id: transactionId,
+                    ...transaction
+                });
+            });
+            return allTransactions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
         case 'today':
             startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
@@ -454,7 +465,10 @@ function filterTransactionsByPeriod(transactions) {
             break;
         case 'month':
             startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+            startDate.setHours(0, 0, 0, 0);
             endDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+            endDate.setHours(0, 0, 0, 0);
+            console.log('Month filter - startDate:', startDate, 'endDate:', endDate);
             break;
         case 'quarter':
             const quarterStart = Math.floor(now.getMonth() / 3) * 3;
@@ -474,22 +488,45 @@ function filterTransactionsByPeriod(transactions) {
                 endDate = new Date(endDateInput.value);
                 endDate.setHours(23, 59, 59, 999);
             } else {
-                // If no custom dates selected, use last 30 days
-                startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-                endDate = now;
+                // If no custom dates selected, return all transactions
+                const allTransactions = [];
+                Object.keys(transactions).forEach(transactionId => {
+                    const transaction = transactions[transactionId];
+                    allTransactions.push({
+                        id: transactionId,
+                        ...transaction
+                    });
+                });
+                return allTransactions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
             }
             break;
         default:
-            // For unknown periods, use last 30 days
-            startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-            endDate = now;
+            // For unknown periods, return all transactions
+            const defaultTransactions = [];
+            Object.keys(transactions).forEach(transactionId => {
+                const transaction = transactions[transactionId];
+                defaultTransactions.push({
+                    id: transactionId,
+                    ...transaction
+                });
+            });
+            return defaultTransactions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     }
     
-    // Filter transactions
+    // Filter transactions by date range (for non-'all' cases)
     const filteredTransactions = [];
     Object.keys(transactions).forEach(transactionId => {
         const transaction = transactions[transactionId];
         const transactionDate = new Date(transaction.timestamp);
+        
+        console.log('Checking transaction:', {
+            id: transactionId,
+            timestamp: transaction.timestamp,
+            transactionDate: transactionDate,
+            startDate: startDate,
+            endDate: endDate,
+            inRange: transactionDate >= startDate && transactionDate < endDate
+        });
         
         // Check date range
         if (transactionDate >= startDate && transactionDate < endDate) {
@@ -521,6 +558,12 @@ function processUsageReportData() {
     if (typeof loadOrderHistoryData === 'function') {
         loadOrderHistoryData().catch(console.error);
     }
+    
+    // Refresh transaction history table if it exists
+    if (typeof filterTransactionTable === 'function') {
+        filterTransactionTable();
+    }
+    
     // Show or hide empty state
     toggleUsageReportEmptyState();
 }
@@ -1205,127 +1248,7 @@ function toggleCustomDateRange() {
     }
 }
 
-// Create sample usage data for testing
-function createSampleUsageData() {
-    console.log('Creating sample usage data...');
-    
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
-    const twoDaysAgo = new Date(today.getTime() - 2 * 24 * 60 * 60 * 1000);
-    
-    // Sample warehouse data
-    const sampleWarehouse = {
-        'product1': {
-            id: 'product1',
-            name: 'Bánh quy chocolate',
-            sku: 'BQ001',
-            category: 'Bánh kẹo',
-            stock: 150,
-            unitPrice: 25000
-        },
-        'product2': {
-            id: 'product2',
-            name: 'Nước ngọt Coca Cola',
-            sku: 'NN001',
-            category: 'Nước giải khát',
-            stock: 200,
-            unitPrice: 12000
-        },
-        'product3': {
-            id: 'product3',
-            name: 'Mì tôm Hảo Hảo',
-            sku: 'MT001',
-            category: 'Thực phẩm khô',
-            stock: 300,
-            unitPrice: 4000
-        }
-    };
-    
-    // Sample transactions
-    const sampleTransactions = [
-        {
-            id: 'trans1',
-            productId: 'product1',
-            productName: 'Bánh quy chocolate',
-            productSku: 'BQ001',
-            type: 'in',
-            quantity: 50,
-            unitPrice: 25000,
-            timestamp: yesterday.getTime(),
-            reason: 'Nhập hàng mới',
-            orderType: 'purchase',
-            storeId: localStorage.getItem('selectedStoreId') || 'store1'
-        },
-        {
-            id: 'trans2',
-            productId: 'product1',
-            productName: 'Bánh quy chocolate',
-            productSku: 'BQ001',
-            type: 'out',
-            quantity: 20,
-            unitPrice: 25000,
-            timestamp: today.getTime() - 2 * 60 * 60 * 1000,
-            reason: 'Bán lẻ',
-            orderType: 'retail_order',
-            storeId: localStorage.getItem('selectedStoreId') || 'store1'
-        },
-        {
-            id: 'trans3',
-            productId: 'product2',
-            productName: 'Nước ngọt Coca Cola',
-            productSku: 'NN001',
-            type: 'in',
-            quantity: 100,
-            unitPrice: 12000,
-            timestamp: twoDaysAgo.getTime(),
-            reason: 'Nhập hàng mới',
-            orderType: 'purchase',
-            storeId: localStorage.getItem('selectedStoreId') || 'store1'
-        },
-        {
-            id: 'trans4',
-            productId: 'product2',
-            productName: 'Nước ngọt Coca Cola',
-            productSku: 'NN001',
-            type: 'out',
-            quantity: 30,
-            unitPrice: 12000,
-            timestamp: today.getTime() - 1 * 60 * 60 * 1000,
-            reason: 'Bán sỉ',
-            orderType: 'wholesale_order',
-            storeId: localStorage.getItem('selectedStoreId') || 'store1'
-        },
-        {
-            id: 'trans5',
-            productId: 'product3',
-            productName: 'Mì tôm Hảo Hảo',
-            productSku: 'MT001',
-            type: 'out',
-            quantity: 50,
-            unitPrice: 4000,
-            timestamp: today.getTime() - 3 * 60 * 60 * 1000,
-            reason: 'Bán lẻ',
-            orderType: 'retail_order',
-            storeId: localStorage.getItem('selectedStoreId') || 'store1'
-        }
-    ];
-    
-    // Update global variables with sample data
-    window.warehouseData = sampleWarehouse;
-    window.transactionHistory = sampleTransactions;
-    transactionHistory = sampleTransactions;
-    
-    usageReportData = {
-        transactions: sampleTransactions,
-        warehouse: sampleWarehouse
-    };
-    
-    console.log('Sample data created:', {
-        warehouseProducts: Object.keys(sampleWarehouse).length,
-        transactions: sampleTransactions.length
-    });
-}
+// REMOVED: Sample data creation function - using only real Firebase data
 
 // Get order type display text
 function getOrderTypeDisplay(reason) {
@@ -2671,5 +2594,18 @@ window.deleteSingleTransaction = deleteSingleTransaction;
 window.toggleSelectAllTransactions = toggleSelectAllTransactions;
 window.updateSelectedCount = updateSelectedCount;
 window.clearAllFilters = clearAllFilters;
+
+// Refresh usage report data
+function refreshUsageReport() {
+    console.log('Refreshing usage report...');
+    if (window.transactionHistory && window.transactionHistory.length > 0) {
+        processReportData(window.transactionHistory);
+        updateUsageReportTable();
+        updateSummaryCards();
+    }
+}
+
+// Export refresh function to global scope
+window.refreshUsageReport = refreshUsageReport;
 
 console.log('Enhanced warehouse usage report functions loaded successfully');

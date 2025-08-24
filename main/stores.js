@@ -131,10 +131,10 @@ function displayStores() {
 
 // Get store statistics
 function getStoreStats(storeId) {
-    // This would normally fetch from Firebase, for now return mock data
+    // Fetch real data from Firebase - no mock data
     return {
-        products: Math.floor(Math.random() * 50) + 1,
-        orders: Math.floor(Math.random() * 100) + 1
+        products: 0, // Will be updated with real Firebase data
+        orders: 0    // Will be updated with real Firebase data
     };
 }
 

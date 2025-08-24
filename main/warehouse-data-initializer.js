@@ -1,7 +1,7 @@
-// Warehouse Data Initializer - Creates sample data for testing
-console.log('=== Warehouse Data Initializer Loading ===');
+// REMOVED: Warehouse Data Initializer - No longer creating sample data
+// System now uses only real Firebase data
 
-// Sample products data
+console.log('⚠️ Warehouse sample data creation disabled - using real Firebase data only');
 const sampleProducts = {
     'prod001': {
         id: 'prod001',

@@ -126,13 +126,11 @@ function populateStoreOptions() {
                         });
                         console.log('🎉 Successfully loaded stores from Firebase!');
                     } else {
-                        console.log('⚠️ No stores found in Firebase, using sample data');
-                        addSampleStores();
+                        console.log('⚠️ No stores found in Firebase database');
                     }
                 })
                 .catch(error => {
                     console.error('❌ Error fetching stores from Firebase:', error);
-                    addSampleStores();
                 });
         }
         // Fallback to getAllStores function
@@ -152,36 +150,18 @@ function populateStoreOptions() {
                     });
                     console.log('🎉 Successfully loaded stores using getAllStores!');
                 } else {
-                    console.log('⚠️ No stores found, using sample data');
-                    addSampleStores();
+                    console.log('⚠️ No stores found in database');
                 }
             }).catch(error => {
                 console.error('❌ Error with getAllStores:', error);
-                addSampleStores();
             });
         } else {
-            console.log('⚠️ Firebase not available, using sample data');
-            addSampleStores();
+            console.log('⚠️ Firebase not available');
         }
     }
 }
 
-// Fallback function to add sample stores
-function addSampleStores() {
-    const storeSelect = document.getElementById('report-store-select');
-    const sampleStores = [
-        { id: 'store1', name: 'Cửa hàng 1' },
-        { id: 'store2', name: 'Cửa hàng 2' },
-        { id: 'store3', name: 'Cửa hàng 3' }
-    ];
-    
-    sampleStores.forEach(store => {
-        const option = document.createElement('option');
-        option.value = store.id;
-        option.textContent = store.name;
-        storeSelect.appendChild(option);
-    });
-}
+// REMOVED: Sample store creation - using only real Firebase data
 
 // Generate report data from Firebase
 function generateReportData() {
@@ -203,11 +183,8 @@ function generateReportData() {
         hideLoadingState();
     }).catch(error => {
         console.error('Error generating report:', error);
-        // Fallback to sample data
-        populateEcommerceTable();
-        populateWholesaleTable();
-        populateRetailTable();
-        updateSummaryCards();
+        // No fallback data - using real Firebase data only
+        console.log('No data available from Firebase');
         hideLoadingState();
     });
 }
@@ -436,37 +413,6 @@ function populateEcommerceTableWithRealData(ecommerceOrders) {
     }
 }
 
-// Populate e-commerce orders table with sample data (fallback)
-function populateEcommerceTable() {
-    const tableBody = document.querySelector('#ecommerce-orders-table tbody');
-    
-    if (tableBody) {
-        // Clear existing rows
-        tableBody.innerHTML = '';
-        
-        // Sample data
-        const sampleData = [
-            { date: '01/01/2023', orderCode: 'EC001', productName: 'Sản phẩm A', sku: 'SKU001', quantity: 5, value: 1000000 },
-            { date: '02/01/2023', orderCode: 'EC002', productName: 'Sản phẩm B', sku: 'SKU002', quantity: 3, value: 750000 },
-            { date: '03/01/2023', orderCode: 'EC003', productName: 'Sản phẩm C', sku: 'SKU003', quantity: 8, value: 2000000 }
-        ];
-        
-        sampleData.forEach((item, index) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${index + 1}</td>
-                <td>${item.date}</td>
-                <td>${item.orderCode}</td>
-                <td>${item.productName}</td>
-                <td>${item.sku}</td>
-                <td>${item.quantity}</td>
-                <td>${formatCurrency(item.value)}</td>
-            `;
-            tableBody.appendChild(row);
-        });
-    }
-}
-
 // Populate wholesale orders table with real data
 function populateWholesaleTableWithRealData(wholesaleOrders) {
     const tableBody = document.querySelector('#wholesale-orders-table tbody');
@@ -513,37 +459,7 @@ function populateWholesaleTableWithRealData(wholesaleOrders) {
     }
 }
 
-// Populate wholesale orders table with sample data (fallback)
-function populateWholesaleTable() {
-    const tableBody = document.querySelector('#wholesale-orders-table tbody');
-    
-    if (tableBody) {
-        // Clear existing rows
-        tableBody.innerHTML = '';
-        
-        // Sample data
-        const sampleData = [
-            { date: '01/01/2023', orderCode: 'WS001', customerName: 'Khách hàng X', productName: 'Sản phẩm D', sku: 'SKU004', quantity: 10, value: 5000000 },
-            { date: '02/01/2023', orderCode: 'WS002', customerName: 'Khách hàng Y', productName: 'Sản phẩm E', sku: 'SKU005', quantity: 15, value: 7500000 },
-            { date: '03/01/2023', orderCode: 'WS003', customerName: 'Khách hàng Z', productName: 'Sản phẩm F', sku: 'SKU006', quantity: 7, value: 3500000 }
-        ];
-        
-        sampleData.forEach((item, index) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${index + 1}</td>
-                <td>${item.date}</td>
-                <td>${item.orderCode}</td>
-                <td>${item.customerName}</td>
-                <td>${item.productName}</td>
-                <td>${item.sku}</td>
-                <td>${item.quantity}</td>
-                <td>${formatCurrency(item.value)}</td>
-            `;
-            tableBody.appendChild(row);
-        });
-    }
-}
+// REMOVED: Sample wholesale table population - using only real Firebase data
 
 // Populate retail orders table with real data
 function populateRetailTableWithRealData(retailOrders) {
@@ -589,48 +505,9 @@ function populateRetailTableWithRealData(retailOrders) {
     }
 }
 
-// Populate retail orders table with sample data (fallback)
-function populateRetailTable() {
-    const tableBody = document.querySelector('#retail-orders-table tbody');
-    
-    if (tableBody) {
-        // Clear existing rows
-        tableBody.innerHTML = '';
-        
-        // Sample data
-        const sampleData = [
-            { date: '01/01/2023', orderCode: 'RT001', productName: 'Sản phẩm G', sku: 'SKU007', quantity: 2, value: 400000 },
-            { date: '02/01/2023', orderCode: 'RT002', productName: 'Sản phẩm H', sku: 'SKU008', quantity: 1, value: 250000 },
-            { date: '03/01/2023', orderCode: 'RT003', productName: 'Sản phẩm I', sku: 'SKU009', quantity: 4, value: 800000 }
-        ];
-        
-        sampleData.forEach((item, index) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${index + 1}</td>
-                <td>${item.date}</td>
-                <td>${item.orderCode}</td>
-                <td>${item.productName}</td>
-                <td>${item.sku}</td>
-                <td>${item.quantity}</td>
-                <td>${formatCurrency(item.value)}</td>
-            `;
-            tableBody.appendChild(row);
-        });
-    }
-}
+// REMOVED: Sample retail table population - using only real Firebase data
 
-// Update summary cards with sample data
-function updateSummaryCards() {
-    // Update summary card values with sample data
-    const totalOrdersElement = document.getElementById('total-orders');
-    const totalProductsElement = document.getElementById('total-products-sold');
-    const totalRevenueElement = document.getElementById('total-revenue');
-    
-    if (totalOrdersElement) totalOrdersElement.textContent = '25';
-    if (totalProductsElement) totalProductsElement.textContent = '150';
-    if (totalRevenueElement) totalRevenueElement.textContent = formatCurrency(12500000);
-}
+// REMOVED: Sample summary cards update - using only real Firebase data
 
 // Format number as currency (VND)
 function formatCurrency(amount) {
