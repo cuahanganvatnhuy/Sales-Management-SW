@@ -428,14 +428,15 @@
                     <i class="fas fa-list"></i>
                     Danh sách hiện tại
                 </button>
+                <button id="transactionReportViewBtn" class="btn btn-info" onclick="switchToTransactionReportView()">
+                    <i class="fas fa-chart-bar"></i>
+                    Quản lý giao dịch kho
+                </button>
                 <button id="usageReportViewBtn" class="btn btn-secondary" onclick="switchToUsageReportView()">
                     <i class="fas fa-chart-line"></i>
                     Báo cáo sử dụng
                 </button>
-                <button id="transactionReportViewBtn" class="btn btn-info" onclick="switchToTransactionReportView()">
-                    <i class="fas fa-chart-bar"></i>
-                    Báo cáo giao dịch kho
-                </button>
+               
             </div>
         </section>
         
@@ -535,15 +536,15 @@
             <div class="report-tabs">
                 <button class="tab-button active" onclick="switchReportTab('export')">
                     <i class="fas fa-file-export"></i>
-                    Báo cáo xuất kho
+                     Quản lý  xuất kho
                 </button>
                 <button class="tab-button" onclick="switchReportTab('import')">
                     <i class="fas fa-file-import"></i>
-                    Báo cáo nhập kho
+                    Quản lý  nhập kho
                 </button>
                 <button class="tab-button" onclick="switchReportTab('adjustment')">
                     <i class="fas fa-balance-scale"></i>
-                    Báo cáo điều chỉnh
+                    quản lý  điều chỉnh
                 </button>
             </div>
             
@@ -633,7 +634,7 @@
                 
                 <!-- Filters -->
                 <div class="filters-section">
-                    <h3 class="filters-title"><i class="fas fa-filter"></i> Bộ Lọc Danh sách kho</h3>
+                    <h3 class="filters-title"><i class="fas fa-filter"></i> Bộ Lọc Danh sách xuất kho</h3>
                     <div class="filters-grid">
                         <div class="filter-group">
                             <label class="filter-label">Thời gian:</label>
@@ -747,6 +748,69 @@
             
             <!-- Import Report Tab Content -->
             <div id="importReportTab" class="tab-content">
+                <!-- Statistics Filters -->
+                <div class="stats-filters-section">
+                    <h3 class="stats-filters-title">
+                        <i class="fas fa-chart-bar"></i> Bộ Lọc Thống Kê
+                    </h3>
+                    <div class="stats-filters-grid">
+                        <div class="stats-filter-group">
+                            <label class="stats-filter-label">📅 Thời gian:</label>
+                            <select id="statsImportDateRange" class="stats-filter-select">
+                                <option value="all">Tất cả</option>
+                                <option value="today">Hôm nay</option>
+                                <option value="week">7 ngày qua</option>
+                                <option value="month">30 ngày qua</option>
+                                <option value="quarter">3 tháng qua</option>
+                                <option value="custom">Tùy chọn</option>
+                            </select>
+                        </div>
+                        <div class="stats-filter-group">
+                            <label class="stats-filter-label">🏪 Cửa hàng:</label>
+                            <select id="statsImportStoreFilter" class="stats-filter-select">
+                                <option value="all">Tất cả cửa hàng</option>
+                            </select>
+                        </div>
+                        <div class="stats-filter-group">
+                            <label class="stats-filter-label">📦 Sản phẩm:</label>
+                            <select id="statsImportProductFilter" class="stats-filter-select">
+                                <option value="all">Tất cả sản phẩm</option>
+                            </select>
+                        </div>
+                        <div class="stats-filter-group">
+                            <label class="stats-filter-label">🏭 Nhà cung cấp:</label>
+                            <select id="statsImportSupplierFilter" class="stats-filter-select">
+                                <option value="all">Tất cả nhà cung cấp</option>
+                            </select>
+                        </div>
+                        <div class="stats-filter-actions">
+                            <button id="applyImportStatsFiltersBtn" class="btn btn-primary stats-filter-btn">
+                                <i class="fas fa-filter"></i> Áp dụng
+                            </button>
+                            <button id="resetImportStatsFiltersBtn" class="btn btn-secondary stats-filter-btn">
+                                <i class="fas fa-undo"></i> Đặt lại
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Custom Date Range (appears below when selected) -->
+                    <div id="statsImportCustomDateRange" class="stats-filter-group custom-date-range hidden">
+                        <label class="stats-filter-label">Từ ngày:</label>
+                        <input type="date" id="statsImportStartDate" class="stats-filter-input">
+                        <label class="stats-filter-label">Đến ngày:</label>
+                        <input type="date" id="statsImportEndDate" class="stats-filter-input">
+                    </div>
+                    
+                    <!-- Filter Status Display -->
+                    <div class="stats-filter-status" id="statsImportFilterStatus" style="display: none;">
+                        <div class="filter-active-indicator">
+                            <i class="fas fa-info-circle text-info"></i>
+                            <span class="filter-status-text">Thống kê đã được lọc</span>
+                        </div>
+                        <div class="filter-summary" id="statsImportFilterSummary"></div>
+                    </div>
+                </div>
+                
                 <!-- Statistics Cards -->
                 <div class="stats-container">
                     <div class="stat-card import-card">
@@ -770,25 +834,11 @@
                         <span class="stat-number" id="totalImportValue">0₫</span>
                         <span class="stat-label">Tổng giá trị</span>
                     </div>
-                    <div class="stat-card pending-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-clock text-warning"></i>
-                        </div>
-                        <span class="stat-number" id="pendingImportsCount">0</span>
-                        <span class="stat-label">Chờ xử lý</span>
-                    </div>
-                    <div class="stat-card completed-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-check-circle text-success"></i>
-                        </div>
-                        <span class="stat-number" id="completedImportsCount">0</span>
-                        <span class="stat-label">Hoàn thành</span>
-                    </div>
                 </div>
                 
                 <!-- Filters -->
                 <div class="filters-section">
-                    <h3 class="filters-title"><i class="fas fa-filter"></i> Bộ Lọc</h3>
+                    <h3 class="filters-title"><i class="fas fa-filter"></i> Bộ Lọc Danh sách nhập kho</h3>
                     <div class="filters-grid">
                         <div class="filter-group">
                             <label class="filter-label">Thời gian:</label>
@@ -798,6 +848,7 @@
                                 <option value="week">Tuần này</option>
                                 <option value="month">Tháng này</option>
                                 <option value="quarter">Quý này</option>
+                                <option value="custom">Tùy chọn</option>
                             </select>
                         </div>
                         <div class="filter-group">
@@ -813,44 +864,61 @@
                             </select>
                         </div>
                         <div class="filter-group">
-                            <label class="filter-label">Trạng thái:</label>
-                            <select id="importStatusFilter" class="filter-select">
-                                <option value="all">Tất cả</option>
-                                <option value="pending">Chờ xử lý</option>
-                                <option value="completed">Hoàn thành</option>
-                                <option value="cancelled">Đã hủy</option>
+                            <label class="filter-label">Sản phẩm:</label>
+                            <select id="importProductFilter" class="filter-select">
+                                <option value="all">Tất cả sản phẩm</option>
                             </select>
                         </div>
+                        <div class="filter-group">
+                            <label class="filter-label">Danh mục:</label>
+                            <select id="importCategoryFilter" class="filter-select">
+                                <option value="all">Tất cả danh mục</option>
+                            </select>
+                        </div>
+                        <div class="filter-actions" style="margin-top: 2%;">
+                            <button id="applyImportFiltersBtn" class="btn btn-primary filter-btn">
+                                <i class="fas fa-filter"></i> Áp dụng
+                            </button>
+                            <button id="resetImportFiltersBtn" class="btn btn-secondary filter-btn">
+                                <i class="fas fa-undo"></i> Đặt lại
+                            </button>
+                        </div>
+                        
                     </div>
-                    <div class="filters-actions">
-                        <button id="importExportToExcelBtn" class="btn-filter btn-success">
-                            <i class="fas fa-file-excel"></i>
-                            Xuất Excel
-                        </button>
-                        <button id="refreshImportReportBtn" class="btn-filter btn-secondary">
-                            <i class="fas fa-sync-alt"></i>
-                            Làm mới
-                        </button>
+                    
+                    <!-- Custom Date Range (appears below when selected) -->
+                    <div id="importCustomDateRange" class="filter-group custom-date-range hidden">
+                        <label class="filter-label">Từ ngày:</label>
+                        <input type="date" id="importStartDate" class="filter-input">
+                        <label class="filter-label">Đến ngày:</label>
+                        <input type="date" id="importEndDate" class="filter-input">
                     </div>
-                </div>
                 
                 <!-- Import Report Table -->
                 <div class="report-table-container">
                     <div class="report-table-header">
                         <h3 class="report-table-title"><i class="fas fa-table"></i> Danh Sách Nhập Kho</h3>
+                        <button id="bulkDeleteImportBtn" class="btn btn-danger" onclick="deleteSelectedImportTransactions()" style="display: none;">
+                            <i class="fas fa-trash"></i> Xóa các mục đã chọn
+                        </button>
                     </div>
                     <table class="report-table">
                         <thead>
                             <tr>
+                                <th>
+                                    <input type="checkbox" id="selectAllImport" onchange="toggleAllImportSelection()">
+                                </th>
                                 <th>STT</th>
+                                <th>Ngày nhập</th>
                                 <th>Sản phẩm</th>
-                                <th>Nhà cung cấp</th>
-                                <th>Cửa hàng</th>
+                                <th>Danh mục</th>
+                                <th>SKU</th>
                                 <th>Số lượng</th>
+                                <th>Đơn vị</th>
                                 <th>Đơn giá</th>
                                 <th>Tổng giá trị</th>
-                                <th>Trạng thái</th>
-                                <th>Ngày nhập</th>
+                                <th>Cửa hàng</th>
+                                <th>Thao tác</th>
                             </tr>
                         </thead>
                         <tbody id="importReportTableBody">
@@ -3232,8 +3300,15 @@
                     }
                     break;
                 case 'import':
-                    if (typeof initializeImportReport === 'function') {
-                        initializeImportReport();
+                    console.log('📊 Checking initWarehouseImportReport function...');
+                    if (typeof initWarehouseImportReport === 'function') {
+                        console.log('✅ Function found, calling initWarehouseImportReport...');
+                        initWarehouseImportReport();
+                    } else if (window.initWarehouseImportReport) {
+                        console.log('🔄 Found in window, calling...');
+                        window.initWarehouseImportReport();
+                    } else {
+                        console.error('❌ initWarehouseImportReport function not found!');
                     }
                     break;
                 case 'adjustment':
@@ -3412,11 +3487,17 @@
             }
         }
 
+        // Function to open import report in new window
+        function openImportReport() {
+            window.open('../view/warehouse-import-report.html', '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+        }
+
         // Expose functions to global scope
         window.switchToTransactionReportView = switchToTransactionReportView;
         window.switchReportTab = switchReportTab;
         window.switchToCurrentListView = switchToCurrentListView;
         window.switchToUsageReportView = switchToUsageReportView;
+        window.openImportReport = openImportReport;
         window.testExportReportManually = testExportReportManually;
         window.showModal = showModal;
         window.hideModal = hideModal;
