@@ -1,5 +1,48 @@
 /* Warehouse Management Styles */
 
+/* Platform Badge Styles */
+.platform-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: 12px;
+    text-align: center;
+    min-width: 60px;
+    color: white;
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2);
+    text-transform: capitalize;
+}
+
+.platform-badge[data-platform="shopee"] {
+    background: linear-gradient(135deg, #ee4d2d, #d73211);
+}
+
+.platform-badge[data-platform="lazada"] {
+    background: linear-gradient(135deg, #0f146d, #0a0f4d);
+}
+
+.platform-badge[data-platform="tiktok"] {
+    background: linear-gradient(135deg, #000000, #333333);
+}
+
+.platform-badge[data-platform="sendo"] {
+    background: linear-gradient(135deg, #d70018, #a50013);
+}
+
+.platform-badge[data-platform="tiki"] {
+    background: linear-gradient(135deg, #1a94ff, #0066cc);
+}
+
+.platform-badge[data-platform="facebook"] {
+    background: linear-gradient(135deg, #1877f2, #166fe5);
+}
+
+.platform-badge[data-platform="zalo"] {
+    background: linear-gradient(135deg, #0068ff, #0052cc);
+}
+
 /* Custom Date Range Styles */
 .custom-date-range {
     display: flex;

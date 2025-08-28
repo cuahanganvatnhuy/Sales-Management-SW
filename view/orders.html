@@ -174,6 +174,28 @@
                                     </div>
                                 </div>
 
+                                <!-- Platform Selection for TMĐT Orders -->
+                                <div class="platform-selection" id="platformSelection">
+                                    <div class="form-group">
+                                        <label for="ecommercePlatform">Chọn Sàn TMĐT:</label>
+                                        <select id="ecommercePlatform" name="ecommercePlatform" required>
+                                            <option value="">-- Chọn sàn thương mại điện tử --</option>
+                                            <option value="shopee">Shopee</option>
+                                            <option value="lazada">Lazada</option>
+                                            <option value="tiktok">TikTok Shop</option>
+                                            <option value="sendo">Sendo</option>
+                                            <option value="tiki">Tiki</option>
+                                            <option value="facebook">Facebook Shop</option>
+                                            <option value="zalo">Zalo Shop</option>
+                                            <option value="other">Khác</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group" id="otherPlatformGroup" style="display: none;">
+                                        <label for="otherPlatformName">Tên sàn khác:</label>
+                                        <input type="text" id="otherPlatformName" name="otherPlatformName" placeholder="Nhập tên sàn TMĐT">
+                                    </div>
+                                </div>
+
 
                                 <div class="form-row">
                                     <div class="form-group">
@@ -266,6 +288,8 @@
                                         <th class="price-col">Số Lượng (kg)</th>
                                         <th class="price-col">Giá (VNĐ)</th>
                                         <th class="price-col">Tổng Tiền</th>
+                                        <th class="platform-col">Sàn TMĐT</th>
+                                        <th class="store-col">Cửa Hàng</th>
                                         <th class="action-col" style="color: rgb(24, 100, 1);">Ngày Tạo</th>
                                         <th class="action-col">Xóa</th>
                                     </tr>

@@ -597,11 +597,11 @@ function calculateUsageSummaryStats() {
         });
         
         if (transaction.type === 'in') {
-            totalStockIn += parseInt(transaction.quantity) || 0;
+            totalStockIn += parseFloat(transaction.quantity) || 0;
         } else if (transaction.type === 'out' || transaction.type === 'export' || transaction.type === 'stock_out') {
             // Xử lý cả 'out', 'export' và 'stock_out' như xuất kho
-            const quantity = parseInt(transaction.quantity) || 0;
-            const unitPrice = parseFloat(transaction.unitPrice) || 0;
+            const quantity = parseFloat(transaction.quantity) || parseFloat(transaction.amount) || 0;
+            const unitPrice = parseFloat(transaction.unitPrice) || parseFloat(transaction.price) || 0;
             const value = quantity * unitPrice;
             
             console.log(`DEBUG Stock out transaction:`, {
@@ -615,8 +615,18 @@ function calculateUsageSummaryStats() {
             totalStockOut += quantity;
             totalUsageValue += value;
             
-            // Classify by order type
-            const orderType = transaction.orderType || 'other';
+            // Classify by order type based on reason field
+            let orderType = 'other';
+            const reason = (transaction.reason || '').toLowerCase();
+            
+            if (reason.includes('tmđt') || reason.includes('ecommerce') || reason.includes('bán hàng tmđt')) {
+                orderType = 'tmdt';
+            } else if (reason.includes('sỉ') || reason.includes('wholesale')) {
+                orderType = 'wholesale';
+            } else if (reason.includes('lẻ') || reason.includes('retail')) {
+                orderType = 'retail';
+            }
+            
             if (statsByOrderType[orderType]) {
                 statsByOrderType[orderType].movements++;
                 statsByOrderType[orderType].stockOut += quantity;
@@ -762,11 +772,11 @@ function generateProductUsageTable() {
             <td>${product.name}</td>
             <td>${product.sku || '-'}</td>
             <td>${product.category || '-'}</td>
-            <td>${product.beginningStock.toLocaleString()}</td>
-            <td class="text-success">${product.stockIn.toLocaleString()}</td>
-            <td class="text-danger">${product.stockOut.toLocaleString()}</td>
-            <td>${product.endingStock.toLocaleString()}</td>
-            <td class="text-info"><strong>${product.currentStock.toLocaleString()}</strong></td>
+            <td>${product.beginningStock.toLocaleString('vi-VN', {minimumFractionDigits: 0, maximumFractionDigits: 2})}</td>
+            <td class="text-success">${product.stockIn.toLocaleString('vi-VN', {minimumFractionDigits: 0, maximumFractionDigits: 2})}</td>
+            <td class="text-danger">${product.stockOut.toLocaleString('vi-VN', {minimumFractionDigits: 0, maximumFractionDigits: 2})}</td>
+            <td>${product.endingStock.toLocaleString('vi-VN', {minimumFractionDigits: 0, maximumFractionDigits: 2})}</td>
+            <td class="text-info"><strong>${product.currentStock.toLocaleString('vi-VN', {minimumFractionDigits: 0, maximumFractionDigits: 2})}</strong></td>
             <td><span class="usage-percentage ${usageClass}">${usagePercentage}%</span></td>
             <td>${formatUsageCurrency(product.usageValue)}</td>
         `;
@@ -787,7 +797,7 @@ function calculateProductUsageData() {
             const product = usageReportData.warehouse[productId];
             if (!product) return;
             
-            const currentStock = parseInt(product.stock) || parseInt(product.quantity) || parseInt(product.currentStock) || 0;
+            const currentStock = parseFloat(product.stock) || parseFloat(product.quantity) || parseFloat(product.currentStock) || 0;
             
             console.log(`Product ${productId} (${product.name || 'Unknown'}): current stock = ${currentStock}`);
             
@@ -836,8 +846,8 @@ function calculateProductUsageData() {
                 };
             }
             
-            const quantity = parseInt(transaction.quantity) || 0;
-            const unitPrice = parseFloat(transaction.unitPrice) || 0;
+            const quantity = parseFloat(transaction.quantity) || parseFloat(transaction.amount) || 0;
+            const unitPrice = parseFloat(transaction.unitPrice) || parseFloat(transaction.price) || 0;
             
             console.log(`Transaction ${index + 1}: ${transaction.type} ${quantity} of ${transaction.productName || 'Unknown'}`);
             
@@ -1064,9 +1074,33 @@ function updateTransactionHistoryTable(transactions) {
             'adjustment': 'text-warning'
         }[transaction.type] || '';
         
-        const quantity = parseInt(transaction.quantity) || 0;
-        const unitPrice = parseFloat(transaction.unitPrice) || 0;
-        const totalValue = quantity * unitPrice;
+        // Try multiple possible field names for quantity and price
+        const quantity = parseFloat(transaction.quantity) || 
+                        parseFloat(transaction.amount) || 
+                        parseFloat(transaction.stockOut) ||
+                        parseFloat(transaction.stockIn) ||
+                        parseFloat(transaction.qty) || 0;
+                        
+        const unitPrice = parseFloat(transaction.unitPrice) || 
+                         parseFloat(transaction.price) || 
+                         parseFloat(transaction.cost) ||
+                         parseFloat(transaction.value) || 0;
+                         
+        const totalValue = parseFloat(transaction.totalValue) || 
+                          parseFloat(transaction.total) ||
+                          (quantity * unitPrice);
+        
+        // Debug log for all transactions to see data structure
+        if (globalIndex === 1) { // Debug first transaction only
+            console.log('DEBUG: First transaction data:', {
+                allFields: Object.keys(transaction),
+                transaction,
+                extractedQuantity: quantity,
+                extractedUnitPrice: unitPrice,
+                extractedTotalValue: totalValue,
+                productName: transaction.productName
+            });
+        }
         
         row.innerHTML = `
             <td><input type="checkbox" class="transaction-checkbox" data-transaction-id="${transaction.id}"></td>
@@ -1075,7 +1109,7 @@ function updateTransactionHistoryTable(transactions) {
             <td><span class="${typeClass}">${typeText}</span></td>
             <td>${transaction.productName || 'Không xác định'}</td>
             <td>${transaction.productSku || '-'}</td>
-            <td>${quantity.toLocaleString()}</td>
+            <td>${quantity.toLocaleString('vi-VN', {minimumFractionDigits: 0, maximumFractionDigits: 2})}</td>
             <td>${formatUsageCurrency(unitPrice)}</td>
             <td>${formatUsageCurrency(totalValue)}</td>
             <td>${transaction.reason || '-'}</td>
@@ -1189,7 +1223,7 @@ function openTransactionDetailModal(transactionId) {
         'adjustment': 'Điều chỉnh'
     }[transaction.type] || transaction.type;
     
-    const quantity = parseInt(transaction.quantity) || 0;
+    const quantity = parseFloat(transaction.quantity) || 0;
     const unitPrice = parseFloat(transaction.unitPrice) || 0;
     const totalValue = quantity * unitPrice;
     
@@ -1198,7 +1232,7 @@ function openTransactionDetailModal(transactionId) {
         ['Loại giao dịch', typeText],
         ['Sản phẩm', transaction.productName || 'Không xác định'],
         ['SKU', transaction.productSku || '-'],
-        ['Số lượng', quantity.toLocaleString()],
+        ['Số lượng', quantity.toLocaleString('vi-VN', {minimumFractionDigits: 0, maximumFractionDigits: 2})],
         ['Đơn giá', formatUsageCurrency(unitPrice)],
         ['Tổng giá trị', formatUsageCurrency(totalValue)],
         ['Lý do', transaction.reason || '-'],
@@ -1254,18 +1288,30 @@ function toggleCustomDateRange() {
 function getOrderTypeDisplay(reason) {
     if (!reason) return '-';
     
-    switch (reason.toLowerCase()) {
+    const reasonLower = reason.toLowerCase();
+    
+    // Check for TMĐT orders
+    if (reasonLower.includes('tmđt') || reasonLower.includes('ecommerce') || reasonLower.includes('bán hàng tmđt')) {
+        return '📱 TMĐT';
+    }
+    
+    switch (reasonLower) {
         case 'retail_order':
+        case 'bán hàng lẻ':
             return '🛒 Bán lẻ';
         case 'wholesale_order':
+        case 'bán hàng sỉ':
             return '🏪 Bán sỉ';
         case 'tmdt_order':
             return '📱 TMĐT';
         case 'stock_in':
+        case 'nhập kho':
             return '📦 Nhập kho';
         case 'adjustment':
+        case 'điều chỉnh':
             return '⚙️ Điều chỉnh';
         case 'stock_out':
+        case 'xuất kho':
             return '📤 Xuất kho';
         default:
             return '📋 Khác';
@@ -1276,18 +1322,30 @@ function getOrderTypeDisplay(reason) {
 function getOrderTypeBadgeClass(reason) {
     if (!reason) return 'badge-secondary';
     
-    switch (reason.toLowerCase()) {
+    const reasonLower = reason.toLowerCase();
+    
+    // Check for TMĐT orders
+    if (reasonLower.includes('tmđt') || reasonLower.includes('ecommerce') || reasonLower.includes('bán hàng tmđt')) {
+        return 'badge-warning';
+    }
+    
+    switch (reasonLower) {
         case 'retail_order':
+        case 'bán hàng lẻ':
             return 'badge-success';
         case 'wholesale_order':
+        case 'bán hàng sỉ':
             return 'badge-primary';
         case 'tmdt_order':
             return 'badge-warning';
         case 'stock_in':
+        case 'nhập kho':
             return 'badge-info';
         case 'adjustment':
+        case 'điều chỉnh':
             return 'badge-secondary';
         case 'stock_out':
+        case 'xuất kho':
             return 'badge-danger';
         default:
             return 'badge-light';
@@ -1490,7 +1548,7 @@ function filterProductUsageByPeriod() {
     // Initialize with current warehouse data
     Object.keys(usageReportData.warehouse || {}).forEach(productId => {
         const product = usageReportData.warehouse[productId];
-        const currentStock = parseInt(product.stock) || parseInt(product.quantity) || parseInt(product.currentStock) || 0;
+        const currentStock = parseFloat(product.stock) || parseFloat(product.quantity) || parseFloat(product.currentStock) || 0;
         
         productUsage[productId] = {
             id: productId,
@@ -1524,8 +1582,8 @@ function filterProductUsageByPeriod() {
             };
         }
         
-        const quantity = parseInt(transaction.quantity) || 0;
-        const unitPrice = parseFloat(transaction.unitPrice) || 0;
+        const quantity = parseFloat(transaction.quantity) || parseFloat(transaction.amount) || 0;
+        const unitPrice = parseFloat(transaction.unitPrice) || parseFloat(transaction.price) || 0;
         
         if (transaction.type === 'in') {
             productUsage[productId].stockIn += quantity;
@@ -1601,11 +1659,11 @@ function updateProductUsageTable(productUsageData) {
             <td>${product.name}</td>
             <td>${product.sku || '-'}</td>
             <td>${product.category || '-'}</td>
-            <td>${product.beginningStock.toLocaleString()}</td>
-            <td class="text-success">${product.stockIn.toLocaleString()}</td>
-            <td class="text-danger">${product.stockOut.toLocaleString()}</td>
-            <td>${product.endingStock.toLocaleString()}</td>
-            <td class="text-info"><strong>${product.currentStock.toLocaleString()}</strong></td>
+            <td>${product.beginningStock.toLocaleString('vi-VN', {minimumFractionDigits: 0, maximumFractionDigits: 2})}</td>
+            <td class="text-success">${product.stockIn.toLocaleString('vi-VN', {minimumFractionDigits: 0, maximumFractionDigits: 2})}</td>
+            <td class="text-danger">${product.stockOut.toLocaleString('vi-VN', {minimumFractionDigits: 0, maximumFractionDigits: 2})}</td>
+            <td>${product.endingStock.toLocaleString('vi-VN', {minimumFractionDigits: 0, maximumFractionDigits: 2})}</td>
+            <td class="text-info"><strong>${product.currentStock.toLocaleString('vi-VN', {minimumFractionDigits: 0, maximumFractionDigits: 2})}</strong></td>
             <td><span class="usage-percentage ${usageClass}">${usagePercentage}%</span></td>
             <td>${formatUsageCurrency(product.usageValue)}</td>
         `;
@@ -1820,7 +1878,7 @@ function openTransactionDetailModal(transactionId) {
                     </div>
                     <div class="detail-item">
                         <span class="detail-label">Số lượng:</span>
-                        <span class="detail-value">${quantity.toLocaleString()}</span>
+                        <span class="detail-value">${quantity.toLocaleString('vi-VN', {minimumFractionDigits: 0, maximumFractionDigits: 2})}</span>
                     </div>
                     <div class="detail-item">
                         <span class="detail-label">Đơn giá:</span>
@@ -2056,7 +2114,7 @@ function calculateCategoryDistribution() {
     transactionHistory.forEach(transaction => {
         if (transaction.type === 'out' || transaction.type === 'export' || transaction.type === 'stock_out') {
             const category = transaction.productCategory || 'Khác';
-            const value = (parseInt(transaction.quantity) || 0) * (parseFloat(transaction.unitPrice) || 0);
+            const value = (parseFloat(transaction.quantity) || 0) * (parseFloat(transaction.unitPrice) || 0);
             
             if (!categoryTotals[category]) {
                 categoryTotals[category] = 0;
@@ -2087,7 +2145,7 @@ function calculateTopProductsData() {
     transactionHistory.forEach(transaction => {
         if (transaction.type === 'out' || transaction.type === 'export' || transaction.type === 'stock_out') {
             const productName = transaction.productName || 'Sản phẩm không xác định';
-            const value = (parseInt(transaction.quantity) || 0) * (parseFloat(transaction.unitPrice) || 0);
+            const value = (parseFloat(transaction.quantity) || 0) * (parseFloat(transaction.unitPrice) || 0);
             
             if (!productTotals[productName]) {
                 productTotals[productName] = 0;
@@ -2320,9 +2378,9 @@ function updateTransactionHistoryTable(allData) {
         const transactionDate = new Date(transaction.timestamp);
         const typeClass = transaction.type === 'in' ? 'in' : transaction.type === 'out' ? 'out' : 'adjustment';
         const typeText = transaction.type === 'in' ? 'Nhập kho' : transaction.type === 'out' ? 'Xuất kho' : 'Điều chỉnh';
-        const quantity = parseInt(transaction.quantity) || 0;
-        const unitPrice = parseFloat(transaction.unitPrice) || 0;
-        const totalValue = quantity * unitPrice;
+        const quantity = parseFloat(transaction.quantity) || parseFloat(transaction.amount) || 0;
+        const unitPrice = parseFloat(transaction.unitPrice) || parseFloat(transaction.price) || 0;
+        const totalValue = parseFloat(transaction.totalValue) || (quantity * unitPrice);
         
         // Determine order type display
         const orderTypeDisplay = getOrderTypeDisplay(transaction.reason);
@@ -2334,7 +2392,7 @@ function updateTransactionHistoryTable(allData) {
             <td><span class="transaction-type ${typeClass}">${typeText}</span></td>
             <td>${transaction.productName || 'N/A'}</td>
             <td>${transaction.productSku || '-'}</td>
-            <td>${quantity.toLocaleString()}</td>
+            <td>${quantity.toLocaleString('vi-VN', {minimumFractionDigits: 0, maximumFractionDigits: 2})}</td>
             <td>${formatUsageCurrency(unitPrice)}</td>
             <td>${formatUsageCurrency(totalValue)}</td>
             <td>${transaction.reason || '-'}</td>

@@ -436,6 +436,10 @@
                     <i class="fas fa-chart-line"></i>
                     Báo cáo sử dụng
                 </button>
+                <button id="orderReportViewBtn" class="btn btn-secondary" onclick="switchToOrderReportView()">
+                    <i class="fas fa-chart-line"></i>
+                    Báo cáo đơn hàng
+                </button>
                
             </div>
         </section>
@@ -558,7 +562,7 @@
                     <div class="stats-filters-grid">
                         <div class="stats-filter-group">
                             <label class="stats-filter-label">📅 Thời gian:</label>
-                            <select id="statsExportDateRange" class="stats-filter-select">
+                            <select id="statsExportDateRange" class="stats-filter-select" onchange="toggleStatsCustomDateRange()">
                                 <option value="all">Tất cả</option>
                                 <option value="today">Hôm nay</option>
                                 <option value="week">7 ngày qua</option>
@@ -1348,16 +1352,385 @@
             </div>
         </section>
 
+        <!-- Order Report View -->
+        <section id="orderReportView" class="report-container" style="display: none;">
+            
+            <!-- Report Tabs -->
+            <div class="report-tabs">
+                <button class="tab-button active" onclick="switchOrderReportTab('tmdt')">
+                    <i class="fas fa-shopping-cart"></i>
+                    Quản lý đơn hàng TMĐT
+                </button>
+                <button class="tab-button" onclick="switchOrderReportTab('retail')">
+                    <i class="fas fa-store"></i>
+                    Quản lý đơn hàng Lẻ
+                </button>
+                <button class="tab-button" onclick="switchOrderReportTab('wholesale')">
+                    <i class="fas fa-warehouse"></i>
+                    Quản lý đơn hàng Sỉ
+                </button>
+            </div>
+            
+            <!-- TMDT Report Tab Content -->
+            <div id="tmdtReportTab" class="tab-content active">
+                <!-- Statistics Filters -->
+                <div class="stats-filters-section">
+                    <h3 class="stats-filters-title">
+                        <i class="fas fa-chart-bar"></i> Bộ Lọc Thống Kê - Đơn Hàng TMĐT
+                    </h3>
+                    <div class="stats-filters-grid">
+                        <div class="stats-filter-group">
+                            <label class="stats-filter-label">📅 Thời gian:</label>
+                            <select id="statsTmdtDateRange" class="stats-filter-select" onchange="toggleTmdtCustomDateRange()">
+                                <option value="all">Tất cả</option>
+                                <option value="today">Hôm nay</option>
+                                <option value="week">7 ngày qua</option>
+                                <option value="month">30 ngày qua</option>
+                                <option value="quarter">3 tháng qua</option>
+                                <option value="custom">Tùy chọn</option>
+                            </select>
+                        </div>
+                        <div class="stats-filter-group">
+                            <label class="stats-filter-label">🏪 Cửa hàng:</label>
+                            <select id="statsTmdtStoreFilter" class="stats-filter-select">
+                                <option value="all">Tất cả cửa hàng</option>
+                            </select>
+                        </div>
+                        <div class="stats-filter-group">
+                            <label class="stats-filter-label">📦 Sản phẩm:</label>
+                            <select id="statsTmdtProductFilter" class="stats-filter-select">
+                                <option value="all">Tất cả sản phẩm</option>
+                            </select>
+                        </div>
+                        <div class="stats-filter-group">
+                            <label class="stats-filter-label">🛒 Sàn TMĐT:</label>
+                            <select id="statsTmdtPlatformFilter" class="stats-filter-select">
+                                <option value="all">Tất cả sàn</option>
+                                <option value="Lazada">Lazada</option>
+                                <option value="Shopee">Shopee</option>
+                                <option value="Tiki">Tiki</option>
+                                <option value="TikTok Shop">TikTok Shop</option>
+                                <option value="Sendo">Sendo</option>
+                                <option value="Fahasa">Fahasa</option>
+                                <option value="Khác">Khác</option>
+                            </select>
+                        </div>
+                        <div class="stats-filter-actions">
+                            <button id="applyTmdtFiltersBtn" class="btn btn-primary stats-filter-btn">
+                                <i class="fas fa-filter"></i> Áp dụng
+                            </button>
+                            <button id="resetTmdtFiltersBtn" class="btn btn-secondary stats-filter-btn">
+                                <i class="fas fa-undo"></i> Đặt lại
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Custom Date Range for TMDT (appears below when selected) -->
+                    <div id="statsTmdtCustomDateRange" class="stats-filter-group custom-date-range hidden">
+                        <label class="stats-filter-label">Từ ngày:</label>
+                        <input type="date" id="statsTmdtStartDate" class="stats-filter-input">
+                        <label class="stats-filter-label">Đến ngày:</label>
+                        <input type="date" id="statsTmdtEndDate" class="stats-filter-input">
+                    </div>
+                </div>
+                
+                <!-- Statistics Cards -->
+                <div class="stats-container">
+                    <div class="stat-card tmdt-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-shopping-cart text-success"></i>
+                        </div>
+                        <span class="stat-number" id="totalTmdtOrdersCount">0</span>
+                        <span class="stat-label">Tổng đơn TMĐT</span>
+                    </div>
+                    <div class="stat-card tmdt-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-boxes text-warning"></i>
+                        </div>
+                        <span class="stat-number" id="totalTmdtQuantity">0</span>
+                        <span class="stat-label">Số lượng xuất</span>
+                    </div>
+                    <div class="stat-card value-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-dollar-sign text-purple"></i>
+                        </div>
+                        <span class="stat-number" id="totalTmdtValue">0₫</span>
+                        <span class="stat-label">Giá trị xuất kho</span>
+                    </div>
+                    <div class="stat-card percentage-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-percentage text-info"></i>
+                        </div>
+                        <span class="stat-number" id="tmdtUsagePercentage">0%</span>
+                        <span class="stat-label">% Sử dụng kho</span>
+                    </div>
+                </div>
+                
+                <!-- TMDT Report Table -->
+                <div class="report-table-container">
+                    <div class="report-table-header">
+                        <h3 class="report-table-title"><i class="fas fa-table"></i> Danh Sách Đơn Hàng TMĐT</h3>
+                        <div class="table-actions">
+                            <button class="btn btn-success" onclick="exportTmdtReport()">
+                                <i class="fas fa-file-excel"></i> Xuất Excel
+                            </button>
+                            <button class="btn btn-danger" id="deleteSelectedTmdtBtn" onclick="deleteSelectedTmdtOrders()" style="display: none;">
+                                <i class="fas fa-trash"></i> Xóa đã chọn (<span id="selectedTmdtCount">0</span>)
+                            </button>
+                        </div>
+                    </div>
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th width="40">
+                                    <input type="checkbox" id="selectAllTmdt" onchange="toggleSelectAllTmdt(this)">
+                                </th>
+                                <th>STT</th>
+                                <th>Mã đơn hàng</th>
+                                <th>Ngày tạo</th>
+                                <th>Sản phẩm</th>
+                                <th>SKU</th>
+                                <th>Số lượng xuất</th>
+                                <th>Đơn vị</th>
+                                <th>Giá trị</th>
+                                <th>Sàn TMĐT</th>
+                                <th>Cửa hàng</th>
+                                <th>Trạng thái</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tmdtReportTableBody">
+                            <!-- Data will be populated here -->
+                        </tbody>
+                    </table>
+                    <div class="pagination-container">
+                        <ul class="pagination" id="tmdtReportPagination">
+                            <!-- Pagination will be generated here -->
+                        </ul>
+                    </div>
+                </div>
+            </div>
 
+            <!-- Retail Report Tab Content -->
+            <div id="retailReportTab" class="tab-content">
+                <!-- Statistics Filters -->
+                <div class="stats-filters-section">
+                    <h3 class="stats-filters-title">
+                        <i class="fas fa-chart-bar"></i> Bộ Lọc Thống Kê - Đơn Hàng Lẻ
+                    </h3>
+                    <div class="stats-filters-grid">
+                        <div class="stats-filter-group">
+                            <label class="stats-filter-label">📅 Thời gian:</label>
+                            <select id="statsRetailDateRange" class="stats-filter-select">
+                                <option value="all">Tất cả</option>
+                                <option value="today">Hôm nay</option>
+                                <option value="week">7 ngày qua</option>
+                                <option value="month">30 ngày qua</option>
+                                <option value="quarter">3 tháng qua</option>
+                                <option value="custom">Tùy chọn</option>
+                            </select>
+                        </div>
+                        <div class="stats-filter-group">
+                            <label class="stats-filter-label">🏪 Cửa hàng:</label>
+                            <select id="statsRetailStoreFilter" class="stats-filter-select">
+                                <option value="all">Tất cả cửa hàng</option>
+                            </select>
+                        </div>
+                        <div class="stats-filter-group">
+                            <label class="stats-filter-label">📦 Sản phẩm:</label>
+                            <select id="statsRetailProductFilter" class="stats-filter-select">
+                                <option value="all">Tất cả sản phẩm</option>
+                            </select>
+                        </div>
+                        <div class="stats-filter-actions">
+                            <button id="applyRetailFiltersBtn" class="btn btn-primary stats-filter-btn">
+                                <i class="fas fa-filter"></i> Áp dụng
+                            </button>
+                            <button id="resetRetailFiltersBtn" class="btn btn-secondary stats-filter-btn">
+                                <i class="fas fa-undo"></i> Đặt lại
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Statistics Cards -->
+                <div class="stats-container">
+                    <div class="stat-card retail-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-store text-primary"></i>
+                        </div>
+                        <span class="stat-number" id="totalRetailOrdersCount">0</span>
+                        <span class="stat-label">Tổng đơn Lẻ</span>
+                    </div>
+                    <div class="stat-card retail-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-boxes text-warning"></i>
+                        </div>
+                        <span class="stat-number" id="totalRetailQuantity">0</span>
+                        <span class="stat-label">Số lượng xuất</span>
+                    </div>
+                    <div class="stat-card value-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-dollar-sign text-purple"></i>
+                        </div>
+                        <span class="stat-number" id="totalRetailValue">0₫</span>
+                        <span class="stat-label">Giá trị xuất kho</span>
+                    </div>
+                    <div class="stat-card percentage-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-percentage text-info"></i>
+                        </div>
+                        <span class="stat-number" id="retailUsagePercentage">0%</span>
+                        <span class="stat-label">% Sử dụng kho</span>
+                    </div>
+                </div>
+                
+                <!-- Retail Report Table -->
+                <div class="report-table-container">
+                    <div class="report-table-header">
+                        <h3 class="report-table-title"><i class="fas fa-table"></i> Danh Sách Đơn Hàng Lẻ</h3>
+                        <div class="table-actions">
+                            <button class="btn btn-success" onclick="exportRetailReport()">
+                                <i class="fas fa-file-excel"></i> Xuất Excel
+                            </button>
+                        </div>
+                    </div>
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>STT</th>
+                                <th>Mã đơn hàng</th>
+                                <th>Ngày tạo</th>
+                                <th>Sản phẩm</th>
+                                <th>Số lượng xuất</th>
+                                <th>Giá trị</th>
+                                <th>Cửa hàng</th>
+                                <th>Trạng thái</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="retailReportTableBody">
+                            <!-- Data will be populated here -->
+                        </tbody>
+                    </table>
+                    <div class="pagination-container">
+                        <ul class="pagination" id="retailReportPagination">
+                            <!-- Pagination will be generated here -->
+                        </ul>
+                    </div>
+                </div>
+            </div>
 
-
-
-
-
-
-
-
-
+            <!-- Wholesale Report Tab Content -->
+            <div id="wholesaleReportTab" class="tab-content">
+                <!-- Statistics Filters -->
+                <div class="stats-filters-section">
+                    <h3 class="stats-filters-title">
+                        <i class="fas fa-chart-bar"></i> Bộ Lọc Thống Kê - Đơn Hàng Sỉ
+                    </h3>
+                    <div class="stats-filters-grid">
+                        <div class="stats-filter-group">
+                            <label class="stats-filter-label">📅 Thời gian:</label>
+                            <select id="statsWholesaleDateRange" class="stats-filter-select">
+                                <option value="all">Tất cả</option>
+                                <option value="today">Hôm nay</option>
+                                <option value="week">7 ngày qua</option>
+                                <option value="month">30 ngày qua</option>
+                                <option value="quarter">3 tháng qua</option>
+                                <option value="custom">Tùy chọn</option>
+                            </select>
+                        </div>
+                        <div class="stats-filter-group">
+                            <label class="stats-filter-label">🏪 Cửa hàng:</label>
+                            <select id="statsWholesaleStoreFilter" class="stats-filter-select">
+                                <option value="all">Tất cả cửa hàng</option>
+                            </select>
+                        </div>
+                        <div class="stats-filter-group">
+                            <label class="stats-filter-label">📦 Sản phẩm:</label>
+                            <select id="statsWholesaleProductFilter" class="stats-filter-select">
+                                <option value="all">Tất cả sản phẩm</option>
+                            </select>
+                        </div>
+                        <div class="stats-filter-actions">
+                            <button id="applyWholesaleFiltersBtn" class="btn btn-primary stats-filter-btn">
+                                <i class="fas fa-filter"></i> Áp dụng
+                            </button>
+                            <button id="resetWholesaleFiltersBtn" class="btn btn-secondary stats-filter-btn">
+                                <i class="fas fa-undo"></i> Đặt lại
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Statistics Cards -->
+                <div class="stats-container">
+                    <div class="stat-card wholesale-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-warehouse text-danger"></i>
+                        </div>
+                        <span class="stat-number" id="totalWholesaleOrdersCount">0</span>
+                        <span class="stat-label">Tổng đơn Sỉ</span>
+                    </div>
+                    <div class="stat-card wholesale-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-boxes text-warning"></i>
+                        </div>
+                        <span class="stat-number" id="totalWholesaleQuantity">0</span>
+                        <span class="stat-label">Số lượng xuất</span>
+                    </div>
+                    <div class="stat-card value-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-dollar-sign text-purple"></i>
+                        </div>
+                        <span class="stat-number" id="totalWholesaleValue">0₫</span>
+                        <span class="stat-label">Giá trị xuất kho</span>
+                    </div>
+                    <div class="stat-card percentage-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-percentage text-info"></i>
+                        </div>
+                        <span class="stat-number" id="wholesaleUsagePercentage">0%</span>
+                        <span class="stat-label">% Sử dụng kho</span>
+                    </div>
+                </div>
+                
+                <!-- Wholesale Report Table -->
+                <div class="report-table-container">
+                    <div class="report-table-header">
+                        <h3 class="report-table-title"><i class="fas fa-table"></i> Danh Sách Đơn Hàng Sỉ</h3>
+                        <div class="table-actions">
+                            <button class="btn btn-success" onclick="exportWholesaleReport()">
+                                <i class="fas fa-file-excel"></i> Xuất Excel
+                            </button>
+                        </div>
+                    </div>
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>STT</th>
+                                <th>Mã đơn hàng</th>
+                                <th>Ngày tạo</th>
+                                <th>Sản phẩm</th>
+                                <th>Số lượng xuất</th>
+                                <th>Giá trị</th>
+                                <th>Cửa hàng</th>
+                                <th>Trạng thái</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="wholesaleReportTableBody">
+                            <!-- Data will be populated here -->
+                        </tbody>
+                    </table>
+                    <div class="pagination-container">
+                        <ul class="pagination" id="wholesaleReportPagination">
+                            <!-- Pagination will be generated here -->
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
 
     <!-- Warehouse Detail Modal -->
     <div id="warehouseDetailModal" class="modal" aria-hidden="true">
@@ -3221,6 +3594,7 @@
     <script src="../main/warehouse-export-report.js"></script>
     <script src="../main/warehouse-import-report.js"></script>
     <script src="../main/warehouse-adjustment-report.js"></script>
+    <script src="../main/order-report.js"></script>
  
     
     <script>
@@ -3346,7 +3720,8 @@
             const views = [
                 'warehouseListView',
                 'warehouseUsageReportView',
-                'transactionReportView'
+                'transactionReportView',
+                'orderReportView'
             ];
             
             views.forEach(viewId => {
@@ -3393,6 +3768,81 @@
             
             updateViewButtonStates('usageReportViewBtn');
         }
+
+        // Switch to order report view
+        function switchToOrderReportView() {
+            hideAllWarehouseViews();
+            const orderReportView = document.getElementById('orderReportView');
+            if (orderReportView) {
+                orderReportView.style.display = 'block';
+                
+                // Update button states
+                updateViewButtonStates('orderReportViewBtn');
+                
+                // Initialize the currently active tab
+                initializeOrderReportTab();
+            }
+        }
+
+        // Switch between order report tabs
+        function switchOrderReportTab(tabType) {
+            // Hide all tab contents
+            const tabContents = document.querySelectorAll('#orderReportView .tab-content');
+            tabContents.forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Remove active class from all tab buttons
+            const tabButtons = document.querySelectorAll('#orderReportView .tab-button');
+            tabButtons.forEach(button => {
+                button.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            const selectedTab = document.getElementById(tabType + 'ReportTab');
+            if (selectedTab) {
+                selectedTab.classList.add('active');
+            }
+            
+            // Add active class to selected button
+            const selectedButton = document.querySelector(`#orderReportView .tab-button[onclick="switchOrderReportTab('${tabType}')"]`);
+            if (selectedButton) {
+                selectedButton.classList.add('active');
+            }
+            
+            // Initialize the selected tab
+            initializeOrderReportTab(tabType);
+        }
+
+        // Initialize order report tab
+        function initializeOrderReportTab(tabType = 'tmdt') {
+            console.log('Initializing order report tab:', tabType);
+            
+            switch(tabType) {
+                case 'tmdt':
+                    if (typeof initTmdtReport === 'function') {
+                        initTmdtReport();
+                    } else {
+                        console.log('initTmdtReport function not found');
+                    }
+                    break;
+                case 'retail':
+                    if (typeof initRetailReport === 'function') {
+                        initRetailReport();
+                    } else {
+                        console.log('initRetailReport function not found');
+                    }
+                    break;
+                case 'wholesale':
+                    if (typeof initWholesaleReport === 'function') {
+                        initWholesaleReport();
+                    } else {
+                        console.log('initWholesaleReport function not found');
+                    }
+                    break;
+            }
+        }
+
         
         // REMOVED: Manual test function - using only real Firebase data
 

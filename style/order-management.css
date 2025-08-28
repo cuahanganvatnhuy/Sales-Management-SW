@@ -261,20 +261,44 @@
     border-color: #e0e0e0;
 }
 
+/* Table Header Animation */
+@keyframes headerGlow {
+    0% { box-shadow: 0 0 5px rgba(76, 175, 80, 0.3); }
+    50% { box-shadow: 0 0 20px rgba(76, 175, 80, 0.5); }
+    100% { box-shadow: 0 0 5px rgba(76, 175, 80, 0.3); }
+}
+
 /* Orders Table */
 .orders-table {
     width: 100%;
     border-collapse: collapse;
     background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 .orders-table th {
-    background: #f8f9fa;
-    padding: 12px;
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    padding: 15px 12px;
     text-align: left;
     font-weight: 600;
-    color: #333;
-    border-bottom: 2px solid #e0e0e0;
+    color: white;
+    border: none;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    position: relative;
+}
+
+.orders-table th::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: rgba(255,255,255,0.3);
 }
 
 /* Select All Container */
@@ -286,8 +310,8 @@
 }
 
 .select-all-label {
-    font-size: 11px;
-    color: #666;
+    font-size: 10px;
+    color: rgba(255,255,255,0.9);
     cursor: pointer;
     user-select: none;
     font-weight: 500;
@@ -296,19 +320,20 @@
 }
 
 .select-all-label:hover {
-    color: #4CAF50;
+    color: white;
 }
 
 /* Select All Checkbox */
 #selectAll {
-    transform: scale(1.2);
+    transform: scale(1.3);
     cursor: pointer;
-    accent-color: #4CAF50;
+    accent-color: white;
     margin: 0;
+    filter: brightness(1.2);
 }
 
 #selectAll:hover {
-    transform: scale(1.3);
+    transform: scale(1.4);
     transition: transform 0.2s ease;
 }
 
@@ -319,23 +344,40 @@
 
 /* Checkbox styling for all checkboxes */
 .product-checkbox {
-    transform: scale(1.1);
+    transform: scale(1.2);
     cursor: pointer;
     accent-color: #4CAF50;
+    transition: all 0.2s ease;
 }
 
 .product-checkbox:hover {
-    transform: scale(1.2);
-    transition: transform 0.2s ease;
+    transform: scale(1.3);
+    filter: brightness(1.1);
 }
 
 .orders-table td {
-    padding: 12px;
-    border-bottom: 1px solid #e0e0e0;
+    padding: 15px 12px;
+    border-bottom: 1px solid #f0f0f0;
+    vertical-align: middle;
+    font-size: 14px;
 }
 
-.orders-table tr:hover {
-    background: #f8f9fa;
+.orders-table tbody tr {
+    transition: all 0.3s ease;
+}
+
+.orders-table tbody tr:hover {
+    background: linear-gradient(135deg, #f8fff8, #f0f8f0);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.15);
+}
+
+.orders-table tbody tr:nth-child(even) {
+    background: #fafafa;
+}
+
+.orders-table tbody tr:nth-child(even):hover {
+    background: linear-gradient(135deg, #f8fff8, #f0f8f0);
 }
 
 .text-center {
@@ -344,6 +386,78 @@
 
 .text-right {
     text-align: right;
+    font-weight: 500;
+}
+
+/* Platform and Store Column Styling */
+.platform-col, .store-col {
+    min-width: 120px;
+    text-align: center;
+}
+
+/* Platform Badge Styling */
+.platform-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.platform-badge:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+/* Store Name Styling */
+.store-name {
+    font-weight: 500;
+    color: #2d3748;
+    padding: 4px 8px;
+    background: #f7fafc;
+    border-radius: 6px;
+    border-left: 3px solid #4CAF50;
+}
+
+/* Action Button Styling */
+.btn-danger.btn-small {
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(244, 67, 54, 0.2);
+}
+
+.btn-danger.btn-small:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
+}
+
+/* Quantity and Price Styling */
+.quantity-cell {
+    font-weight: 600;
+    color: #3182ce;
+}
+
+.price-cell {
+    font-weight: 600;
+    color: #38a169;
+}
+
+.total-cell {
+    font-weight: 700;
+    color: #e53e3e;
+    font-size: 15px;
+}
+
+/* Date Cell Styling */
+.date-cell {
+    color: #4a5568;
+    font-size: 13px;
+    font-weight: 500;
 }
 
 /* Export Button */
@@ -475,6 +589,25 @@
     
     .orders-table th,
     .orders-table td {
-        padding: 8px;
+        padding: 10px 8px;
     }
+    
+    .platform-badge {
+        font-size: 10px;
+        padding: 4px 8px;
+    }
+    
+    .store-name {
+        font-size: 12px;
+        padding: 2px 6px;
+    }
+}
+
+/* Table Container Styling */
+.orders-table-container {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    margin: 20px 0;
 }
