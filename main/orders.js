@@ -470,7 +470,6 @@ async function createOrders(event) {
     event.preventDefault();
     
     const orderDate = document.getElementById('orderDate').value;
-    const orderCount = parseInt(document.getElementById('orderCount').value);
     
     if (!orderDate) {
         showNotification('Vui lòng chọn ngày tạo đơn!', 'error');
@@ -500,6 +499,10 @@ async function createOrders(event) {
     const orders = [];
     let hasError = false;
     
+    // Always use manual order logic (Excel just pre-fills the forms)
+    // Handle manual orders
+    const orderCount = parseInt(document.getElementById('orderCount').value);
+        
     // Collect all order data
     for (let i = 1; i <= orderCount; i++) {
         const productId = document.getElementById(`product_${i}`).value;
@@ -511,7 +514,7 @@ async function createOrders(event) {
             hasError = true;
             break;
         }
-        
+    
         if (!quantity || quantity <= 0) {
             showNotification(`Vui lòng nhập số lượng hợp lệ cho đơn hàng ${i}!`, 'error');
             hasError = true;
@@ -860,7 +863,23 @@ async function deleteSelectedOrders() {
     }
 }
 
-// Show loading state
+// Get processed Excel orders from the Excel processor
+function getProcessedExcelOrders() {
+    if (typeof window.getValidatedExcelOrders === 'function') {
+        return window.getValidatedExcelOrders();
+    }
+    return [];
+}
+
+// Get current Excel orders from form
+function getCurrentExcelOrders() {
+    if (typeof window.getCurrentExcelOrders === 'function') {
+        return window.getCurrentExcelOrders();
+    }
+    return [];
+}
+
+// Show/hide loading overlay
 function showLoading(show) {
     const overlay = document.getElementById('loadingOverlay');
     if (show) {

@@ -1,4 +1,4 @@
-// Method Selection - Chuyển đổi giữa tự tạo đơn và upload PDF
+// Method Selection - Chuyển đổi giữa tự tạo đơn, upload PDF và upload Excel
 let currentCreationMethod = 'manual';
 
 // Chọn phương thức tạo đơn hàng
@@ -8,14 +8,28 @@ function selectCreationMethod(method) {
     // Update button states
     const manualBtn = document.getElementById('manualMethodBtn');
     const pdfBtn = document.getElementById('pdfMethodBtn');
+    const excelBtn = document.getElementById('excelMethodBtn');
+    
+    // Reset all buttons
+    manualBtn?.classList.remove('active');
+    pdfBtn?.classList.remove('active');
+    excelBtn?.classList.remove('active');
+    
+    // Hide all groups
+    const manualGroup = document.getElementById('manualOrderGroup');
+    const pdfGroup = document.getElementById('pdfUploadGroup');
+    const excelGroup = document.getElementById('excelUploadGroup');
+    const orderFormsContainer = document.getElementById('orderFormsContainer');
+    
+    if (manualGroup) manualGroup.style.display = 'none';
+    if (pdfGroup) pdfGroup.style.display = 'none';
+    if (excelGroup) excelGroup.style.display = 'none';
     
     if (method === 'manual') {
-        manualBtn.classList.add('active');
-        pdfBtn.classList.remove('active');
+        manualBtn?.classList.add('active');
         
         // Show manual order group
-        document.getElementById('manualOrderGroup').style.display = 'block';
-        document.getElementById('pdfUploadGroup').style.display = 'none';
+        if (manualGroup) manualGroup.style.display = 'block';
         
         // Hide extracted orders if any
         const extractedOrders = document.getElementById('extractedOrders');
@@ -24,22 +38,34 @@ function selectCreationMethod(method) {
         }
         
         // Show order forms container
-        document.getElementById('orderFormsContainer').style.display = 'block';
+        if (orderFormsContainer) orderFormsContainer.style.display = 'block';
         
     } else if (method === 'pdf') {
-        manualBtn.classList.remove('active');
-        pdfBtn.classList.add('active');
+        pdfBtn?.classList.add('active');
         
         // Show PDF upload group
-        document.getElementById('manualOrderGroup').style.display = 'none';
-        document.getElementById('pdfUploadGroup').style.display = 'block';
+        if (pdfGroup) pdfGroup.style.display = 'block';
         
         // Hide order forms container
-        document.getElementById('orderFormsContainer').style.display = 'none';
+        if (orderFormsContainer) orderFormsContainer.style.display = 'none';
         
         // Initialize TikTok processor if not already done
         if (window.tikTokProcessor) {
             window.tikTokProcessor.bindEvents();
+        }
+        
+    } else if (method === 'excel') {
+        excelBtn?.classList.add('active');
+        
+        // Show Excel upload group
+        if (excelGroup) excelGroup.style.display = 'block';
+        
+        // Show order forms container for Excel preview
+        if (orderFormsContainer) orderFormsContainer.style.display = 'block';
+        
+        // Initialize Excel processor
+        if (typeof initializeExcelUpload === 'function') {
+            initializeExcelUpload();
         }
     }
 }
