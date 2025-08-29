@@ -147,18 +147,28 @@ function initializeDashboard() {
 
 // Show store selection message
 function showStoreSelectionMessage() {
-    document.getElementById('storeSelectionMessage').classList.remove('hidden');
-    document.getElementById('dashboardStats').classList.add('hidden');
-    document.getElementById('recentOrdersSection').classList.add('hidden');
-    document.getElementById('quickActionsSection').classList.add('hidden');
+    const storeSelectionMessage = document.getElementById('storeSelectionMessage');
+    const dashboardStats = document.getElementById('dashboardStats');
+    const recentOrdersSection = document.getElementById('recentOrdersSection');
+    const quickActionsSection = document.getElementById('quickActionsSection');
+    
+    if (storeSelectionMessage) storeSelectionMessage.classList.remove('hidden');
+    if (dashboardStats) dashboardStats.classList.add('hidden');
+    if (recentOrdersSection) recentOrdersSection.classList.add('hidden');
+    if (quickActionsSection) quickActionsSection.classList.add('hidden');
 }
 
 // Show dashboard content
 function showDashboardContent() {
-    document.getElementById('storeSelectionMessage').classList.add('hidden');
-    document.getElementById('dashboardStats').classList.remove('hidden');
-    document.getElementById('recentOrdersSection').classList.remove('hidden');
-    document.getElementById('quickActionsSection').classList.remove('hidden');
+    const storeSelectionMessage = document.getElementById('storeSelectionMessage');
+    const dashboardStats = document.getElementById('dashboardStats');
+    const recentOrdersSection = document.getElementById('recentOrdersSection');
+    const quickActionsSection = document.getElementById('quickActionsSection');
+    
+    if (storeSelectionMessage) storeSelectionMessage.classList.add('hidden');
+    if (dashboardStats) dashboardStats.classList.remove('hidden');
+    if (recentOrdersSection) recentOrdersSection.classList.remove('hidden');
+    if (quickActionsSection) quickActionsSection.classList.remove('hidden');
 }
 
 // Load dashboard data
@@ -352,14 +362,20 @@ function loadRecentOrders() {
 // Show store selection modal
 function showStoreSelectionModal() {
     const modal = document.getElementById('storeSelectionModal');
-    modal.classList.remove('hidden');
-    loadStoresInModal();
+    if (modal) {
+        modal.classList.remove('hidden');
+        loadStoresInModal();
+    } else {
+        console.warn('Store selection modal not found on this page');
+    }
 }
 
 // Hide store selection modal
 function hideStoreSelectionModal() {
     const modal = document.getElementById('storeSelectionModal');
-    modal.classList.add('hidden');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
 }
 
 // Load stores in modal

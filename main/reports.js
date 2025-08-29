@@ -44,10 +44,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 firebase.initializeApp(firebaseConfig);
                 console.log('✅ Firebase initialized in reports.js');
                 
-                // Create sample data if needed
-                setTimeout(() => {
-                    createSampleDataIfNeeded();
-                }, 1000);
+                // Database initialized - using real data only
+                console.log('✅ Firebase initialized in reports.js');
             }
             
             console.log('✅ Firebase available, initializing reports page...');
@@ -1059,23 +1057,7 @@ function formatNumber(number) {
     });
 }
 
-// Create sample data if needed
-async function createSampleDataIfNeeded() {
-    try {
-        console.log('🔍 Checking for existing data...');
-        const snapshot = await firebase.database().ref().once('value');
-        const data = snapshot.val();
-        
-        if (!data || Object.keys(data).length === 0) {
-            console.log('📄 Database empty, creating sample data...');
-            await createSampleData();
-        } else {
-            console.log('✅ Database already has data! Keeping existing data.');
-        }
-    } catch (error) {
-        console.error('❌ Error checking database:', error);
-    }
-}
+// REMOVED: Sample data creation - using only real Firebase data
 
 // ===== ENHANCED REPORT FUNCTIONS =====
 
@@ -1358,105 +1340,4 @@ function parseOrderDate(dateValue) {
     return isNaN(orderDate.getTime()) ? null : orderDate;
 }
 
-// Create sample data
-async function createSampleData() {
-    try {
-        const database = firebase.database();
-        
-        // Sample stores
-        const stores = {
-            'store1': {
-                name: 'Cửa Hàng Trung Tâm',
-                address: '123 Đường ABC, Quận 1, TP.HCM',
-                phone: '0901234567'
-            },
-            'store2': {
-                name: 'Cửa Hàng Chi Nhánh',
-                address: '456 Đường XYZ, Quận 2, TP.HCM', 
-                phone: '0907654321'
-            }
-        };
-        
-        // Sample products
-        const products = {
-            'prod1': {
-                name: 'Sản phẩm A',
-                price: 100000,
-                category: 'Electronics'
-            },
-            'prod2': {
-                name: 'Sản phẩm B',
-                price: 200000,
-                category: 'Fashion'
-            },
-            'prod3': {
-                name: 'Sản phẩm C',
-                price: 150000,
-                category: 'Home'
-            }
-        };
-        
-        // Sample orders for the last 30 days (including today: 02/08/2025)
-        const orders = {};
-        const today = new Date(2025, 7, 2); // August 2, 2025 (month is 0-indexed)
-        
-        for (let i = 0; i < 30; i++) {
-            const orderDate = new Date(today);
-            orderDate.setDate(today.getDate() - i);
-            const dateStr = `${String(orderDate.getDate()).padStart(2, '0')}/${String(orderDate.getMonth() + 1).padStart(2, '0')}/${orderDate.getFullYear()}`;
-            
-            // Create 2-5 orders per day
-            const ordersPerDay = Math.floor(Math.random() * 4) + 2;
-            
-            for (let j = 0; j < ordersPerDay; j++) {
-                const orderId = `order_${i}_${j}`;
-                const storeId = Math.random() > 0.5 ? 'store1' : 'store2';
-                const productId = ['prod1', 'prod2', 'prod3'][Math.floor(Math.random() * 3)];
-                const quantity = Math.floor(Math.random() * 5) + 1;
-                const price = products[productId].price;
-                
-                orders[`${storeId}_${orderId}`] = {
-                    id: orderId,
-                    date: dateStr,
-                    storeId: storeId,
-                    items: {
-                        [productId]: {
-                            name: products[productId].name,
-                            price: price,
-                            quantity: quantity
-                        }
-                    },
-                    total: price * quantity,
-                    status: 'completed'
-                };
-                
-                // Also add to store-specific orders
-                await database.ref(`stores/${storeId}/orders/${orderId}`).set({
-                    id: orderId,
-                    date: dateStr,
-                    items: {
-                        [productId]: {
-                            name: products[productId].name,
-                            price: price,
-                            quantity: quantity
-                        }
-                    },
-                    total: price * quantity,
-                    status: 'completed'
-                });
-            }
-        }
-        
-        // Save to Firebase
-        await database.ref('stores').set(stores);
-        await database.ref('products').set(products);
-        
-        console.log('✅ Sample data created successfully!');
-        console.log(`📊 Created ${Object.keys(stores).length} stores`);
-        console.log(`📦 Created ${Object.keys(products).length} products`);
-        console.log(`🛒 Created ${Object.keys(orders).length} orders`);
-        
-    } catch (error) {
-        console.error('❌ Error creating sample data:', error);
-    }
-}
+// REMOVED: Sample data creation function - using only real Firebase data

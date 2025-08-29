@@ -1014,10 +1014,46 @@ function saveWholesaleOrderToFirebase(order) {
     
     console.log('Calling Firebase set...');
     return ordersRef.set(order)
-        .then(() => {
+        .then(async () => {
             console.log('Firebase save SUCCESS for wholesale order:', order.id);
+            
+            // Update stock for all ordered products
+            console.log('=== Updating product stock for wholesale order ===');
+            try {
+                for (const item of order.items) {
+                    const productRef = window.database.ref(`products/${item.productId}`);
+                    const productSnapshot = await productRef.once('value');
+                    const currentProduct = productSnapshot.val();
+                    
+                    if (currentProduct) {
+                        const newStock = (currentProduct.stock || 0) - (item.quantity || 0);
+                        await productRef.update({ 
+                            stock: Math.max(0, newStock), // Ensure stock doesn't go negative
+                            updatedAt: new Date().toISOString()
+                        });
+                        console.log(`Updated stock for ${item.productName}: ${currentProduct.stock} -> ${newStock}`);
+                    }
+                }
+            } catch (stockError) {
+                console.error('Error updating stock:', stockError);
+                // Don't fail the order creation, just log the error
+            }
+            
+            // Log warehouse transactions for tracking usage by order type
+            console.log('=== Logging warehouse transactions for wholesale order ===');
+            try {
+                if (typeof window.logWarehouseTransactionForOrder === 'function') {
+                    await window.logWarehouseTransactionForOrder(order, 'wholesale', order.storeId);
+                } else {
+                    console.warn('Warehouse transaction logger not available');
+                }
+            } catch (transactionError) {
+                console.error('Error logging warehouse transactions:', transactionError);
+                // Don't fail the order creation, just log the error
+            }
+            
             hideLoading();
-            showNotification('Tạo đơn hàng bán sỉ thành công!', 'success');
+            showNotification('Tạo đơn hàng bán sỉ thành công và cập nhật tồn kho!', 'success');
             
             // Add to local data (check for duplicates first)
             const existingOrderIndex = wholesaleOrdersData.findIndex(existingOrder => existingOrder.id === order.id);

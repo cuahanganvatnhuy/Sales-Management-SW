@@ -431,6 +431,19 @@ function saveRetailOrderToFirebase(order) {
                 // Don't fail the order creation, just log the error
             }
             
+            // Log warehouse transactions for tracking usage by order type
+            console.log('=== Logging warehouse transactions for retail order ===');
+            try {
+                if (typeof window.logWarehouseTransactionForOrder === 'function') {
+                    await window.logWarehouseTransactionForOrder(order, 'retail', order.storeId);
+                } else {
+                    console.warn('Warehouse transaction logger not available');
+                }
+            } catch (transactionError) {
+                console.error('Error logging warehouse transactions:', transactionError);
+                // Don't fail the order creation, just log the error
+            }
+            
             hideLoading();
             showNotification('Tạo đơn hàng bán lẻ thành công và cập nhật tồn kho!', 'success');
             

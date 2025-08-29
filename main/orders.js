@@ -24,6 +24,7 @@ window.addEventListener('DOMContentLoaded', function() {
     
     setDefaultDate();
     generateOrderForms();
+    setupPlatformSelection();
 });
 
 // Initialize orders page with store context
@@ -93,6 +94,57 @@ function hideStoreSelectionMessage() {
 function setDefaultDate() {
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('orderDate').value = today;
+}
+
+// Setup platform selection functionality
+function setupPlatformSelection() {
+    const platformSelect = document.getElementById('ecommercePlatform');
+    const otherPlatformGroup = document.getElementById('otherPlatformGroup');
+    
+    if (platformSelect) {
+        platformSelect.addEventListener('change', function() {
+            if (this.value === 'other') {
+                otherPlatformGroup.style.display = 'block';
+                document.getElementById('otherPlatformName').required = true;
+            } else {
+                otherPlatformGroup.style.display = 'none';
+                document.getElementById('otherPlatformName').required = false;
+                document.getElementById('otherPlatformName').value = '';
+            }
+        });
+    }
+}
+
+// Get selected platform information
+function getSelectedPlatform() {
+    const platformSelect = document.getElementById('ecommercePlatform');
+    const otherPlatformName = document.getElementById('otherPlatformName');
+    
+    if (!platformSelect || !platformSelect.value) {
+        return null;
+    }
+    
+    if (platformSelect.value === 'other') {
+        return {
+            platform: 'other',
+            platformName: otherPlatformName.value.trim() || 'Khác'
+        };
+    }
+    
+    const platformNames = {
+        'shopee': 'Shopee',
+        'lazada': 'Lazada', 
+        'tiktok': 'TikTok Shop',
+        'sendo': 'Sendo',
+        'tiki': 'Tiki',
+        'facebook': 'Facebook Shop',
+        'zalo': 'Zalo Shop'
+    };
+    
+    return {
+        platform: platformSelect.value,
+        platformName: platformNames[platformSelect.value] || platformSelect.value
+    };
 }
 
 // Load products from Firebase (global products shared across all stores)
@@ -276,7 +328,7 @@ function generateOrderFormsContent(orderCount, container) {
     initializeProductSelects(orderCount);
     
     // Update total orders count
-    updateTotalOrdersCount();
+    // updateTotalOrdersCount(); // Function not needed for form generation
 }
 
 // Initialize SearchableSelect for product dropdowns
@@ -418,16 +470,39 @@ async function createOrders(event) {
     event.preventDefault();
     
     const orderDate = document.getElementById('orderDate').value;
-    const orderCount = parseInt(document.getElementById('orderCount').value);
     
     if (!orderDate) {
         showNotification('Vui lòng chọn ngày tạo đơn!', 'error');
         return;
     }
     
+    // Validate platform selection for TMĐT orders
+    const platformInfo = getSelectedPlatform();
+    if (!platformInfo) {
+        showNotification('Vui lòng chọn sàn TMĐT!', 'error');
+        return;
+    }
+    
+    if (platformInfo.platform === 'other' && !platformInfo.platformName.trim()) {
+        showNotification('Vui lòng nhập tên sàn TMĐT khác!', 'error');
+        return;
+    }
+    
+    // Get store information
+    const selectedStoreId = localStorage.getItem('selectedStoreId');
+    const storeInfo = getCurrentStoreData();
+    if (!selectedStoreId || !storeInfo) {
+        showNotification('Vui lòng chọn cửa hàng trước khi tạo đơn!', 'error');
+        return;
+    }
+    
     const orders = [];
     let hasError = false;
     
+    // Always use manual order logic (Excel just pre-fills the forms)
+    // Handle manual orders
+    const orderCount = parseInt(document.getElementById('orderCount').value);
+        
     // Collect all order data
     for (let i = 1; i <= orderCount; i++) {
         const productId = document.getElementById(`product_${i}`).value;
@@ -439,7 +514,7 @@ async function createOrders(event) {
             hasError = true;
             break;
         }
-        
+    
         if (!quantity || quantity <= 0) {
             showNotification(`Vui lòng nhập số lượng hợp lệ cho đơn hàng ${i}!`, 'error');
             hasError = true;
@@ -468,20 +543,66 @@ async function createOrders(event) {
         
         const total = price * quantity;
         
-        orders.push({
+        const productName = product.name;
+        const productSKU = product.sku || 'N/A';
+        const customerName = document.getElementById('customerName')?.value || '';
+        const customerPhone = document.getElementById('customerPhone')?.value || '';
+        const customerAddress = document.getElementById('customerAddress')?.value || '';
+        const notes = document.getElementById('notes')?.value || '';
+        const platform = platformInfo.platform;
+        const platformName = platformInfo.platformName;
+        
+        // Get Order ID from Excel if available - check hidden input first
+        let excelOrderId = null;
+        
+        // Method 1: From hidden input (most reliable)
+        const orderIdInput = document.getElementById(`orderId_${i}`);
+        if (orderIdInput && orderIdInput.value) {
+            excelOrderId = orderIdInput.value;
+            console.log(`📋 Order ${i}: Excel Order ID from hidden input = ${excelOrderId}`);
+        }
+        // Method 2: From form header
+        else {
+            const headerElement = document.querySelector(`#orderForm_${i} .order-form-title`);
+            if (headerElement && headerElement.textContent.includes('Mã:')) {
+                const match = headerElement.textContent.match(/Mã:\s*([^\s]+)/);
+                if (match) {
+                    excelOrderId = match[1];
+                    console.log(`📋 Order ${i}: Excel Order ID from header = ${excelOrderId}`);
+                }
+            }
+        }
+        
+        if (!excelOrderId) {
+            console.log(`📋 Order ${i}: No Excel Order ID found`);
+        }
+        
+        // Create order data
+        const orderData = {
             productId: productId,
-            productName: product.name,
-            sku: product.sku || 'N/A',
+            productName: productName,
+            sku: productSKU,
             quantity: quantity,
-            unit: unit,
-            conversion: conversion,
-            actualQuantityForStock: actualQuantityForStock,
             price: price,
             total: total,
+            unit: unit,
             orderDate: orderDate,
-            type: 'ecommerce',
-            createdAt: firebase.database.ServerValue.TIMESTAMP
-        });
+            customerName: customerName,
+            customerPhone: customerPhone,
+            customerAddress: customerAddress,
+            notes: notes,
+            platform: platform,
+            platformName: platformName,
+            source: 'order_management',
+            orderType: 'ecommerce',
+            createdAt: new Date().toISOString(),
+            storeId: selectedStoreId,
+            storeName: storeInfo.name,
+            orderId: excelOrderId,
+            actualQuantityForStock: actualQuantityForStock
+        };
+        
+        orders.push(orderData);
     }
     
     if (hasError) return;
@@ -490,6 +611,8 @@ async function createOrders(event) {
         showLoading(true);
         console.log('=== Creating TMĐT orders ===');
         console.log('Orders to create:', orders.length);
+        console.log('Platform info:', platformInfo);
+        console.log('Store info:', storeInfo);
         console.log('Sample order data:', orders[0]);
         
         // Save all orders to the selected store
@@ -511,8 +634,8 @@ async function createOrders(event) {
             }
         }
         
-        // Update stock for all ordered products
-        console.log('=== Updating product stock ===');
+        // Update stock and create warehouse transactions for all ordered products
+        console.log('=== Updating product stock and creating warehouse transactions ===');
         for (const orderData of orders) {
             const productRef = database.ref(`products/${orderData.productId}`);
             const productSnapshot = await productRef.once('value');
@@ -525,10 +648,49 @@ async function createOrders(event) {
                     updatedAt: firebase.database.ServerValue.TIMESTAMP 
                 });
                 console.log(`Updated stock for ${orderData.productName}: ${currentProduct.stock} -> ${newStock}`);
+                
+                // Create warehouse transaction for stock out
+                const transactionId = database.ref('warehouseTransactions').push().key;
+                const warehouseTransaction = {
+                    id: transactionId,
+                    type: 'out',
+                    subType: 'ecommerce_order',
+                    productId: orderData.productId,
+                    productName: orderData.productName,
+                    productSku: orderData.sku,
+                    productCategory: currentProduct.categoryName || 'Khác',
+                    quantity: orderData.actualQuantityForStock,
+                    unit: orderData.unit,
+                    unitPrice: currentProduct.costPrice || currentProduct.price || orderData.price,
+                    totalValue: orderData.actualQuantityForStock * (currentProduct.costPrice || currentProduct.price || orderData.price),
+                    reason: 'Bán hàng TMĐT',
+                    customReason: `Đơn hàng ${platformInfo.platformName}`,
+                    note: `Xuất kho cho đơn hàng TMĐT - Sàn: ${platformInfo.platformName}, SL bán: ${orderData.quantity} ${orderData.unit}`,
+                    timestamp: Date.now(),
+                    date: new Date().toISOString(),
+                    userId: 'system',
+                    storeId: orderData.storeId,
+                    storeName: orderData.storeName,
+                    performedBy: storeInfo.name || 'admin',
+                    orderId: null, // Will be set after order creation
+                    platform: orderData.platform,
+                    platformName: orderData.platformName
+                };
+                
+                await database.ref(`warehouseTransactions/${transactionId}`).set(warehouseTransaction);
+                console.log(`Created warehouse transaction for ${orderData.productName}: ${transactionId}`);
+                console.log('Warehouse transaction data:', {
+                    quantity: warehouseTransaction.quantity,
+                    unitPrice: warehouseTransaction.unitPrice,
+                    totalValue: warehouseTransaction.totalValue,
+                    costPrice: currentProduct.costPrice,
+                    productPrice: currentProduct.price,
+                    orderPrice: orderData.price
+                });
             }
         }
         
-        showNotification(`Đã tạo thành công ${orders.length} đơn hàng và cập nhật tồn kho!`, 'success');
+        showNotification(`Đã tạo thành công ${orders.length} đơn hàng TMĐT từ sàn ${platformInfo.platformName} cho cửa hàng ${storeInfo.name}!`, 'success');
         
         // Reset form with animation
         const form = document.getElementById('addOrderForm');
@@ -557,8 +719,20 @@ async function createOrders(event) {
         await loadOrders();
         
     } catch (error) {
-        console.error('Error creating orders:', error);
-        showNotification('Lỗi tạo đơn hàng!', 'error');
+        console.error('=== Error creating orders ===');
+        console.error('Error details:', error);
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+        console.error('Platform info:', platformInfo);
+        console.error('Store info:', storeInfo);
+        console.error('Orders data:', orders);
+        
+        let errorMessage = 'Lỗi tạo đơn hàng!';
+        if (error.message) {
+            errorMessage += ` Chi tiết: ${error.message}`;
+        }
+        
+        showNotification(errorMessage, 'error');
     } finally {
         showLoading(false);
     }
@@ -594,18 +768,31 @@ function displayOrders() {
         const productSKU = order.sku || product.sku || 'N/A';
         const unit = order.unit || product.unit || 'cái';
         
+        // Get platform display info
+        const platformDisplay = order.platformName || order.platform || 'N/A';
+        const storeDisplay = order.storeName || 'N/A';
+        
         ordersHTML += `
             <tr>
                 <td class="text-center">
                     <input type="checkbox" class="product-checkbox" value="${orderId}" onchange="updateBulkActions()">
                 </td>
                 <td class="text-center">${index}</td>
+                <td class="text-center order-id-cell">
+                    ${order.orderId ? `<span class="order-id-badge">${order.orderId}</span>` : 'N/A'}
+                </td>
                 <td>${order.productName}</td>
                 <td class="text-center sku-cell">${productSKU}</td>
-                <td class="text-right">${order.quantity} ${unit}</td>
-                <td class="text-right">${formatCurrency(order.price)}</td>
-                <td class="text-right">${formatCurrency(order.total)}</td>
-                <td class="text-center">${formatDate(order.orderDate)}</td>
+                <td class="text-right quantity-cell">${order.quantity} ${unit}</td>
+                <td class="text-right price-cell">${formatCurrency(order.price)}</td>
+                <td class="text-right total-cell">${formatCurrency(order.total)}</td>
+                <td class="text-center">
+                    ${order.platform ? `<span class="platform-badge platform-${order.platform}">${platformDisplay}</span>` : 'N/A'}
+                </td>
+                <td class="text-center">
+                    <span class="store-name">${storeDisplay}</span>
+                </td>
+                <td class="text-center date-cell">${formatDate(order.orderDate)}</td>
                 <td class="text-center">
                     <button class="btn btn-danger btn-small" onclick="deleteOrder('${orderId}')">
                         <i class="fas fa-trash"></i>
@@ -717,7 +904,23 @@ async function deleteSelectedOrders() {
     }
 }
 
-// Show loading state
+// Get processed Excel orders from the Excel processor
+function getProcessedExcelOrders() {
+    if (typeof window.getValidatedExcelOrders === 'function') {
+        return window.getValidatedExcelOrders();
+    }
+    return [];
+}
+
+// Get current Excel orders from form
+function getCurrentExcelOrders() {
+    if (typeof window.getCurrentExcelOrders === 'function') {
+        return window.getCurrentExcelOrders();
+    }
+    return [];
+}
+
+// Show/hide loading overlay
 function showLoading(show) {
     const overlay = document.getElementById('loadingOverlay');
     if (show) {

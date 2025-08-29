@@ -100,7 +100,7 @@ async function loadCategories() {
 async function loadTransactionHistory() {
     try {
         console.log('Loading transaction history...');
-        const snapshot = await database.ref('warehouse_transactions').orderByChild('timestamp').limitToLast(100).once('value');
+        const snapshot = await database.ref('warehouseTransactions').orderByChild('timestamp').limitToLast(100).once('value');
         const transactions = snapshot.val() || {};
         warehouseTransactions = Object.values(transactions).reverse();
         console.log(`Loaded ${warehouseTransactions.length} transactions`);

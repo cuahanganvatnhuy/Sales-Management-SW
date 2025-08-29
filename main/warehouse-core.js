@@ -30,6 +30,9 @@ async function initializeWarehouseManagement() {
             }
         }
         
+        // Initialize warehouse data from Firebase only
+        console.log('✅ Warehouse core initialized - using real Firebase data only');
+        
         // Load data
         await loadWarehouseData();
         await loadCategories();
@@ -37,9 +40,47 @@ async function initializeWarehouseManagement() {
         
         // Initialize UI
         updateDashboard();
+        
+        // Debug categories before populating filter
+        console.log('=== CATEGORIES DEBUG ===');
+        console.log('categoriesData:', categoriesData);
+        console.log('categoriesData type:', typeof categoriesData);
+        console.log('categoriesData keys:', Object.keys(categoriesData || {}));
+        console.log('categoriesData values:', Object.values(categoriesData || {}));
+        
         populateCategoryFilter();
         populateProductSelects();
+        
+        // Force display warehouse table with debug logging
+        console.log('About to display warehouse table...');
+        console.log('warehouseData:', warehouseData);
+        console.log('warehouseData keys:', Object.keys(warehouseData || {}));
+        console.log('warehouseData sample:', Object.values(warehouseData || {})[0]);
+        
+        // Force multiple attempts to display the table
+        setTimeout(() => {
+            console.log('First display attempt at 100ms');
+            displayWarehouseTable();
+        }, 100);
+        setTimeout(() => {
+            console.log('Second display attempt at 1000ms');
+            displayWarehouseTable();
+        }, 1000);
+        setTimeout(() => {
+            console.log('Final display attempt at 2000ms');
+            const tbody = document.getElementById('warehouseTableBody');
+            console.log('Final check - tbody exists:', !!tbody);
+            console.log('Final check - tbody children:', tbody ? tbody.children.length : 'N/A');
+            console.log('Final check - warehouseData keys:', Object.keys(warehouseData || {}).length);
+            if (tbody && tbody.children.length === 0 && Object.keys(warehouseData).length > 0) {
+                console.log('Forcing table display in final attempt');
+                displayWarehouseTable();
+            }
+        }, 2000);
+        
+        // Add immediate call to displayWarehouseTable
         displayWarehouseTable();
+        
         initializeCharts();
         checkLowStockAlerts();
         
@@ -89,6 +130,21 @@ async function loadCategories() {
         categoriesData = snapshot.val() || {};
         console.log(`Loaded ${Object.keys(categoriesData).length} categories`, categoriesData);
         
+        // Force reload categories if empty or insufficient
+        if (Object.keys(categoriesData).length < 3) {
+            console.log('Categories data insufficient, trying alternative paths...');
+            
+            // Try loading from productCategories path
+            const altSnapshot = await database.ref('productCategories').once('value');
+            const altData = altSnapshot.val() || {};
+            console.log('Alternative categories data:', altData);
+            
+            if (Object.keys(altData).length > Object.keys(categoriesData).length) {
+                categoriesData = altData;
+                console.log('Using alternative categories data');
+            }
+        }
+        
     } catch (error) {
         console.error('Error loading categories:', error);
         categoriesData = {};
@@ -99,7 +155,7 @@ async function loadCategories() {
 async function loadTransactionHistory() {
     try {
         console.log('Loading transaction history...');
-        const snapshot = await database.ref('warehouse_transactions').orderByChild('timestamp').limitToLast(100).once('value');
+        const snapshot = await database.ref('warehouseTransactions').orderByChild('timestamp').limitToLast(100).once('value');
         const transactions = snapshot.val() || {};
         warehouseTransactions = Object.values(transactions).reverse();
         console.log(`Loaded ${warehouseTransactions.length} transactions`);
@@ -154,26 +210,52 @@ function showNotification(message, type = 'info') {
     const notification = document.getElementById('notification');
     if (!notification) return;
     
-    const icon = notification.querySelector('.notification-icon');
-    const messageSpan = notification.querySelector('.notification-message');
-    
-    // Set icon based on type
-    let iconClass = 'fas fa-info-circle';
-    if (type === 'success') iconClass = 'fas fa-check-circle';
-    else if (type === 'error') iconClass = 'fas fa-exclamation-circle';
-    else if (type === 'warning') iconClass = 'fas fa-exclamation-triangle';
-    
-    if (icon) icon.className = `notification-icon ${iconClass}`;
-    if (messageSpan) messageSpan.textContent = message;
-    
-    // Set notification type class
+    notification.textContent = message;
     notification.className = `notification ${type}`;
-    notification.classList.remove('hidden');
+    notification.style.display = 'block';
     
-    // Auto hide after 5 seconds
     setTimeout(() => {
-        notification.classList.add('hidden');
-    }, 5000);
+        notification.style.display = 'none';
+    }, 3000);
+}
+
+// Refresh all warehouse data and UI components
+async function refreshWarehouseData() {
+    try {
+        console.log('Refreshing warehouse data...');
+        
+        // Reload warehouse data from Firebase
+        await loadWarehouseData();
+        
+        // Update main warehouse table
+        displayWarehouseTable();
+        
+        // Update dashboard
+        updateDashboard();
+        
+        // Refresh product selects in modals
+        populateProductSelects();
+        
+        // Refresh transaction history if the function exists
+        if (typeof loadTransactionHistory === 'function') {
+            await loadTransactionHistory();
+        }
+        
+        // Refresh usage report if the function exists
+        if (typeof refreshUsageReport === 'function') {
+            refreshUsageReport();
+        }
+        
+        // Refresh transaction table if the function exists
+        if (typeof refreshTransactionTable === 'function') {
+            refreshTransactionTable();
+        }
+        
+        console.log('Warehouse data refreshed successfully');
+        
+    } catch (error) {
+        console.error('Error refreshing warehouse data:', error);
+    }
 }
 
 // Populate category filter
@@ -192,15 +274,33 @@ function populateCategoryFilter() {
     
     console.log('Categories data available:', categoriesData);
     console.log('Number of categories to populate:', Object.values(categoriesData).length);
+    console.log('Categories keys:', Object.keys(categoriesData));
     
-    // Add category options
-    Object.values(categoriesData).forEach(category => {
-        console.log('Adding category:', category);
-        const option = document.createElement('option');
-        option.value = category.id;
-        option.textContent = category.name;
-        categoryFilter.appendChild(option);
-    });
+    // Add category options - check both Object.values and Object.entries
+    if (categoriesData && typeof categoriesData === 'object') {
+        Object.entries(categoriesData).forEach(([key, category]) => {
+            console.log('Processing category entry:', key, category);
+            
+            // Handle different data structures
+            let categoryId, categoryName;
+            if (category && typeof category === 'object') {
+                categoryId = category.id || key;
+                categoryName = category.name || category.categoryName || key;
+            } else if (typeof category === 'string') {
+                categoryId = key;
+                categoryName = category;
+            } else {
+                console.log('Skipping invalid category:', category);
+                return;
+            }
+            
+            console.log('Adding category:', categoryName, 'with ID:', categoryId);
+            const option = document.createElement('option');
+            option.value = categoryId;
+            option.textContent = categoryName;
+            categoryFilter.appendChild(option);
+        });
+    }
     
     console.log('Category filter populated. Total options:', categoryFilter.options.length);
 }
@@ -276,31 +376,95 @@ function toggleStockInMode() {
 
 // Display warehouse table
 function displayWarehouseTable() {
+    console.log('=== displayWarehouseTable called ===');
+    console.log('warehouseData available:', !!warehouseData);
+    console.log('warehouseData length:', Object.keys(warehouseData || {}).length);
+    console.log('warehouseData sample:', Object.values(warehouseData || {})[0]);
+    
     const tbody = document.getElementById('warehouseTableBody');
-    if (!tbody) return;
+    console.log('tbody element found:', !!tbody);
+    
+    if (!tbody) {
+        console.error('warehouseTableBody element not found!');
+        // Try to find it with a different approach
+        const allTbodies = document.querySelectorAll('tbody');
+        console.log('All tbody elements found:', allTbodies.length);
+        allTbodies.forEach((tb, index) => {
+            console.log(`tbody ${index} id:`, tb.id);
+        });
+        return;
+    }
     
     tbody.innerHTML = '';
+    console.log('tbody cleared');
+    
+    // Force table to be visible
+    const table = tbody.closest('table');
+    if (table) {
+        table.style.display = 'table';
+        table.style.visibility = 'visible';
+    }
+    tbody.style.display = 'table-row-group';
+    tbody.style.visibility = 'visible';
+    
+    // Check if we have data
+    if (!warehouseData || Object.keys(warehouseData).length === 0) {
+        console.log('No warehouse data available');
+        tbody.innerHTML = '<tr><td colspan="11" class="text-center">Không có dữ liệu sản phẩm</td></tr>';
+        return;
+    }
+    
+    console.log('About to process', Object.keys(warehouseData).length, 'products');
+    
+    // Debug: Log the actual structure of the first product
+    const firstProduct = Object.values(warehouseData)[0];
+    console.log('First product structure:', firstProduct);
+    console.log('First product keys:', Object.keys(firstProduct || {}));
     
     // Get filter values
     const categoryFilter = document.getElementById('categoryFilter')?.value || '';
     const stockStatusFilter = document.getElementById('stockStatusFilter')?.value || '';
     const searchTerm = document.getElementById('searchInput')?.value.toLowerCase() || '';
     
+    // Debug filter values
+    console.log('Filter values:', {
+        categoryFilter,
+        stockStatusFilter,
+        searchTerm
+    });
+    
     // Filter products
     let filteredProducts = Object.values(warehouseData).filter(product => {
-        // Category filter
-        if (categoryFilter && product.categoryId !== categoryFilter) {
+        console.log('Filtering product:', product.name, {
+            categoryId: product.categoryId,
+            category: product.category,
+            stock: product.stock,
+            currentStock: product.currentStock
+        });
+        
+        // Category filter - use both categoryId and category fields
+        if (categoryFilter && product.categoryId !== categoryFilter && product.category !== categoryFilter) {
+            console.log('Product filtered out by category:', product.name);
             return false;
         }
         
-        // Stock status filter
+        // Stock status filter - use currentStock or stock
         if (stockStatusFilter) {
-            const stock = product.stock || 0;
+            const stock = product.currentStock || product.stock || 0;
             const minStock = product.minStock || 10;
             
-            if (stockStatusFilter === 'in_stock' && stock <= minStock) return false;
-            if (stockStatusFilter === 'low_stock' && (stock <= 0 || stock > minStock)) return false;
-            if (stockStatusFilter === 'out_of_stock' && stock > 0) return false;
+            if (stockStatusFilter === 'in_stock' && stock <= minStock) {
+                console.log('Product filtered out by in_stock filter:', product.name);
+                return false;
+            }
+            if (stockStatusFilter === 'low_stock' && (stock <= 0 || stock > minStock)) {
+                console.log('Product filtered out by low_stock filter:', product.name);
+                return false;
+            }
+            if (stockStatusFilter === 'out_of_stock' && stock > 0) {
+                console.log('Product filtered out by out_of_stock filter:', product.name);
+                return false;
+            }
         }
         
         // Search filter
@@ -308,14 +472,16 @@ function displayWarehouseTable() {
             const searchableText = (
                 (product.name || '') + ' ' +
                 (product.sku || '') + ' ' +
-                (categoriesData[product.categoryId]?.name || '')
+                (categoriesData[product.categoryId]?.name || product.category || '')
             ).toLowerCase();
             
             if (!searchableText.includes(searchTerm)) {
+                console.log('Product filtered out by search:', product.name);
                 return false;
             }
         }
         
+        console.log('Product passed all filters:', product.name);
         return true;
     });
     
@@ -323,9 +489,12 @@ function displayWarehouseTable() {
     filteredProducts.sort((a, b) => a.name.localeCompare(b.name));
     
     // Display products
+    console.log('Filtered products count:', filteredProducts.length);
     filteredProducts.forEach((product, index) => {
+        console.log(`Processing product ${index + 1}:`, product.name);
+        
         const row = document.createElement('tr');
-        const stock = product.stock || 0;
+        const stock = product.currentStock || product.endingStock || product.stock || 0;
         const minStock = product.minStock || 10;
         
         // Determine status
@@ -339,7 +508,7 @@ function displayWarehouseTable() {
             statusClass = 'status-low-stock';
         }
         
-        const categoryName = categoriesData[product.categoryId]?.name || 'Chưa phân loại';
+        const categoryName = product.category || categoriesData[product.categoryId]?.name || 'Chưa phân loại';
         const totalValue = (stock * (product.costPrice || product.price || 0));
         
         row.innerHTML = `
@@ -356,7 +525,9 @@ function displayWarehouseTable() {
             <td>${formatCurrency(totalValue)}</td>
             <td><span class="status ${statusClass}">${status}</span></td>
             <td>
-               
+                <button type="button" class="btn btn-sm btn-success" onclick="openStockInModal('${product.id}')">
+                    <i class="fas fa-plus"></i>
+                </button>
                 <button type="button" class="btn btn-sm btn-warning" onclick="openStockOutModal('${product.id}')">
                     <i class="fas fa-minus"></i>
                 </button>
@@ -369,14 +540,17 @@ function displayWarehouseTable() {
             </td>
         `;
         
+        console.log('Adding row to tbody for product:', product.name);
         tbody.appendChild(row);
     });
+    
+    console.log(`Displayed ${filteredProducts.length} products in table`);
     
     // Show empty state if no products
     if (filteredProducts.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="7" class="text-center">
+                <td colspan="11" class="text-center">
                     <div class="empty-state">
                         <i class="fas fa-box-open"></i>
                         <p>Không tìm thấy sản phẩm nào</p>
@@ -518,12 +692,18 @@ async function processStockIn(event) {
         // Add to local warehouseData
         warehouseData[productId] = product;
         
-        const transactionId = database.ref('warehouse_transactions').push().key;
+        // Get current store information from store context
+        const currentStoreId = getCurrentStoreId();
+        const currentStoreData = getCurrentStoreData();
+        
+        const transactionId = database.ref('warehouseTransactions').push().key;
         const transaction = {
             id: transactionId,
-            type: 'stock_in',
+            type: 'in',
             productId: productId,
             productName: product.name,
+            productSku: product.sku,
+            productCategory: categoriesData[product.categoryId]?.name || 'Khác',
             quantity: quantity,
             unitPrice: unitPrice,
             totalValue: quantity * unitPrice,
@@ -531,18 +711,23 @@ async function processStockIn(event) {
             note: note,
             timestamp: Date.now(),
             date: new Date().toISOString(),
-            userId: 'admin'
+            userId: 'admin',
+            storeId: currentStoreId || '',
+            storeName: currentStoreData?.name || 'Không xác định',
+            performedBy: currentStoreData?.name || 'admin'
         };
         
-        await database.ref(`warehouse_transactions/${transactionId}`).set(transaction);
+        await database.ref(`warehouseTransactions/${transactionId}`).set(transaction);
         
         // Update local data
         warehouseTransactions.unshift(transaction);
         
         // Refresh UI components
-        updateDashboard();
         populateProductSelects(); // Refresh product selects in case new product was added
         displayWarehouseTable();
+        
+        // Auto refresh all warehouse data
+        await refreshWarehouseData();
         
         showNotification(`Đã tạo sản phẩm mới "${product.name}" và nhập ${quantity} ${product.unit} vào kho!`, 'success');
         closeStockInModal();
@@ -640,12 +825,18 @@ async function processStockOut(event) {
         
         await database.ref(`products/${productId}/stock`).set(newStock);
         
-        const transactionId = database.ref('warehouse_transactions').push().key;
+        // Get current store information from store context
+        const currentStoreId = getCurrentStoreId();
+        const currentStoreData = getCurrentStoreData();
+        
+        const transactionId = database.ref('warehouseTransactions').push().key;
         const transaction = {
             id: transactionId,
-            type: 'stock_out',
+            type: 'out',
             productId: productId,
             productName: product.name,
+            productSku: product.sku,
+            productCategory: categoriesData[product.categoryId]?.name || 'Khác',
             quantity: quantity,
             unitPrice: product.costPrice || 0,
             totalValue: quantity * (product.costPrice || 0),
@@ -654,16 +845,22 @@ async function processStockOut(event) {
             note: note,
             timestamp: Date.now(),
             date: new Date().toISOString(),
-            userId: 'admin'
+            userId: 'admin',
+            storeId: currentStoreId || '',
+            storeName: currentStoreData?.name || 'Không xác định',
+            performedBy: currentStoreData?.name || 'admin'
         };
         
-        await database.ref(`warehouse_transactions/${transactionId}`).set(transaction);
+        await database.ref(`warehouseTransactions/${transactionId}`).set(transaction);
         
         warehouseData[productId].stock = newStock;
         warehouseTransactions.unshift(transaction);
         
         updateDashboard();
         displayWarehouseTable();
+        
+        // Auto refresh all warehouse data
+        await refreshWarehouseData();
         
         showNotification(`Đã xuất ${formatCurrency(quantity)} ${product.unit} ${product.name}`, 'success');
         
@@ -934,8 +1131,12 @@ async function processAdjustment(event) {
         // Update product in Firebase
         await database.ref(`products/${productId}`).set(updatedProduct);
         
+        // Get current store information from store context
+        const currentStoreId = getCurrentStoreId();
+        const currentStoreData = getCurrentStoreData();
+        
         // Create adjustment transaction
-        const transactionId = database.ref('warehouse_transactions').push().key;
+        const transactionId = database.ref('warehouseTransactions').push().key;
         const transaction = {
             id: transactionId,
             type: 'adjustment',
@@ -956,7 +1157,10 @@ async function processAdjustment(event) {
             note: note,
             timestamp: Date.now(),
             date: new Date().toISOString(),
-            userId: 'admin'
+            userId: 'admin',
+            storeId: currentStoreId || '',
+            storeName: currentStoreData?.name || 'Không xác định',
+            performedBy: currentStoreData?.name || 'admin'
         };
         
         await database.ref(`warehouse_transactions/${transactionId}`).set(transaction);
@@ -967,6 +1171,9 @@ async function processAdjustment(event) {
         
         updateDashboard();
         displayWarehouseTable();
+        
+        // Auto refresh all warehouse data
+        await refreshWarehouseData();
         
         let message = `Đã cập nhật sản phẩm "${productName}" thành công!`;
         if (stockDifference !== 0) {
@@ -1672,14 +1879,13 @@ async function exportWarehouseReportByCategory() {
     } catch (error) {
         console.error('Error exporting category report:', error);
         showNotification('Lỗi xuất báo cáo theo danh mục: ' + error.message, 'error');
-    } finally {
-        showLoading(false);
     }
 }
 
 // Export functions to global scope
 window.loadWarehouseData = loadWarehouseData;
 window.displayWarehouseTable = displayWarehouseTable;
+window.applyFilters = displayWarehouseTable;
 window.openStockInModal = openStockInModal;
 window.openStockOutModal = openStockOutModal;
 window.openAdjustmentModal = openAdjustmentModal;
@@ -2181,6 +2387,176 @@ function deleteSelectedProducts() {
     showBulkDeleteConfirmModal();
 }
 
+// ===== ADD STOCK FUNCTIONS (Nhập Kho Thêm) =====
+
+// Open Add Stock Modal
+function openAddStockModal() {
+    console.log('Opening Add Stock Modal...');
+    
+    // Populate product dropdown
+    populateAddStockProductSelect();
+    
+    // Reset form
+    document.getElementById('addStockForm').reset();
+    document.getElementById('addStockInfoDisplay').classList.add('hidden');
+    
+    // Show modal
+    const modal = document.getElementById('addStockModal');
+    if (modal) {
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+// Close Add Stock Modal
+function closeAddStockModal() {
+    const modal = document.getElementById('addStockModal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+    
+    // Reset form
+    document.getElementById('addStockForm').reset();
+    document.getElementById('addStockInfoDisplay').classList.add('hidden');
+}
+
+// Populate product select dropdown for Add Stock
+function populateAddStockProductSelect() {
+    const select = document.getElementById('addStockProduct');
+    if (!select) return;
+    
+    // Clear existing options except first one
+    select.innerHTML = '<option value="">🔍 Chọn sản phẩm từ kho...</option>';
+    
+    // Add products from warehouse data
+    Object.entries(warehouseData).forEach(([id, product]) => {
+        const option = document.createElement('option');
+        option.value = id;
+        option.textContent = `${product.name} (${product.sku || 'N/A'}) - Tồn: ${product.stock || 0} ${product.unit || 'cái'}`;
+        select.appendChild(option);
+    });
+}
+
+// Update product info when product is selected
+function updateAddStockProductInfo() {
+    const select = document.getElementById('addStockProduct');
+    const productId = select.value;
+    const infoDisplay = document.getElementById('addStockInfoDisplay');
+    
+    if (!productId || !warehouseData[productId]) {
+        infoDisplay.classList.add('hidden');
+        return;
+    }
+    
+    const product = warehouseData[productId];
+    
+    // Update info display
+    document.getElementById('addStockCurrentStock').textContent = `${product.stock || 0} ${product.unit || 'cái'}`;
+    document.getElementById('addStockCurrentPrice').textContent = formatCurrency(product.costPrice || product.price || 0);
+    document.getElementById('addStockCurrentUnit').textContent = product.unit || 'cái';
+    
+    // Pre-fill unit price with current price
+    document.getElementById('addStockUnitPrice').value = product.costPrice || product.price || 0;
+    
+    // Show info display
+    infoDisplay.classList.remove('hidden');
+}
+
+// Process Add Stock form submission
+async function processAddStock(event) {
+    event.preventDefault();
+    
+    try {
+        showLoading();
+        
+        const formData = new FormData(event.target);
+        const productId = formData.get('addStockProduct');
+        const quantity = parseFloat(formData.get('addStockQuantity'));
+        const unitPrice = parseFloat(formData.get('addStockUnitPrice'));
+        const supplier = formData.get('addStockSupplier') || '';
+        const note = formData.get('addStockNote') || '';
+        
+        // Validation
+        if (!productId) {
+            throw new Error('Vui lòng chọn sản phẩm');
+        }
+        
+        if (!quantity || quantity <= 0) {
+            throw new Error('Số lượng phải lớn hơn 0');
+        }
+        
+        if (!unitPrice || unitPrice < 0) {
+            throw new Error('Giá nhập không hợp lệ');
+        }
+        
+        const product = warehouseData[productId];
+        if (!product) {
+            throw new Error('Sản phẩm không tồn tại');
+        }
+        
+        // Calculate new stock
+        const currentStock = product.stock || 0;
+        const newStock = currentStock + quantity;
+        
+        // Update product in Firebase
+        const updateData = {
+            stock: newStock,
+            costPrice: unitPrice, // Update cost price with new import price
+            lastUpdated: new Date().toISOString()
+        };
+
+        await database.ref(`products/${productId}`).update(updateData);
+
+        // Get store information from localStorage
+        const selectedStoreData = JSON.parse(localStorage.getItem('selectedStoreData') || '{}');
+        const currentStoreId = localStorage.getItem('selectedStoreId') || '';
+
+        // Create transaction record
+        const transactionId = `stock_in_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const transaction = {
+            id: transactionId,
+            type: 'in',
+            productId: product.id,
+            productName: product.name,
+            productSku: product.sku || '',
+            quantity: quantity,
+            unitPrice: unitPrice,
+            totalValue: quantity * unitPrice,
+            reason: 'Nhập hàng mới',
+            note: note,
+            timestamp: new Date().toISOString(),
+            storeId: currentStoreId,
+            storeName: selectedStoreData.name || 'Không xác định',
+            performedBy: selectedStoreData.name || 'admin'
+        };
+
+        await database.ref(`warehouseTransactions/${transactionId}`).set(transaction);
+
+        // Update local data
+        warehouseData[productId].stock = newStock;
+        warehouseData[productId].costPrice = unitPrice;
+        
+        // Refresh UI
+        displayWarehouseTable();
+        updateDashboard();
+        populateProductSelects(); // Update all product selects
+        
+        // Auto refresh all warehouse data
+        await refreshWarehouseData();
+        
+        // Close modal and show success
+        closeAddStockModal();
+        showNotification(`Nhập kho thành công! Đã thêm ${quantity} ${product.unit || 'cái'} ${product.name}`, 'success');
+        
+    } catch (error) {
+        console.error('Error processing add stock:', error);
+        showNotification('Lỗi nhập kho: ' + error.message, 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
 window.processStockIn = processStockIn;
 window.processStockOut = processStockOut;
 window.processAdjustment = processAdjustment;
@@ -2206,3 +2582,10 @@ window.confirmDeleteProduct = confirmDeleteProduct;
 window.showBulkDeleteConfirmModal = showBulkDeleteConfirmModal;
 window.closeBulkDeleteConfirmModal = closeBulkDeleteConfirmModal;
 window.confirmBulkDeleteProducts = confirmBulkDeleteProducts;
+window.refreshWarehouseData = refreshWarehouseData;
+
+// Export Add Stock functions
+window.openAddStockModal = openAddStockModal;
+window.closeAddStockModal = closeAddStockModal;
+window.updateAddStockProductInfo = updateAddStockProductInfo;
+window.processAddStock = processAddStock;

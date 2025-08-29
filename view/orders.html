@@ -171,6 +171,31 @@
                                         <button type="button" class="btn btn-method" id="pdfMethodBtn" onclick="selectCreationMethod('pdf')">
                                             <i class="fas fa-file-pdf"></i> Upload PDF TikTok
                                         </button>
+                                        <button type="button" class="btn btn-method" id="excelMethodBtn" onclick="selectCreationMethod('excel')">
+                                            <i class="fas fa-file-excel"></i> Upload Excel TMĐT
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Platform Selection for TMĐT Orders -->
+                                <div class="platform-selection" id="platformSelection">
+                                    <div class="form-group">
+                                        <label for="ecommercePlatform">Chọn Sàn TMĐT:</label>
+                                        <select id="ecommercePlatform" name="ecommercePlatform" required>
+                                            <option value="">-- Chọn sàn thương mại điện tử --</option>
+                                            <option value="shopee">Shopee</option>
+                                            <option value="lazada">Lazada</option>
+                                            <option value="tiktok">TikTok Shop</option>
+                                            <option value="sendo">Sendo</option>
+                                            <option value="tiki">Tiki</option>
+                                            <option value="facebook">Facebook Shop</option>
+                                            <option value="zalo">Zalo Shop</option>
+                                            <option value="other">Khác</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group" id="otherPlatformGroup" style="display: none;">
+                                        <label for="otherPlatformName">Tên sàn khác:</label>
+                                        <input type="text" id="otherPlatformName" name="otherPlatformName" placeholder="Nhập tên sàn TMĐT">
                                     </div>
                                 </div>
 
@@ -215,6 +240,28 @@
                                         </div>
                                         <small class="form-hint">Hỗ trợ nhiều file PDF cùng lúc</small>
                                     </div>
+
+                                    <!-- Excel Upload -->
+                                    <div class="form-group" id="excelUploadGroup" style="display: none;">
+                                        <label>Upload File Excel TMĐT:</label>
+                                        <div class="excel-upload-compact">
+                                            <div class="upload-area-compact" id="excelDropAreaCompact">
+                                                <i class="fas fa-file-excel"></i>
+                                                <span>Kéo thả Excel hoặc <span class="upload-link" id="excelUploadLinkCompact">chọn file</span></span>
+                                                <input type="file" id="excelFileInputCompact" accept=".xlsx,.xls" style="display: none;">
+                                            </div>
+
+                                            <!-- Progress indicator -->
+                                            <div id="excelUploadProgress" class="upload-progress" style="display: none;">
+                                                <div class="progress-spinner"></div>
+                                                <span id="excelProgressText">Đang xử lý Excel...</span>
+                                            </div>
+
+                                        </div>
+                                        <small class="form-hint">
+                                            Hỗ trợ file Excel (.xlsx, .xls) từ TikTok Shop, Shopee, Lazada với các cột: Order ID, SKU ID, Seller SKU, Product Name, Quantity. Hệ thống sẽ tự động nhận diện các cột cần thiết.
+                                        </small>
+                                    </div>
                                 </div>
                             </div>
 
@@ -256,16 +303,19 @@
                         <div class="table-container orders-table-container">
                             <table class="products-table" id="ordersTable">
                                 <thead>
-                                    <tr>
+                                    <tr style="color: black;">
                                         <th class="checkbox-col">
                                             <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
                                         </th>
                                         <th class="stt-col">STT</th>
+                                        <th class="order-id-col">Mã ĐH</th>
                                         <th class="name-col">Sản Phẩm</th>
                                         <th class="sku-col">SKU</th>
                                         <th class="price-col">Số Lượng (kg)</th>
                                         <th class="price-col">Giá (VNĐ)</th>
                                         <th class="price-col">Tổng Tiền</th>
+                                        <th class="platform-col">Sàn TMĐT</th>
+                                        <th class="store-col">Cửa Hàng</th>
                                         <th class="action-col" style="color: rgb(24, 100, 1);">Ngày Tạo</th>
                                         <th class="action-col">Xóa</th>
                                     </tr>
@@ -316,6 +366,7 @@
     <script src="../main/order-type-selection.js"></script>
     <script src="../main/new-retail-orders.js"></script>
     <script src="../main/new-wholesale-orders.js"></script>
+    <script src="../main/excel-order-processor.js"></script>
     <script>
         // Load components using XMLHttpRequest
         function loadComponent(url, elementId, callback) {

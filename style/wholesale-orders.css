@@ -118,6 +118,7 @@
     margin-bottom: 15px;
     border: 1px solid #e1e5e9;
     position: relative;
+    /* cursor: pointer; */
 }
 
 .wholesale-item:last-child {
