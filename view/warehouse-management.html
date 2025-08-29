@@ -1471,6 +1471,11 @@
                     <div class="report-table-header">
                         <h3 class="report-table-title"><i class="fas fa-table"></i> Danh Sách Đơn Hàng TMĐT</h3>
                         <div class="table-actions">
+                            <div class="search-container" style="margin-right: 15px;">
+                                <input type="text" id="tmdtOrderSearchInput" placeholder="🔍 Tìm kiếm theo mã đơn hàng..." 
+                                       style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; width: 250px; font-size: 14px;"
+                                       oninput="searchTmdtOrders(this.value)">
+                            </div>
                             <button class="btn btn-success" onclick="exportTmdtReport()">
                                 <i class="fas fa-file-excel"></i> Xuất Excel
                             </button>
@@ -1504,9 +1509,198 @@
                         </tbody>
                     </table>
                     <div class="pagination-container">
-                        <ul class="pagination" id="tmdtReportPagination">
-                            <!-- Pagination will be generated here -->
-                        </ul>
+                        <div class="pagination-info" id="tmdtPaginationInfo">
+                            <!-- Pagination info will be shown here -->
+                        </div>
+                        <div class="pagination-controls">
+                            <div class="items-per-page-selector">
+                                <span>Hiển thị:</span>
+                                <select class="items-per-page-select" id="tmdtItemsPerPageSelect" onchange="changeTmdtItemsPerPage(this.value)">
+                                    <option value="10" selected>10</option>
+                                    <option value="20">20</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                                <span>mục/trang</span>
+                            </div>
+                            <ul class="pagination" id="tmdtReportPagination">
+                                <!-- Pagination will be generated here -->
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Monthly Statistics Report Section -->
+                <div class="monthly-stats-section">
+                    <div class="stats-header">
+                        <h3 class="stats-title">
+                            <i class="fas fa-chart-line"></i> Báo Cáo Thống Kê Hàng Tháng
+                        </h3>
+                        <div class="stats-actions">
+                            <button type="button" class="btn btn-primary" onclick="generateMonthlyReport()">
+                                <i class="fas fa-sync-alt"></i> Tạo Báo Cáo
+                            </button>
+                            <button type="button" class="btn btn-success" onclick="printMonthlyReport()">
+                                <i class="fas fa-print"></i> In Báo Cáo
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Filters -->
+                    <div class="monthly-filters">
+                        <div class="filter-row" style="display: flex; gap: 15px; align-items: end; flex-wrap: wrap;">
+                            <div class="filter-group" style="flex: 1; min-width: 150px;">
+                                <label>Loại Thời Gian:</label>
+                                <select id="dateTypeSelect" class="form-control" onchange="toggleDateFilter()">
+                                    <option value="month">Theo Tháng</option>
+                                    <option value="custom">Tùy Chỉnh</option>
+                                </select>
+                            </div>
+                            <div class="filter-group" style="flex: 1; min-width: 150px;">
+                                <label>Sản Phẩm:</label>
+                                <select id="productFilter" class="form-control">
+                                    <option value="">Tất cả sản phẩm</option>
+                                    <!-- Options will be populated dynamically -->
+                                </select>
+                            </div>
+                            <div class="filter-group" style="flex: 1; min-width: 150px;">
+                                <label>Sàn TMĐT:</label>
+                                <select id="platformFilter" class="form-control">
+                                    <option value="">Tất cả sàn</option>
+                                    <!-- Options will be populated dynamically -->
+                                </select>
+                            </div>
+                            <div class="filter-group" style="flex: 1; min-width: 150px;">
+                                <label>Cửa Hàng:</label>
+                                <select id="tmdtStoreFilter" class="form-control">
+                                    <option value="">Tất cả cửa hàng</option>
+                                    <!-- Options will be populated dynamically -->
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- Month/Year Filters -->
+                        <div id="monthYearFilters" class="filter-row" style="display: flex; gap: 15px; align-items: end; margin-top: 15px;">
+                            <div class="filter-group" style="flex: 1;">
+                                <label>Tháng:</label>
+                                <select id="monthSelect" class="form-control">
+                                    <option value="1">Tháng 1</option>
+                                    <option value="2">Tháng 2</option>
+                                    <option value="3">Tháng 3</option>
+                                    <option value="4">Tháng 4</option>
+                                    <option value="5">Tháng 5</option>
+                                    <option value="6">Tháng 6</option>
+                                    <option value="7">Tháng 7</option>
+                                    <option value="8">Tháng 8</option>
+                                    <option value="9">Tháng 9</option>
+                                    <option value="10">Tháng 10</option>
+                                    <option value="11">Tháng 11</option>
+                                    <option value="12">Tháng 12</option>
+                                </select>
+                            </div>
+                            <div class="filter-group" style="flex: 1;">
+                                <label>Năm:</label>
+                                <select id="yearSelect" class="form-control">
+                                    <option value="2024">2024</option>
+                                    <option value="2025" selected>2025</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- Custom Date Range Filters -->
+                        <div id="customDateFilters" class="filter-row" style="display: none; gap: 15px; align-items: end; margin-top: 15px;">
+                            <div class="filter-group" style="flex: 1;">
+                                <label>Từ Ngày:</label>
+                                <input type="date" id="fromDateSelect" class="form-control">
+                            </div>
+                            <div class="filter-group" style="flex: 1;">
+                                <label>Đến Ngày:</label>
+                                <input type="date" id="toDateSelect" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Statistics Summary -->
+                    <div class="monthly-summary" id="monthlySummary">
+                        <div class="summary-card">
+                            <div class="summary-icon">
+                                <i class="fas fa-shopping-cart"></i>
+                            </div>
+                            <div class="summary-content">
+                                <h4 id="totalMonthlyOrders">0</h4>
+                                <p>Tổng Đơn Hàng</p>
+                            </div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="summary-icon">
+                                <i class="fas fa-boxes"></i>
+                            </div>
+                            <div class="summary-content">
+                                <h4 id="totalMonthlyProducts">0</h4>
+                                <p>Tổng Sản Phẩm</p>
+                            </div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="summary-icon">
+                                <i class="fas fa-weight"></i>
+                            </div>
+                            <div class="summary-content">
+                                <h4 id="totalMonthlyQuantity">0 kg</h4>
+                                <p>Tổng Khối Lượng</p>
+                            </div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="summary-icon">
+                                <i class="fas fa-money-bill-wave"></i>
+                            </div>
+                            <div class="summary-content">
+                                <h4 id="totalMonthlyRevenue">0 đ</h4>
+                                <p>Tổng Doanh Thu</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Product Details Table -->
+                    <div class="monthly-details" id="monthlyDetails">
+                        <h4>Chi Tiết Sản Phẩm Đã Xuất</h4>
+                        <div class="table-responsive">
+                            <table class="report-table" id="monthlyProductTable">
+                                <thead>
+                                    <tr>
+                                        <th>STT</th>
+                                        <th>Mã Đơn Hàng</th>
+                                        <th>Tên Sản Phẩm</th>
+                                        <th>SKU</th>
+                                        <th>Số Lượng Xuất</th>
+                                        <th>Đơn Vị</th>
+                                        <th>Tổng Giá Trị</th>
+                                        <th>Sàn TMĐT</th>
+                                        <th>Cửa Hàng</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="monthlyProductTableBody">
+                                    <!-- Data will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Pagination Controls -->
+                        <div class="pagination-container" id="monthlyPaginationContainer" style="display: none;">
+                            <div class="pagination-info">
+                                <span id="monthlyPaginationInfo">Hiển thị 1-10 của 50 kết quả</span>
+                            </div>
+                            <div class="pagination-controls">
+                                <button class="btn-pagination" id="monthlyPrevBtn" onclick="changeMonthlyPage(-1)">
+                                    <i class="fas fa-chevron-left"></i> Trước
+                                </button>
+                                <div class="pagination-numbers" id="monthlyPaginationNumbers">
+                                    <!-- Page numbers will be generated here -->
+                                </div>
+                                <button class="btn-pagination" id="monthlyNextBtn" onclick="changeMonthlyPage(1)">
+                                    Sau <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

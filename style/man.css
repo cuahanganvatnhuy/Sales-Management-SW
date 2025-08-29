@@ -442,6 +442,7 @@ textarea {
     border-bottom: 1px solid #f1f3f4;
     vertical-align: middle;
     font-size: 15px;
+    color: #1f2937;
 }
 
 .products-table tbody tr:hover {
@@ -1627,8 +1628,8 @@ textarea {
 }
 
 .order-id {
-    background: var(--primary-green);
-    color: white;
+    background: transparent;
+    color: black;
     padding: 4px 8px;
     border-radius: 4px;
     font-size: 12px;

@@ -543,28 +543,66 @@ async function createOrders(event) {
         
         const total = price * quantity;
         
-        orders.push({
+        const productName = product.name;
+        const productSKU = product.sku || 'N/A';
+        const customerName = document.getElementById('customerName')?.value || '';
+        const customerPhone = document.getElementById('customerPhone')?.value || '';
+        const customerAddress = document.getElementById('customerAddress')?.value || '';
+        const notes = document.getElementById('notes')?.value || '';
+        const platform = platformInfo.platform;
+        const platformName = platformInfo.platformName;
+        
+        // Get Order ID from Excel if available - check hidden input first
+        let excelOrderId = null;
+        
+        // Method 1: From hidden input (most reliable)
+        const orderIdInput = document.getElementById(`orderId_${i}`);
+        if (orderIdInput && orderIdInput.value) {
+            excelOrderId = orderIdInput.value;
+            console.log(`📋 Order ${i}: Excel Order ID from hidden input = ${excelOrderId}`);
+        }
+        // Method 2: From form header
+        else {
+            const headerElement = document.querySelector(`#orderForm_${i} .order-form-title`);
+            if (headerElement && headerElement.textContent.includes('Mã:')) {
+                const match = headerElement.textContent.match(/Mã:\s*([^\s]+)/);
+                if (match) {
+                    excelOrderId = match[1];
+                    console.log(`📋 Order ${i}: Excel Order ID from header = ${excelOrderId}`);
+                }
+            }
+        }
+        
+        if (!excelOrderId) {
+            console.log(`📋 Order ${i}: No Excel Order ID found`);
+        }
+        
+        // Create order data
+        const orderData = {
             productId: productId,
-            productName: product.name,
-            sku: product.sku || 'N/A',
+            productName: productName,
+            sku: productSKU,
             quantity: quantity,
-            unit: unit,
-            conversion: conversion,
-            actualQuantityForStock: actualQuantityForStock,
             price: price,
             total: total,
+            unit: unit,
             orderDate: orderDate,
-            type: 'ecommerce',
-            orderType: 'ecommerce',
-            platform: platformInfo.platform,
-            platformName: platformInfo.platformName,
+            customerName: customerName,
+            customerPhone: customerPhone,
+            customerAddress: customerAddress,
+            notes: notes,
+            platform: platform,
+            platformName: platformName,
             source: 'order_management',
+            orderType: 'ecommerce',
+            createdAt: new Date().toISOString(),
             storeId: selectedStoreId,
             storeName: storeInfo.name,
-            storeCode: storeInfo.code || storeInfo.id || 'N/A',
-            createdBy: storeInfo.name,
-            createdAt: firebase.database.ServerValue.TIMESTAMP
-        });
+            orderId: excelOrderId,
+            actualQuantityForStock: actualQuantityForStock
+        };
+        
+        orders.push(orderData);
     }
     
     if (hasError) return;
@@ -633,7 +671,7 @@ async function createOrders(event) {
                     userId: 'system',
                     storeId: orderData.storeId,
                     storeName: orderData.storeName,
-                    performedBy: orderData.createdBy,
+                    performedBy: storeInfo.name || 'admin',
                     orderId: null, // Will be set after order creation
                     platform: orderData.platform,
                     platformName: orderData.platformName
@@ -740,6 +778,9 @@ function displayOrders() {
                     <input type="checkbox" class="product-checkbox" value="${orderId}" onchange="updateBulkActions()">
                 </td>
                 <td class="text-center">${index}</td>
+                <td class="text-center order-id-cell">
+                    ${order.orderId ? `<span class="order-id-badge">${order.orderId}</span>` : 'N/A'}
+                </td>
                 <td>${order.productName}</td>
                 <td class="text-center sku-cell">${productSKU}</td>
                 <td class="text-right quantity-cell">${order.quantity} ${unit}</td>

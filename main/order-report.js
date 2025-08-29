@@ -63,6 +63,16 @@ function loadOrderReportData() {
         // Populate dropdowns after data is loaded
         setTimeout(() => {
             populateFilterDropdowns();
+            // Load all data from Firebase for complete filter options
+            setTimeout(() => {
+                loadStoresForFilter();
+                loadProductsForFilter();
+            }, 1500);
+            // Try multiple times to ensure loading
+            setTimeout(() => {
+                loadStoresForFilter();
+                loadProductsForFilter();
+            }, 3000);
         }, 500);
     });
 }
@@ -100,6 +110,7 @@ function processOrderData(transactions, orders) {
                         productName: order.productName || 'N/A',
                         quantity: order.quantity || 0,
                         total: order.total || 0,
+                        totalPrice: order.total || order.totalAmount || order.totalPrice || 0,
                         value: order.total || order.totalAmount || 0,
                         storeName: order.storeName || 'Không xác định',
                         status: order.status || 'completed',
@@ -551,8 +562,154 @@ function updateTmdtStatistics(data) {
 
 // Pagination variables for TMDT
 let currentTmdtPage = 1;
-let tmdtItemsPerPage = 10;
+let tmdtItemsPerPage = 10; // Default to 10 items per page
 let filteredTmdtData = [];
+
+// Function to change items per page
+function changeTmdtItemsPerPage(newItemsPerPage) {
+    tmdtItemsPerPage = parseInt(newItemsPerPage);
+    currentTmdtPage = 1; // Reset to first page
+    
+    // Re-generate the current view
+    const searchInput = document.getElementById('tmdtOrderSearch');
+    if (searchInput && searchInput.value.trim() !== '') {
+        searchTmdtOrders(searchInput.value);
+    } else {
+        generateTmdtReport();
+    }
+}
+
+// Search TMDT orders by order ID
+function searchTmdtOrders(searchTerm) {
+    if (!searchTerm || searchTerm.trim() === '') {
+        // If search is empty, show all filtered data
+        generateTmdtReport();
+        return;
+    }
+    
+    const searchValue = searchTerm.toLowerCase().trim();
+    
+    // Filter current filtered data by order ID
+    const searchResults = filteredTmdtData.filter(order => {
+        const orderId = (order.orderId || '').toLowerCase();
+        return orderId.includes(searchValue);
+    });
+    
+    // Reset to first page for search results
+    currentTmdtPage = 1;
+    
+    // Update table with search results
+    updateTmdtTableWithData(searchResults);
+    
+    console.log(`Search for "${searchTerm}" found ${searchResults.length} results`);
+}
+
+// Update TMDT table with specific data (for search results)
+function updateTmdtTableWithData(data) {
+    const container = document.getElementById('tmdtReportTableBody');
+    if (!container) {
+        console.error('TMDT table container not found');
+        return;
+    }
+    
+    if (data.length === 0) {
+        container.innerHTML = '<tr><td colspan="13" class="text-center">Không tìm thấy đơn hàng nào</td></tr>';
+        updateTmdtPaginationWithData(data);
+        return;
+    }
+    
+    // Calculate pagination for search results
+    const startIndex = (currentTmdtPage - 1) * tmdtItemsPerPage;
+    const endIndex = startIndex + tmdtItemsPerPage;
+    const pageData = data.slice(startIndex, endIndex);
+    
+    let tableHTML = '';
+    pageData.forEach((order, index) => {
+        const actualIndex = startIndex + index + 1;
+        const platformBadge = order.platform && order.platform !== 'N/A' 
+            ? `<span class="platform-badge platform-${order.platform}">${order.platformName || order.platform}</span>`
+            : 'N/A';
+            
+        tableHTML += `
+            <tr>
+                <td class="text-center">
+                    <input type="checkbox" class="tmdt-checkbox" value="${order.id}" onchange="updateTmdtSelection()">
+                </td>
+                <td class="text-center">${actualIndex}</td>
+                <td><strong>${order.orderId || 'N/A'}</strong></td>
+                <td>${formatDate(order.date)}</td>
+                <td>${order.productName || 'N/A'}</td>
+                <td class="text-center">${order.sku || 'N/A'}</td>
+                <td class="text-right">${order.quantity || 0}</td>
+                <td class="text-center">${order.unit || 'cái'}</td>
+                <td class="text-right">${formatCurrency(order.total || order.value || 0)}</td>
+                <td class="text-center">${platformBadge}</td>
+                <td>${order.storeName || 'Không xác định'}</td>
+                <td class="text-center">
+                    <span class="status-badge status-${order.status || 'pending'}">
+                        ${getStatusText(order.status || 'pending')}
+                    </span>
+                </td>
+                <td class="text-center">
+                    <div class="action-buttons">
+                        <button class="btn btn-sm btn-info" onclick="viewOrderDetails('${order.id}')" title="Xem chi tiết">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteSingleTmdtOrder('${order.id}')" title="Xóa">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+    
+    container.innerHTML = tableHTML;
+    updateTmdtPaginationWithData(data);
+}
+
+// Update pagination for search results
+function updateTmdtPaginationWithData(data) {
+    const totalPages = Math.ceil(data.length / tmdtItemsPerPage);
+    const paginationContainer = document.getElementById('tmdtReportPagination');
+    const paginationInfo = document.getElementById('tmdtPaginationInfo');
+    
+    if (!paginationContainer) return;
+    
+    // Update pagination info for search results
+    if (paginationInfo) {
+        const startItem = (currentTmdtPage - 1) * tmdtItemsPerPage + 1;
+        const endItem = Math.min(currentTmdtPage * tmdtItemsPerPage, data.length);
+        paginationInfo.textContent = `Hiển thị ${startItem}-${endItem} trong tổng ${data.length} đơn hàng (kết quả tìm kiếm)`;
+    }
+    
+    paginationContainer.innerHTML = '';
+    
+    if (totalPages <= 1) return;
+    
+    // Previous button
+    const prevLi = document.createElement('li');
+    prevLi.className = `page-item ${currentTmdtPage === 1 ? 'disabled' : ''}`;
+    prevLi.innerHTML = `<a class="page-link" href="#" onclick="changeTmdtPage(${currentTmdtPage - 1})">‹</a>`;
+    paginationContainer.appendChild(prevLi);
+    
+    // Page numbers
+    const startPage = Math.max(1, currentTmdtPage - 2);
+    const endPage = Math.min(totalPages, currentTmdtPage + 2);
+    
+    for (let i = startPage; i <= endPage; i++) {
+        const li = document.createElement('li');
+        li.className = `page-item ${i === currentTmdtPage ? 'active' : ''}`;
+        li.innerHTML = `<a class="page-link" href="#" onclick="changeTmdtPage(${i})">${i}</a>`;
+        paginationContainer.appendChild(li);
+    }
+    
+    // Next button
+    const nextLi = document.createElement('li');
+    nextLi.className = `page-item ${currentTmdtPage === totalPages ? 'disabled' : ''}`;
+    nextLi.innerHTML = `<a class="page-link" href="#" onclick="changeTmdtPage(${currentTmdtPage + 1})">›</a>`;
+    paginationContainer.appendChild(nextLi);
+}
 
 // Update TMDT table with pagination
 function updateTmdtTable(data) {
@@ -625,8 +782,16 @@ function updateTmdtTable(data) {
 function updateTmdtPagination() {
     const totalPages = Math.ceil(filteredTmdtData.length / tmdtItemsPerPage);
     const paginationContainer = document.getElementById('tmdtReportPagination');
+    const paginationInfo = document.getElementById('tmdtPaginationInfo');
     
     if (!paginationContainer) return;
+    
+    // Update pagination info
+    if (paginationInfo) {
+        const startItem = (currentTmdtPage - 1) * tmdtItemsPerPage + 1;
+        const endItem = Math.min(currentTmdtPage * tmdtItemsPerPage, filteredTmdtData.length);
+        paginationInfo.textContent = `Hiển thị ${startItem}-${endItem} trong tổng ${filteredTmdtData.length} đơn hàng`;
+    }
     
     paginationContainer.innerHTML = '';
     
@@ -634,8 +799,8 @@ function updateTmdtPagination() {
     
     // Previous button
     const prevLi = document.createElement('li');
-    prevLi.className = currentTmdtPage === 1 ? 'disabled' : '';
-    prevLi.innerHTML = `<a href="#" onclick="changeTmdtPage(${currentTmdtPage - 1})">‹</a>`;
+    prevLi.className = `page-item ${currentTmdtPage === 1 ? 'disabled' : ''}`;
+    prevLi.innerHTML = `<a class="page-link" href="#" onclick="changeTmdtPage(${currentTmdtPage - 1})">‹</a>`;
     paginationContainer.appendChild(prevLi);
     
     // Page numbers
@@ -644,15 +809,15 @@ function updateTmdtPagination() {
     
     for (let i = startPage; i <= endPage; i++) {
         const li = document.createElement('li');
-        li.className = i === currentTmdtPage ? 'active' : '';
-        li.innerHTML = `<a href="#" onclick="changeTmdtPage(${i})">${i}</a>`;
+        li.className = `page-item ${i === currentTmdtPage ? 'active' : ''}`;
+        li.innerHTML = `<a class="page-link" href="#" onclick="changeTmdtPage(${i})">${i}</a>`;
         paginationContainer.appendChild(li);
     }
     
     // Next button
     const nextLi = document.createElement('li');
-    nextLi.className = currentTmdtPage === totalPages ? 'disabled' : '';
-    nextLi.innerHTML = `<a href="#" onclick="changeTmdtPage(${currentTmdtPage + 1})">›</a>`;
+    nextLi.className = `page-item ${currentTmdtPage === totalPages ? 'disabled' : ''}`;
+    nextLi.innerHTML = `<a class="page-link" href="#" onclick="changeTmdtPage(${currentTmdtPage + 1})">›</a>`;
     paginationContainer.appendChild(nextLi);
 }
 
@@ -664,6 +829,967 @@ function changeTmdtPage(page) {
     currentTmdtPage = page;
     updateTmdtTable(filteredTmdtData);
 }
+
+// Monthly Statistics Report Functions
+function generateMonthlyReport() {
+    // Get all filter values
+    const dateType = document.getElementById('dateTypeSelect').value;
+    const month = document.getElementById('monthSelect').value;
+    const year = document.getElementById('yearSelect').value;
+    const fromDate = document.getElementById('fromDateSelect').value;
+    const toDate = document.getElementById('toDateSelect').value;
+    const platform = document.getElementById('platformFilter').value;
+    const product = document.getElementById('productFilter').value;
+    const store = document.getElementById('tmdtStoreFilter').value;
+    
+    console.log('=== FILTER DEBUG ===');
+    console.log('Platform filter value:', platform);
+    console.log('Available orders:', orderReportData?.tmdt?.length || 0);
+    console.log('Sample order platforms:', orderReportData?.tmdt?.slice(0, 3).map(o => o.platform));
+    
+    // Filter orders by all criteria
+    const filteredOrders = filterOrdersByAllCriteria(dateType, month, year, fromDate, toDate, platform, product, store);
+    
+    console.log('Filtered orders count:', filteredOrders.length);
+    console.log('Filtered orders sample:', filteredOrders.slice(0, 2));
+    
+    // Calculate statistics
+    const stats = calculateMonthlyStats(filteredOrders);
+    
+    // Update summary cards
+    updateMonthlySummary(stats);
+    
+    // Generate product details table
+    generateProductDetailsTable(filteredOrders);
+}
+
+function toggleDateFilter() {
+    const dateType = document.getElementById('dateTypeSelect').value;
+    const monthYearFilters = document.getElementById('monthYearFilters');
+    const customDateFilters = document.getElementById('customDateFilters');
+    
+    if (dateType === 'month') {
+        monthYearFilters.style.display = 'flex';
+        customDateFilters.style.display = 'none';
+    } else {
+        monthYearFilters.style.display = 'none';
+        customDateFilters.style.display = 'flex';
+    }
+    
+    // Auto-generate report when switching
+    generateMonthlyReport();
+}
+
+function filterOrdersByAllCriteria(dateType, month, year, fromDate, toDate, platform, product, store) {
+    if (!orderReportData || !orderReportData.tmdt) return [];
+    
+    return orderReportData.tmdt.filter(order => {
+        const orderDate = new Date(order.date);
+        
+        // Date filtering
+        let dateMatch = true;
+        if (dateType === 'month') {
+            const orderMonth = orderDate.getMonth() + 1;
+            const orderYear = orderDate.getFullYear();
+            dateMatch = orderMonth === parseInt(month) && orderYear === parseInt(year);
+        } else if (dateType === 'custom' && fromDate && toDate) {
+            const from = new Date(fromDate);
+            const to = new Date(toDate);
+            to.setHours(23, 59, 59, 999); // Include the entire end date
+            dateMatch = orderDate >= from && orderDate <= to;
+        }
+        
+        // Platform filtering - handle platform name variations
+        let platformMatch = !platform || platform === '';
+        if (platform && !platformMatch) {
+            const orderPlatform = order.platform?.toLowerCase() || '';
+            const filterPlatform = platform.toLowerCase();
+            
+            // Direct match
+            if (orderPlatform === filterPlatform) {
+                platformMatch = true;
+            }
+            // Handle platform name variations
+            else if ((orderPlatform === 'tiktok' || orderPlatform === 'tiktok shop') && 
+                     (filterPlatform === 'tiktok' || filterPlatform === 'tiktok shop')) {
+                platformMatch = true;
+            }
+            else if ((orderPlatform === 'facebook' || orderPlatform === 'facebook shop') && 
+                     (filterPlatform === 'facebook' || filterPlatform === 'facebook shop')) {
+                platformMatch = true;
+            }
+            else if ((orderPlatform === 'zalo' || orderPlatform === 'zalo shop') && 
+                     (filterPlatform === 'zalo' || filterPlatform === 'zalo shop')) {
+                platformMatch = true;
+            }
+            // Handle other platform variations if needed
+            else if (orderPlatform.includes(filterPlatform) || filterPlatform.includes(orderPlatform)) {
+                platformMatch = true;
+            }
+        }
+        
+        // Product filtering
+        const productMatch = !product || order.productName === product || order.sku === product;
+        
+        // Store filtering
+        const storeMatch = !store || order.storeName === store;
+        
+        return dateMatch && platformMatch && productMatch && storeMatch;
+    });
+}
+
+function filterOrdersByMonth(month, year, platform) {
+    return filterOrdersByAllCriteria('month', month, year, '', '', platform, '', '');
+}
+
+function calculateMonthlyStats(orders) {
+    const stats = {
+        totalOrders: orders.length,
+        totalProducts: 0,
+        totalQuantity: 0,
+        totalRevenue: 0,
+        productSummary: {}
+    };
+    
+    orders.forEach(order => {
+        stats.totalQuantity += parseFloat(order.quantity) || 0;
+        const revenue = parseFloat(order.totalPrice) || parseFloat(order.total) || parseFloat(order.value) || 0;
+        stats.totalRevenue += revenue;
+        
+        // Group by product
+        const productKey = `${order.productName}-${order.sku}`;
+        if (!stats.productSummary[productKey]) {
+            stats.productSummary[productKey] = {
+                name: order.productName,
+                sku: order.sku,
+                quantity: 0,
+                totalValue: 0,
+                unit: order.unit || 'kg',
+                platforms: new Set(),
+                stores: new Set()
+            };
+        }
+        
+        stats.productSummary[productKey].quantity += parseFloat(order.quantity) || 0;
+        const productRevenue = parseFloat(order.totalPrice) || parseFloat(order.total) || parseFloat(order.value) || 0;
+        stats.productSummary[productKey].totalValue += productRevenue;
+        stats.productSummary[productKey].platforms.add(order.platform);
+        stats.productSummary[productKey].stores.add(order.storeName);
+    });
+    
+    stats.totalProducts = Object.keys(stats.productSummary).length;
+    
+    return stats;
+}
+
+function updateMonthlySummary(stats) {
+    document.getElementById('totalMonthlyOrders').textContent = stats.totalOrders;
+    document.getElementById('totalMonthlyProducts').textContent = stats.totalProducts;
+    document.getElementById('totalMonthlyQuantity').textContent = stats.totalQuantity.toFixed(1) + ' kg';
+    document.getElementById('totalMonthlyRevenue').textContent = formatCurrency(stats.totalRevenue);
+}
+
+// Pagination variables
+let monthlyCurrentPage = 1;
+let monthlyItemsPerPage = 10;
+let monthlyAllData = [];
+
+function generateProductDetailsTable(orders) {
+    const tableBody = document.getElementById('monthlyProductTableBody');
+    
+    if (!tableBody) return;
+    
+    // Group orders by product-platform-store combination for separate rows
+    const productPlatformMap = {};
+    
+    orders.forEach(order => {
+        const key = `${order.productName}-${order.sku}-${order.platform}-${order.storeName}-${order.orderId || order.id}`;
+        
+        if (!productPlatformMap[key]) {
+            productPlatformMap[key] = {
+                orderId: order.orderId || order.id || 'N/A',
+                name: order.productName,
+                sku: order.sku,
+                platform: order.platform,
+                storeName: order.storeName,
+                quantity: 0,
+                totalValue: 0,
+                unit: order.unit || 'kg'
+            };
+        }
+        
+        productPlatformMap[key].quantity += parseFloat(order.quantity) || 0;
+        const revenue = parseFloat(order.totalPrice) || parseFloat(order.total) || parseFloat(order.value) || 0;
+        productPlatformMap[key].totalValue += revenue;
+    });
+    
+    // Store all data for pagination
+    monthlyAllData = Object.values(productPlatformMap);
+    monthlyCurrentPage = 1; // Reset to first page
+    
+    // Render current page
+    renderMonthlyPage();
+    
+    // Update pagination controls
+    updateMonthlyPagination();
+}
+
+function renderMonthlyPage() {
+    const tableBody = document.getElementById('monthlyProductTableBody');
+    if (!tableBody) return;
+    
+    const startIndex = (monthlyCurrentPage - 1) * monthlyItemsPerPage;
+    const endIndex = startIndex + monthlyItemsPerPage;
+    const pageData = monthlyAllData.slice(startIndex, endIndex);
+    
+    let html = '';
+    
+    pageData.forEach((item, index) => {
+        const globalIndex = startIndex + index + 1;
+        html += `
+            <tr>
+                <td>${globalIndex}</td>
+                <td class="order-id">${item.orderId}</td>
+                <td class="product-name">${item.name}</td>
+                <td class="sku">${item.sku}</td>
+                <td class="quantity">${item.quantity.toFixed(1)}</td>
+                <td class="unit">${item.unit}</td>
+                <td class="total-value">${formatCurrency(item.totalValue)}</td>
+                <td class="platform">${item.platform}</td>
+                <td class="store">${item.storeName}</td>
+            </tr>
+        `;
+    });
+    
+    if (html === '') {
+        html = `
+            <tr>
+                <td colspan="9" class="text-center">
+                    <div class="empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <p>Không có dữ liệu cho tháng đã chọn</p>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }
+    
+    tableBody.innerHTML = html;
+}
+
+function updateMonthlyPagination() {
+    const paginationContainer = document.getElementById('monthlyPaginationContainer');
+    const paginationInfo = document.getElementById('monthlyPaginationInfo');
+    const paginationNumbers = document.getElementById('monthlyPaginationNumbers');
+    const prevBtn = document.getElementById('monthlyPrevBtn');
+    const nextBtn = document.getElementById('monthlyNextBtn');
+    
+    if (!paginationContainer || monthlyAllData.length === 0) {
+        if (paginationContainer) paginationContainer.style.display = 'none';
+        return;
+    }
+    
+    const totalPages = Math.ceil(monthlyAllData.length / monthlyItemsPerPage);
+    
+    if (totalPages <= 1) {
+        paginationContainer.style.display = 'none';
+        return;
+    }
+    
+    paginationContainer.style.display = 'flex';
+    
+    // Update info
+    const startItem = (monthlyCurrentPage - 1) * monthlyItemsPerPage + 1;
+    const endItem = Math.min(monthlyCurrentPage * monthlyItemsPerPage, monthlyAllData.length);
+    paginationInfo.textContent = `Hiển thị ${startItem}-${endItem} của ${monthlyAllData.length} kết quả`;
+    
+    // Update buttons
+    prevBtn.disabled = monthlyCurrentPage === 1;
+    nextBtn.disabled = monthlyCurrentPage === totalPages;
+    
+    // Generate page numbers
+    let numbersHtml = '';
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, monthlyCurrentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    if (endPage - startPage + 1 < maxVisiblePages) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    if (startPage > 1) {
+        numbersHtml += `<span class="page-number" onclick="goToMonthlyPage(1)">1</span>`;
+        if (startPage > 2) {
+            numbersHtml += `<span class="page-ellipsis">...</span>`;
+        }
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+        const activeClass = i === monthlyCurrentPage ? 'active' : '';
+        numbersHtml += `<span class="page-number ${activeClass}" onclick="goToMonthlyPage(${i})">${i}</span>`;
+    }
+    
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            numbersHtml += `<span class="page-ellipsis">...</span>`;
+        }
+        numbersHtml += `<span class="page-number" onclick="goToMonthlyPage(${totalPages})">${totalPages}</span>`;
+    }
+    
+    paginationNumbers.innerHTML = numbersHtml;
+}
+
+function changeMonthlyPage(direction) {
+    const totalPages = Math.ceil(monthlyAllData.length / monthlyItemsPerPage);
+    const newPage = monthlyCurrentPage + direction;
+    
+    if (newPage >= 1 && newPage <= totalPages) {
+        monthlyCurrentPage = newPage;
+        renderMonthlyPage();
+        updateMonthlyPagination();
+    }
+}
+
+function goToMonthlyPage(page) {
+    const totalPages = Math.ceil(monthlyAllData.length / monthlyItemsPerPage);
+    
+    if (page >= 1 && page <= totalPages) {
+        monthlyCurrentPage = page;
+        renderMonthlyPage();
+        updateMonthlyPagination();
+    }
+}
+
+function printMonthlyReport() {
+    // Get current filtered data
+    const dateType = document.getElementById('dateTypeSelect').value;
+    const month = document.getElementById('monthSelect').value;
+    const year = document.getElementById('yearSelect').value;
+    const fromDate = document.getElementById('fromDateSelect').value;
+    const toDate = document.getElementById('toDateSelect').value;
+    const platform = document.getElementById('platformFilter').value;
+    const product = document.getElementById('productFilter').value;
+    const store = document.getElementById('tmdtStoreFilter').value;
+    
+    // Filter orders by current criteria
+    const filteredOrders = filterOrdersByAllCriteria(dateType, month, year, fromDate, toDate, platform, product, store);
+    const stats = calculateMonthlyStats(filteredOrders);
+    
+    // Generate print content
+    const printContent = generatePrintContent(filteredOrders, stats, {
+        dateType, month, year, fromDate, toDate, platform, product, store
+    });
+    
+    // Open print window
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.print();
+}
+
+function generatePrintContent(orders, stats, filters) {
+    const monthNames = [
+        '', 'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
+        'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'
+    ];
+    
+    // Determine date range text
+    let dateRangeText = '';
+    if (filters.dateType === 'month') {
+        dateRangeText = `${monthNames[parseInt(filters.month)]} ${filters.year}`;
+    } else if (filters.dateType === 'custom') {
+        const fromDateFormatted = new Date(filters.fromDate).toLocaleDateString('vi-VN');
+        const toDateFormatted = new Date(filters.toDate).toLocaleDateString('vi-VN');
+        dateRangeText = `Từ ${fromDateFormatted} đến ${toDateFormatted}`;
+    }
+    
+    // Generate filter info
+    let filterInfo = [];
+    if (filters.platform) filterInfo.push(`Sàn: ${filters.platform}`);
+    if (filters.product) filterInfo.push(`Sản phẩm: ${filters.product}`);
+    if (filters.store) filterInfo.push(`Cửa hàng: ${filters.store}`);
+    
+    // Group orders by product only (combine same products across different orders/platforms/stores)
+    const productSummaryMap = {};
+    orders.forEach(order => {
+        const key = `${order.productName}-${order.sku}`;
+        
+        if (!productSummaryMap[key]) {
+            productSummaryMap[key] = {
+                name: order.productName,
+                sku: order.sku,
+                quantity: 0,
+                totalValue: 0,
+                unit: order.unit || 'kg',
+                platforms: new Set(),
+                stores: new Set(),
+                orderCount: 0
+            };
+        }
+        
+        productSummaryMap[key].quantity += parseFloat(order.quantity) || 0;
+        const revenue = parseFloat(order.totalPrice) || parseFloat(order.total) || parseFloat(order.value) || 0;
+        productSummaryMap[key].totalValue += revenue;
+        productSummaryMap[key].platforms.add(order.platform);
+        productSummaryMap[key].stores.add(order.storeName);
+        productSummaryMap[key].orderCount += 1;
+    });
+    
+    const displayData = Object.values(productSummaryMap).map(item => ({
+        ...item,
+        platformsText: Array.from(item.platforms).join(', '),
+        storesText: Array.from(item.stores).join(', ')
+    }));
+    
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Báo Cáo Thống Kê TMĐT</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            
+            body {
+                font-family: 'Arial', sans-serif;
+                line-height: 1.6;
+                color: #333;
+                background: white;
+                padding: 20px;
+            }
+            
+            .invoice-container {
+                max-width: 800px;
+                margin: 0 auto;
+                background: white;
+                border: 1px solid #ddd;
+                border-radius: 8px;
+                overflow: hidden;
+            }
+            
+            .invoice-header {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 30px;
+                text-align: center;
+            }
+            
+            .invoice-header h1 {
+                font-size: 28px;
+                margin-bottom: 10px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+            }
+            
+            .invoice-header .subtitle {
+                font-size: 16px;
+                opacity: 0.9;
+            }
+            
+            .invoice-info {
+                padding: 30px;
+                border-bottom: 2px solid #eee;
+            }
+            
+            .info-row {
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 15px;
+                align-items: center;
+            }
+            
+            .info-row:last-child {
+                margin-bottom: 0;
+            }
+            
+            .info-label {
+                font-weight: 600;
+                color: #555;
+            }
+            
+            .info-value {
+                color: #333;
+                font-weight: 500;
+            }
+            
+            .date-range {
+                text-align: center;
+                padding: 20px;
+                background: #f8f9fa;
+                font-size: 18px;
+                font-weight: 600;
+                color: #495057;
+                border-bottom: 2px solid #eee;
+            }
+            
+            .filter-info {
+                padding: 15px 30px;
+                background: #e3f2fd;
+                font-size: 14px;
+                color: #1565c0;
+                border-bottom: 1px solid #ddd;
+            }
+            
+            .products-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin: 0;
+            }
+            
+            .products-table th {
+                background: #f8f9fa;
+                padding: 15px 10px;
+                text-align: left;
+                font-weight: 600;
+                color: #495057;
+                border-bottom: 2px solid #dee2e6;
+                font-size: 12px;
+                text-transform: uppercase;
+            }
+            
+            .products-table td {
+                padding: 12px 10px;
+                border-bottom: 1px solid #eee;
+                font-size: 14px;
+            }
+            
+            .products-table tbody tr:hover {
+                background: #f8f9fa;
+            }
+            
+            .text-right {
+                text-align: right;
+            }
+            
+            .text-center {
+                text-align: center;
+            }
+            
+            .total-section {
+                padding: 30px;
+                background: #f8f9fa;
+                border-top: 2px solid #dee2e6;
+            }
+            
+            .total-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 15px;
+                font-size: 16px;
+            }
+            
+            .total-row.grand-total {
+                font-size: 20px;
+                font-weight: 700;
+                color: #28a745;
+                border-top: 2px solid #28a745;
+                padding-top: 15px;
+                margin-top: 15px;
+            }
+            
+            .company-info {
+                padding: 30px;
+                background: #f8f9fa;
+                border-top: 1px solid #ddd;
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+            }
+            
+            .company-details {
+                flex: 1;
+            }
+            
+            .signature-section {
+                text-align: right;
+                flex: 1;
+            }
+            
+            .company-details h4 {
+                color: #e91e63;
+                margin-bottom: 10px;
+                font-size: 16px;
+            }
+            
+            .company-details p {
+                margin-bottom: 5px;
+                font-size: 14px;
+                color: #666;
+            }
+            
+            .signature-section p {
+                margin-bottom: 10px;
+                font-size: 14px;
+                color: #666;
+            }
+            
+            .signature-section .signature-date {
+                color: #007bff;
+                font-weight: 600;
+            }
+            
+            @media print {
+                body {
+                    padding: 0;
+                }
+                
+                .invoice-container {
+                    border: none;
+                    border-radius: 0;
+                    box-shadow: none;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="invoice-container">
+            <div class="invoice-header">
+                <h1>📊 BÁO CÁO THỐNG KÊ TMĐT</h1>
+                <div class="subtitle">Hệ thống quản lý bán hàng</div>
+            </div>
+            
+            <div class="invoice-info">
+                <div class="info-row">
+                    <span class="info-label">Mã báo cáo:</span>
+                    <span class="info-value">RPT${Date.now().toString().slice(-8)}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Ngày tạo:</span>
+                    <span class="info-value">${new Date().toLocaleDateString('vi-VN')}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Tổng đơn hàng:</span>
+                    <span class="info-value">${stats.totalOrders} đơn</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Tổng sản phẩm:</span>
+                    <span class="info-value">${stats.totalProducts} loại</span>
+                </div>
+            </div>
+            
+            <div class="date-range">
+                ${dateRangeText}
+            </div>
+            
+            ${filterInfo.length > 0 ? `<div class="filter-info">
+                <strong>Bộ lọc áp dụng:</strong> ${filterInfo.join(' • ')}
+            </div>` : ''}
+            
+            <table class="products-table">
+                <thead>
+                    <tr>
+                        <th>STT</th>
+                        <th>Tên Sản Phẩm</th>
+                        <th>SKU</th>
+                        <th class="text-center">Số Lượng</th>
+                        <th class="text-center">Đơn Vị</th>
+                        <th class="text-right">Thành Tiền</th>
+                        <th class="text-center">Số Đơn</th>
+                        <th class="text-center">Sàn TMĐT</th>
+                        <th>Cửa Hàng</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${displayData.map((item, index) => `
+                        <tr>
+                            <td class="text-center">${index + 1}</td>
+                            <td>${item.name}</td>
+                            <td>${item.sku}</td>
+                            <td class="text-center">${item.quantity.toFixed(1)}</td>
+                            <td class="text-center">${item.unit}</td>
+                            <td class="text-right">${formatCurrency(item.totalValue)}</td>
+                            <td class="text-center">${item.orderCount}</td>
+                            <td class="text-center">${item.platformsText}</td>
+                            <td>${item.storesText}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+            
+            <div class="total-section">
+                <div class="total-row">
+                    <span>Tổng khối lượng:</span>
+                    <span>${stats.totalQuantity.toFixed(1)} kg</span>
+                </div>
+                <div class="total-row grand-total">
+                    <span>TỔNG CỘNG:</span>
+                    <span>${formatCurrency(stats.totalRevenue)}</span>
+                </div>
+            </div>
+            
+            <div class="company-info">
+                <div class="company-details">
+                    <h4>📍 Địa chỉ công ty:</h4>
+                    <p>123 Đường ABC, Quận XYZ, TP.HCM</p>
+                    <p>📞 Hotline: 0123-456-789</p>
+                    <p>📧 Email: info@company.com</p>
+                </div>
+                <div class="signature-section">
+                    <p>👤 Người lập: ________________</p>
+                    <p class="signature-date">📅 Ngày lập: ${new Date().toLocaleDateString('vi-VN')}</p>
+                    <p>✍️ Chữ ký:</p>
+                </div>
+            </div>
+        </div>
+    </body>
+    </html>
+    `;
+    
+    const originalTitle = document.querySelector('.stats-title').innerHTML;
+    const printTitle = `
+        <i class="fas fa-chart-line"></i> 
+        PHIẾU XUẤT KHO - BÁO CÁO THỐNG KÊ<br>
+        <small style="font-size: 1rem; font-weight: 400;">
+            ${monthNames[month]} ${year}${platform ? ` - ${platform}` : ''}
+        </small>
+    `;
+    
+    document.querySelector('.stats-title').innerHTML = printTitle;
+    
+    // Add current date to print
+    const currentDate = new Date().toLocaleDateString('vi-VN');
+    const dateInfo = document.createElement('div');
+    dateInfo.style.textAlign = 'center';
+    dateInfo.style.marginTop = '10px';
+    dateInfo.style.fontSize = '0.9rem';
+    dateInfo.innerHTML = `<strong>Ngày in: ${currentDate}</strong>`;
+    document.querySelector('.stats-header').appendChild(dateInfo);
+    
+    // Print
+    window.print();
+    
+    // Restore original title
+    setTimeout(() => {
+        document.querySelector('.stats-title').innerHTML = originalTitle;
+        if (dateInfo.parentNode) {
+            dateInfo.parentNode.removeChild(dateInfo);
+        }
+    }, 1000);
+}
+
+// Populate filter dropdowns with data
+function populateFilterDropdowns() {
+    if (!orderReportData || !orderReportData.tmdt) return;
+    
+    const products = new Set();
+    const stores = new Set();
+    const platforms = new Set();
+    
+    orderReportData.tmdt.forEach(order => {
+        if (order.productName) products.add(order.productName);
+        if (order.storeName) stores.add(order.storeName);
+        if (order.platform) platforms.add(order.platform);
+    });
+    
+    // Populate product filter
+    const productFilter = document.getElementById('productFilter');
+    if (productFilter) {
+        productFilter.innerHTML = '<option value="">Tất cả sản phẩm</option>';
+        
+        // Load all products from Firebase
+        if (database) {
+            database.ref('products').once('value').then(snapshot => {
+                const productsData = snapshot.val() || {};
+                
+                Object.entries(productsData).forEach(([productId, productData]) => {
+                    const productName = productData.name || productData.productName || productId;
+                    productFilter.innerHTML += `<option value="${productName}">${productName}</option>`;
+                });
+            }).catch(error => {
+                console.error('Error loading products:', error);
+            });
+        }
+        
+        // Also add products from current TMDT orders if any
+        Array.from(products).sort().forEach(product => {
+            const existingOptions = Array.from(productFilter.options).map(opt => opt.value);
+            if (!existingOptions.includes(product)) {
+                productFilter.innerHTML += `<option value="${product}">${product}</option>`;
+            }
+        });
+    }
+    
+    // Populate platform filter with predefined platforms
+    const platformFilter = document.getElementById('platformFilter');
+    if (platformFilter) {
+        const predefinedPlatforms = [
+            'Shopee',
+            'Lazada',
+            'TikTok Shop',
+            'Sendo',
+            'Tiki',
+            'Facebook Shop',
+            'Zalo Shop',
+            'Khác'
+        ];
+        
+        platformFilter.innerHTML = '<option value="">Tất cả sàn</option>';
+        predefinedPlatforms.forEach(platform => {
+            platformFilter.innerHTML += `<option value="${platform}">${platform}</option>`;
+        });
+    }
+    
+    // Populate store filter - Load directly from Firebase
+    loadStoresForFilter();
+}
+
+// Load stores from Firebase for filter dropdown
+function loadStoresForFilter() {
+    console.log('=== LOADING STORES DEBUG ===');
+    
+    const storeFilter = document.getElementById('tmdtStoreFilter');
+    if (!storeFilter) {
+        console.log('❌ TMDT Store filter element not found');
+        return;
+    }
+    console.log('✅ TMDT Store filter element found');
+    
+    // Check if we're in the right view
+    const monthlyFilters = document.querySelector('.monthly-filters');
+    if (!monthlyFilters || monthlyFilters.style.display === 'none') {
+        console.log('❌ Monthly filters not visible, skipping store load');
+        return;
+    }
+    console.log('✅ Monthly filters visible');
+    
+    // Wait for Firebase to be ready
+    if (typeof firebase === 'undefined') {
+        console.log('❌ Firebase undefined, retrying in 1s...');
+        setTimeout(loadStoresForFilter, 1000);
+        return;
+    }
+    
+    if (!firebase.apps || firebase.apps.length === 0) {
+        console.log('❌ Firebase not initialized, retrying in 1s...');
+        setTimeout(loadStoresForFilter, 1000);
+        return;
+    }
+    console.log('✅ Firebase ready');
+    
+    console.log('🔄 Loading stores from Firebase...');
+    
+    firebase.database().ref('stores').once('value').then(snapshot => {
+        const storesData = snapshot.val() || {};
+        console.log('📦 Stores data loaded:', Object.keys(storesData));
+        console.log('📦 Full stores data:', storesData);
+        
+        // Clear dropdown first
+        storeFilter.innerHTML = '<option value="">Tất cả cửa hàng</option>';
+        console.log('🧹 Cleared dropdown');
+        
+        let addedCount = 0;
+        Object.entries(storesData).forEach(([storeId, storeData]) => {
+            const storeName = storeData.name || storeData.storeName || storeId;
+            console.log(`➕ Adding store: ${storeName} (ID: ${storeId})`);
+            
+            const option = document.createElement('option');
+            option.value = storeName;
+            option.textContent = storeName;
+            storeFilter.appendChild(option);
+            addedCount++;
+        });
+        
+        console.log(`✅ Store dropdown populated with ${addedCount} stores`);
+        console.log('📋 Final dropdown options:', Array.from(storeFilter.options).map(opt => opt.textContent));
+        
+    }).catch(error => {
+        console.error('❌ Error loading stores:', error);
+        setTimeout(loadStoresForFilter, 2000);
+    });
+}
+
+// Load products from Firebase for filter dropdown
+function loadProductsForFilter() {
+    // Wait for Firebase to be ready
+    if (typeof firebase === 'undefined' || !firebase.apps.length) {
+        console.log('Firebase not ready for products, retrying...');
+        setTimeout(loadProductsForFilter, 1000);
+        return;
+    }
+    
+    const productFilter = document.getElementById('productFilter');
+    if (!productFilter) return;
+    
+    firebase.database().ref('products').once('value').then(snapshot => {
+        const productsData = snapshot.val() || {};
+        
+        // Clear and rebuild dropdown to ensure all products are loaded
+        productFilter.innerHTML = '<option value="">Tất cả sản phẩm</option>';
+        
+        Object.entries(productsData).forEach(([productId, productData]) => {
+            const productName = productData.name || productData.productName || productId;
+            const option = document.createElement('option');
+            option.value = productName;
+            option.textContent = productName;
+            productFilter.appendChild(option);
+        });
+    }).catch(error => {
+        console.error('Error loading products for filter:', error);
+    });
+}
+
+// Auto-generate report when filters change
+document.addEventListener('DOMContentLoaded', function() {
+    // Load stores and products immediately when DOM is ready
+    setTimeout(() => {
+        loadStoresForFilter();
+        loadProductsForFilter();
+    }, 1000);
+    
+    // Try again after longer delay
+    setTimeout(() => {
+        loadStoresForFilter();
+        loadProductsForFilter();
+    }, 3000);
+    
+    // Final attempt
+    setTimeout(() => {
+        loadStoresForFilter();
+        loadProductsForFilter();
+    }, 5000);
+    
+    // Set current month/year as default
+    const now = new Date();
+    const monthSelect = document.getElementById('monthSelect');
+    const yearSelect = document.getElementById('yearSelect');
+    const fromDateSelect = document.getElementById('fromDateSelect');
+    const toDateSelect = document.getElementById('toDateSelect');
+    
+    if (monthSelect) {
+        monthSelect.value = now.getMonth() + 1;
+    }
+    
+    if (yearSelect) {
+        yearSelect.value = now.getFullYear();
+    }
+    
+    // Set default date range (current month)
+    if (fromDateSelect && toDateSelect) {
+        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+        const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        
+        fromDateSelect.value = firstDay.toISOString().split('T')[0];
+        toDateSelect.value = lastDay.toISOString().split('T')[0];
+    }
+    
+    // Populate filter dropdowns
+    populateFilterDropdowns();
+    
+    // Add event listeners for auto-update
+    ['monthSelect', 'yearSelect', 'platformFilter', 'productFilter', 'tmdtStoreFilter', 'fromDateSelect', 'toDateSelect'].forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener('change', generateMonthlyReport);
+        }
+    });
+});
 
 // Toggle select all TMDT orders
 function toggleSelectAllTmdt(checkbox) {
@@ -982,7 +2108,22 @@ function applyFilters(data, orderType) {
             console.log('DEBUG: Sample order data:', filteredData[0]);
             
             filteredData = filteredData.filter(order => {
-                const matches = (order.platform && order.platform.toLowerCase() === platformFilter.toLowerCase()) || 
+                // Map platform codes to filter values
+                const platformMap = {
+                    'tiktok': 'TikTok Shop',
+                    'shopee': 'Shopee', 
+                    'lazada': 'Lazada',
+                    'sendo': 'Sendo',
+                    'tiki': 'Tiki',
+                    'facebook': 'Facebook Shop',
+                    'zalo': 'Zalo Shop'
+                };
+                
+                // Get the display name for the order's platform
+                const orderPlatformDisplay = order.platformName || platformMap[order.platform] || order.platform;
+                
+                const matches = (orderPlatformDisplay && orderPlatformDisplay.toLowerCase() === platformFilter.toLowerCase()) || 
+                               (order.platform && order.platform.toLowerCase() === platformFilter.toLowerCase()) ||
                                (order.marketplace && order.marketplace.toLowerCase() === platformFilter.toLowerCase()) ||
                                (order.source && order.source.toLowerCase() === platformFilter.toLowerCase()) ||
                                (order.ecommercePlatform && order.ecommercePlatform.toLowerCase() === platformFilter.toLowerCase()) ||
@@ -991,6 +2132,9 @@ function applyFilters(data, orderType) {
                 if (order.platform || order.marketplace || order.source) {
                     console.log('DEBUG: Order platform data:', {
                         platform: order.platform,
+                        platformName: order.platformName,
+                        orderPlatformDisplay: orderPlatformDisplay,
+                        platformFilter: platformFilter,
                         marketplace: order.marketplace,
                         source: order.source,
                         ecommercePlatform: order.ecommercePlatform,

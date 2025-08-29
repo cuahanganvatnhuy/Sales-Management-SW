@@ -379,29 +379,21 @@ function displayExcelPreview(data, validCount, errorCount) {
     createOrderFormsFromExcel(validOrders);
 }
 
-// Create order forms from Excel data - group by Order ID
+// Create order forms from Excel data - simple approach
 function createOrderFormsFromExcel(validOrders) {
     console.log('Creating order forms from Excel data:', validOrders);
     
-    // Group products by Order ID
-    const orderGroups = groupProductsByOrderId(validOrders);
-    console.log('Grouped orders:', orderGroups);
-    
-    // Set the order count to match number of unique orders
+    // Set the order count to match number of orders
     const orderCountInput = document.getElementById('orderCount');
     if (orderCountInput) {
-        orderCountInput.value = orderGroups.length;
+        orderCountInput.value = validOrders.length;
     }
     
     // Generate manual order forms
     generateOrderForms();
     
     // Wait a bit for forms to be created, then fill them with Excel data
-    setTimeout(() => {
-        fillFormsWithExcelData(orderGroups);
-    }, 500);
-    
-    console.log('Excel data will be filled into manual order forms');
+    setTimeout(() => fillFormsWithExcelData(validOrders), 500);
 }
 
 // Group products by Order ID
@@ -427,105 +419,118 @@ function groupProductsByOrderId(validOrders) {
     return Object.values(orderGroups);
 }
 
-function fillFormsWithExcelData(orderGroups) {
-    console.log('Filling forms with Excel data (grouped):', orderGroups);
-    console.log('productsData available:', !!productsData, Object.keys(productsData || {}).length);
+function fillFormsWithExcelData(processedOrders) {
+    console.log('🔄 Filling forms with Excel data:', processedOrders);
+    console.log('📦 Products available:', !!productsData, Object.keys(productsData || {}).length);
     
-    orderGroups.forEach((orderGroup, index) => {
+    // Store Excel orders globally for access during order creation
+    window.currentExcelOrders = processedOrders;
+    
+    processedOrders.forEach((order, index) => {
         const orderNumber = index + 1;
-        const firstProduct = orderGroup.products[0]; // Use first product for main form
         
-        // Get product name from database
-        const product = productsData[firstProduct.productId];
-        const productName = product ? product.name : `Sản phẩm SKU: ${firstProduct.sku}`;
-        const productPrice = product ? product.price : firstProduct.price;
+        // Get product info from database
+        const product = productsData[order.productId];
+        const productName = product ? product.name : `SKU: ${order.sku}`;
+        const productPrice = product ? product.price : (order.price || 0);
         
-        console.log(`Filling order ${orderNumber}:`, {
-            orderId: orderGroup.orderId,
-            productsCount: orderGroup.products.length,
-            firstProduct: {
-                sku: firstProduct.sku,
-                productId: firstProduct.productId,
-                productName: productName,
-                quantity: firstProduct.quantity,
-                price: productPrice
-            },
-            totalAmount: orderGroup.totalAmount
+        console.log(`📝 Filling order ${orderNumber}:`, {
+            sku: order.sku,
+            productName: productName,
+            quantity: order.quantity,
+            price: productPrice
         });
         
-        // Fill all fields directly without relying on dropdown events
+        // Fill form fields directly - simple approach
         setTimeout(() => {
-            // 0. Fill Order ID (mã đơn hàng)
-            const orderIdDisplay = document.querySelector(`#order-${orderNumber} .order-header h5`);
-            if (orderIdDisplay) {
-                orderIdDisplay.textContent = `Đơn Hàng ${orderNumber} - Mã: ${orderGroup.orderId}`;
-                console.log(`✓ Order ID displayed: ${orderGroup.orderId}`);
-            }
+            console.log(`⏰ Processing order ${orderNumber}...`);
             
-            // 1. Fill product dropdown - first product
+            // 1. Fill product dropdown - create option and select it
             const productSelect = document.getElementById(`product_${orderNumber}`);
             if (productSelect) {
+                // Clear and add only the needed product
                 productSelect.innerHTML = '';
                 
+                // Add default option
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = 'Chọn sản phẩm...';
+                productSelect.appendChild(defaultOption);
+                
+                // Add product option
                 const productOption = document.createElement('option');
-                productOption.value = firstProduct.productId;
+                productOption.value = order.productId;
                 productOption.textContent = productName;
                 productOption.selected = true;
                 productSelect.appendChild(productOption);
                 
-                productSelect.value = firstProduct.productId;
-                productSelect.dispatchEvent(new Event('change', { bubbles: true }));
-                console.log(`✓ Product filled: ${productName} (ID: ${firstProduct.productId})`);
+                // Set value
+                productSelect.value = order.productId;
+                console.log(`✅ Product: ${productName}`);
             }
             
             // 2. Fill SKU
             const skuInput = document.getElementById(`sku_${orderNumber}`);
             if (skuInput) {
-                skuInput.value = firstProduct.sku;
-                console.log(`✓ SKU filled: ${firstProduct.sku}`);
+                skuInput.value = order.sku;
+                console.log(`✅ SKU: ${order.sku}`);
             }
             
-            // 3. Fill quantity - sum all products in this order
-            const totalQuantity = orderGroup.products.reduce((sum, prod) => sum + (prod.quantity || 1), 0);
+            // 3. Fill quantity
             const quantityInput = document.getElementById(`quantity_${orderNumber}`);
             if (quantityInput) {
-                quantityInput.value = totalQuantity;
-                console.log(`✓ Total quantity filled: ${totalQuantity} (${orderGroup.products.length} products)`);
+                quantityInput.value = order.quantity || 1;
+                console.log(`✅ Quantity: ${order.quantity || 1}`);
             }
             
-            // 4. Fill price - average price or first product price
+            // 4. Fill price
             const priceInput = document.getElementById(`price_${orderNumber}`);
             if (priceInput) {
                 priceInput.value = productPrice;
-                console.log(`✓ Price filled: ${productPrice}`);
+                console.log(`✅ Price: ${productPrice}`);
             }
             
-            // 5. Fill total - use calculated total from all products
+            // 5. Calculate and fill total
             const totalInput = document.getElementById(`total_${orderNumber}`);
             if (totalInput) {
-                totalInput.value = orderGroup.totalAmount;
-                console.log(`✓ Total amount filled: ${orderGroup.totalAmount}`);
+                const total = (order.quantity || 1) * productPrice;
+                totalInput.value = total;
+                console.log(`✅ Total: ${total}`);
             }
             
-            // 6. Add note about multiple products
-            if (orderGroup.products.length > 1) {
-                const noteArea = document.querySelector(`#order-${orderNumber} .additional-info`);
-                if (noteArea) {
-                    const productList = orderGroup.products.map(p => `${p.sku} (x${p.quantity})`).join(', ');
-                    noteArea.innerHTML = `<small><strong>Nhiều sản phẩm:</strong> ${productList}</small>`;
-                    console.log(`✓ Multi-product note added: ${productList}`);
+            // 6. Add hidden input for Order ID
+            if (order.orderId) {
+                let orderIdInput = document.getElementById(`orderId_${orderNumber}`);
+                if (!orderIdInput) {
+                    orderIdInput = document.createElement('input');
+                    orderIdInput.type = 'hidden';
+                    orderIdInput.id = `orderId_${orderNumber}`;
+                    orderIdInput.name = `orderId_${orderNumber}`;
+                    
+                    // Add to form
+                    const orderForm = document.getElementById(`orderForm_${orderNumber}`);
+                    if (orderForm) {
+                        orderForm.appendChild(orderIdInput);
+                    }
                 }
+                orderIdInput.value = order.orderId;
+                console.log(`✅ Hidden Order ID input: ${order.orderId}`);
             }
             
-            // 7. Update overall total
-            if (window.updateOrderTotal) {
-                updateOrderTotal();
+            // 7. Show order ID in header if available
+            const headerElement = document.querySelector(`#orderForm_${orderNumber} .order-form-title`);
+            
+            if (headerElement && order.orderId) {
+                headerElement.innerHTML = `<i class="fas fa-shopping-bag"></i> Đơn Hàng ${orderNumber} - Mã: ${order.orderId}`;
+                console.log(`✅ Order ID header: ${order.orderId}`);
             }
             
-        }, orderNumber * 100); // Stagger each order by 100ms
+            console.log(`🎉 Order ${orderNumber} completed!`);
+            
+        }, orderNumber * 200); // 200ms delay between orders
     });
     
-    console.log('Excel data filled into manual forms successfully');
+    console.log('🚀 All Excel data processing started!');
 }
 
 // Calculate Excel order total
