@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Chi Phí Vận Chuyển - Sales Management System</title>
+    <link rel="stylesheet" href="../style/man.css">
+    <link rel="stylesheet" href="../css/shipping-cost-management.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+    <!-- Include Header -->
+    <div id="header-placeholder"></div>
+    
+    <!-- Include Navbar -->
+    <div id="navbar-placeholder"></div>
+
+    <div class="main-content">
+        <div class="container">
+         
+
+            <!-- Statistics Cards -->
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-icon import">
+                        <i class="fas fa-truck-loading"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="totalImportCost">0 VNĐ</h3>
+                        <p>Tổng Chi Phí Nhập Hàng</p>
+                        <span class="stat-period" id="importCount">0 lần nhập</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon export">
+                        <i class="fas fa-shipping-fast"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="totalExportCost">0 VNĐ</h3>
+                        <p>Tổng Chi Phí Xuất Hàng</p>
+                        <span class="stat-period" id="exportCount">0 lần xuất</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon total">
+                        <i class="fas fa-calculator"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="totalShippingCost">0 VNĐ</h3>
+                        <p>Tổng Chi Phí Vận Chuyển</p>
+                        <span class="stat-period" id="totalTransactions">0 giao dịch</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon average">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="averageCost">0 VNĐ</h3>
+                        <p>Chi Phí Trung Bình</p>
+                        <span class="stat-period">Mỗi giao dịch</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters Section -->
+            <div class="filters-section">
+                <div class="filter-card">
+                    <div class="filter-header">
+                        <i class="fas fa-filter"></i>
+                        <h3>Bộ Lọc Thống Kê</h3>
+                    </div>
+                    <div class="filter-content">
+                        <div class="filter-row">
+                            <div class="filter-group">
+                                <label for="periodFilter">
+                                    <i class="fas fa-calendar"></i>
+                                    Thời Gian
+                                </label>
+                                <select id="periodFilter" onchange="applyFilters()">
+                                    <option value="all">Tất cả</option>
+                                    <option value="today">Hôm nay</option>
+                                    <option value="7days">7 ngày qua</option>
+                                    <option value="30days">30 ngày qua</option>
+                                    <option value="thisMonth">Tháng này</option>
+                                    <option value="lastMonth">Tháng trước</option>
+                                    <option value="custom">Tùy chọn</option>
+                                </select>
+                            </div>
+
+                            <div class="filter-group custom-date-hidden" id="customDateGroup">
+                                <label for="startDate">
+                                    <i class="fas fa-calendar"></i>
+                                    Từ ngày
+                                </label>
+                                <input type="date" id="startDate" onchange="applyFilters()">
+                            </div>
+
+                            <div class="filter-group custom-date-hidden" id="customDateToGroup">
+                                <label for="endDate">
+                                    <i class="fas fa-calendar"></i>
+                                    Đến ngày
+                                </label>
+                                <input type="date" id="endDate" onchange="applyFilters()">
+                            </div>
+
+                            <div class="filter-group">
+                                <label for="storeFilter">
+                                    <i class="fas fa-store"></i>
+                                    Cửa Hàng
+                                </label>
+                                <select id="storeFilter" onchange="applyFilters()">
+                                    <option value="all">Tất cả cửa hàng</option>
+                                </select>
+                            </div>
+
+                            <div class="filter-group">
+                                <label for="typeFilter">
+                                    <i class="fas fa-tags"></i>
+                                    Loại Giao Dịch
+                                </label>
+                                <select id="typeFilter" onchange="applyFilters()">
+                                    <option value="all">Tất cả</option>
+                                    <option value="import">Nhập hàng</option>
+                                    <option value="export">Xuất hàng</option>
+                                </select>
+                            </div>
+
+                            <div class="filter-group">
+                                <label for="supplierFilter">
+                                    <i class="fas fa-industry"></i>
+                                    Nhà Cung Cấp
+                                </label>
+                                <select id="supplierFilter" onchange="applyFilters()">
+                                    <option value="all">Tất cả nhà cung cấp</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="filter-actions">
+                            <button class="filter-btn" onclick="applyFilters()">
+                                <i class="fas fa-filter"></i>
+                                Áp Dụng Lọc
+                            </button>
+                            <button class="clear-btn" onclick="clearFilters()">
+                                <i class="fas fa-times"></i>
+                                Xóa Lọc
+                            </button>
+                            <button class="add-shipping-btn" onclick="openAddShippingCostModal()">
+                                <i class="fas fa-plus"></i>
+                                Thêm Chi Phí Vận Chuyển
+                            </button>
+                            <button class="export-btn" onclick="exportToExcel()">
+                                <i class="fas fa-file-excel"></i>
+                                Xuất Excel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart Section -->
+            <div class="chart-section">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3>
+                            <i class="fas fa-chart-bar"></i>
+                            Biểu Đồ Chi Phí Vận Chuyển
+                        </h3>
+                        <div class="chart-controls">
+                            <select id="chartType" onchange="updateChart()">
+                                <option value="daily">Theo ngày</option>
+                                <option value="weekly">Theo tuần</option>
+                                <option value="monthly">Theo tháng</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="shippingCostChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Table Section -->
+            <div class="table-section">
+                <div class="table-card">
+                    <div class="table-header">
+                        <h3>
+                            <i class="fas fa-list"></i>
+                            Chi Tiết Chi Phí Vận Chuyển
+                        </h3>
+                        <div class="table-info">
+                            <span id="tableResultCount">Hiển thị 0 kết quả</span>
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <table id="shippingCostTable">
+                            <thead>
+                                <tr>
+                                    <th>STT</th>
+                                    <th>Ngày</th>
+                                    <th>Loại</th>
+                                    <th>Mã Giao Dịch</th>
+                                    <th>Cửa Hàng</th>
+                                    <th>Nhà Cung Cấp</th>
+                                    <th>Sản Phẩm</th>
+                                    <th>Số Lượng</th>
+                                    <th>Chi Phí Vận Chuyển</th>
+                                    <th>Ghi Chú</th>
+                                    <th>Thao Tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="shippingCostTableBody">
+                                <!-- Data will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    <div class="pagination-container">
+                        <div class="pagination-info">
+                            <span id="paginationInfo">Trang 1 / 1</span>
+                        </div>
+                        <div class="pagination-controls">
+                            <button class="btn btn-sm" id="prevPageBtn" onclick="changePage(-1)" disabled>
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <div id="pageNumbers" class="page-numbers">
+                                <!-- Page numbers will be generated by JavaScript -->
+                            </div>
+                            <button class="btn btn-sm" id="nextPageBtn" onclick="changePage(1)" disabled>
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add/Edit Shipping Cost Modal -->
+            <div id="shippingCostModal" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>
+                            <i class="fas fa-plus-circle"></i>
+                            <span id="modalTitle">Thêm Chi Phí Vận Chuyển</span>
+                        </h3>
+                        <button class="close-btn" onclick="closeShippingCostModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+
+                    <div class="modal-body">
+                        <form id="shippingCostForm">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="transactionType">Loại Giao Dịch</label>
+                                    <select id="transactionType" required>
+                                        <option value="">Chọn loại giao dịch</option>
+                                        <option value="import">Nhập hàng</option>
+                                        <option value="export">Xuất hàng</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="transactionDate">Ngày Giao Dịch</label>
+                                    <input type="datetime-local" id="transactionDate" required>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="storeSelect">Cửa Hàng</label>
+                                    <select id="storeSelect" required>
+                                        <option value="">Chọn cửa hàng</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="shippingCost">
+                                        <i class="fas fa-money-bill-wave"></i>
+                                        Chi Phí Vận Chuyển (VNĐ)
+                                    </label>
+                                    <input type="number" id="shippingCost" min="0" max="100000000" step="any" required placeholder="nhập chi phí ">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="shippingMethod">
+                                        <i class="fas fa-truck"></i>
+                                        Hình Thức Vận Chuyển
+                                    </label>
+                                    <select id="shippingMethod" required>
+                                        <option value="">Chọn hình thức vận chuyển</option>
+                                        <option value="xe_tai">Chành Xe </option>
+                                        <option value="ship_cod">Ship COD</option>
+                                        <option value="grab_express">Grab Express</option>
+                                        <option value="giao_hang_nhanh">Giao Hàng Nhanh</option>
+                                        <option value="giao_hang_tiet_kiem">Giao Hàng Tiết Kiệm</option>
+                                        <option value="viettel_post">Viettel Post</option>
+                                        <option value="vnpost">VN Post</option>
+                                        <option value="j_t_express">J&T Express</option>
+                                        <option value="shopee_express">Shopee Express</option>
+                                        <option value="lazada_express">Lazada Express</option>
+                                        <option value="khac">Khác</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="notes">
+                                    <i class="fas fa-sticky-note"></i>
+                                    Ghi Chú
+                                </label>
+                                <textarea id="notes" rows="3" placeholder="Nhập ghi chú về chi phí vận chuyển..."></textarea>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" onclick="closeShippingCostModal()">
+                            <i class="fas fa-times"></i>
+                            Hủy
+                        </button>
+                        <button type="button" class="btn btn-primary" onclick="saveShippingCost()">
+                            <i class="fas fa-save"></i>
+                            Lưu
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Floating Action Button -->
+            <button class="fab" onclick="openAddShippingCostModal()" title="Thêm chi phí vận chuyển">
+                <i class="fas fa-plus"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../main/firebase.js"></script>
+    <script src="../main/shipping-cost-management.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script>
+        // Load header and navbar
+        document.addEventListener('DOMContentLoaded', function() {
+            fetch('../components/header.html')
+                .then(response => response.text())
+                .then(data => {
+                    document.getElementById('header-placeholder').innerHTML = data;
+                });
+
+            fetch('../components/navbar.html')
+                .then(response => response.text())
+                .then(data => {
+                    document.getElementById('navbar-placeholder').innerHTML = data;
+                    
+                    // Initialize navbar functionality after loading
+                    setTimeout(() => {
+                        initializeNavbarFunctionality();
+                    }, 100);
+                });
+        });
+
+        // Initialize navbar submenu functionality
+        function initializeNavbarFunctionality() {
+            // Ensure submenu toggle functions are available
+            if (typeof window.toggleProductSubmenu === 'undefined') {
+                window.toggleProductSubmenu = function(event) {
+                    event.preventDefault();
+                    const submenu = document.getElementById('productSubmenu');
+                    if (submenu) {
+                        submenu.classList.toggle('show');
+                        console.log('Product submenu toggled');
+                    }
+                };
+            }
+
+            if (typeof window.toggleOrderSubmenu === 'undefined') {
+                window.toggleOrderSubmenu = function(event) {
+                    event.preventDefault();
+                    const submenu = document.getElementById('orderSubmenu');
+                    if (submenu) {
+                        submenu.classList.toggle('show');
+                        console.log('Order submenu toggled');
+                    }
+                };
+            }
+
+            if (typeof window.toggleSubmenu === 'undefined') {
+                window.toggleSubmenu = function(event) {
+                    event.preventDefault();
+                    const submenu = document.getElementById('invoiceSubmenu');
+                    if (submenu) {
+                        submenu.classList.toggle('show');
+                        console.log('Invoice submenu toggled');
+                    }
+                };
+            }
+
+            if (typeof window.navigateToInvoice === 'undefined') {
+                window.navigateToInvoice = function(type) {
+                    const currentPath = window.location.pathname;
+                    const isInRoot = currentPath === '/' || currentPath.endsWith('/index.html') || currentPath.includes('/index.html');
+                    
+                    let targetUrl;
+                    if (type === 'global') {
+                        targetUrl = isInRoot ? 'view/global-invoice.html' : 'global-invoice.html';
+                    } else {
+                        targetUrl = isInRoot ? 'view/store-invoice.html' : 'store-invoice.html';
+                    }
+                    
+                    window.location.href = targetUrl;
+                };
+            }
+
+            // Close submenu when clicking outside
+            document.addEventListener('click', function(e) {
+                const invoiceSubmenu = document.getElementById('invoiceSubmenu');
+                const orderSubmenu = document.getElementById('orderSubmenu');
+                const productSubmenu = document.getElementById('productSubmenu');
+                const hasSubmenu = e.target.closest('.has-submenu');
+                
+                if (invoiceSubmenu && !hasSubmenu) {
+                    invoiceSubmenu.classList.remove('show');
+                }
+                
+                if (orderSubmenu && !hasSubmenu) {
+                    orderSubmenu.classList.remove('show');
+                }
+                
+                if (productSubmenu && !hasSubmenu) {
+                    productSubmenu.classList.remove('show');
+                }
+            });
+
+            console.log('Navbar functionality initialized');
+        }
+    </script>
+</body>
+</html>
