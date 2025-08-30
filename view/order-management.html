@@ -37,7 +37,6 @@
             border-radius: 10px;
             color: rgb(0, 0, 0);
             font-size: 14px;
-            font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
             backdrop-filter: blur(10px);
@@ -466,12 +465,99 @@
                 <!-- Retail Orders Section -->
                 <div id="retailOrdersSection" class="order-section hidden">
                     <div class="card">
+                        <!-- Search and Filter Card for Retail Orders -->
+                        
+                        <!-- Date Range Filter Section -->
+                        <div class="date-filter-section">
+                            <div class="date-inputs">
+                                <div class="date-group">
+                                    <label>Từ ngày:</label>
+                                    <input type="date" id="retailFromDate" class="date-input">
+                                </div>
+                                <div class="date-group">
+                                    <label>Đến ngày:</label>
+                                    <input type="date" id="retailToDate" class="date-input">
+                                </div>
+                            </div>
+                            <div class="filter-buttons">
+                                <button type="button" class="btn btn-primary" onclick="applyRetailDateFilter()">
+                                    <i class="fas fa-search"></i> Lọc
+                                </button>
+                                <button type="button" class="btn btn-warning" onclick="clearAllRetailFilters()">
+                                    <i class="fas fa-times"></i> Xóa Tất Cả
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Quick Filter Buttons -->
+                        <div class="quick-filters">
+                            <h4>Lọc nhanh:</h4>
+                            <div class="quick-filter-buttons">
+                                <button type="button" class="quick-btn" onclick="filterRetailByPeriod('today')">
+                                    <i class="fas fa-calendar-day"></i> Hôm Nay
+                                </button>
+                                <button type="button" class="quick-btn" onclick="filterRetailByPeriod('week')">
+                                    <i class="fas fa-calendar-week"></i> Tuần Này
+                                </button>
+                                <button type="button" class="quick-btn" onclick="filterRetailByPeriod('month')">
+                                    <i class="fas fa-calendar-alt"></i> Tháng Này
+                                </button>
+                            </div>
+                        </div>
+                        
                         <div class="card-header">
                             <h2><i class="fas fa-store"></i> Danh Sách Đơn Hàng Lẻ</h2>
                             <div class="card-actions">
                                 <button type="button" class="btn btn-success" onclick="exportRetailOrders()">
                                     <i class="fas fa-download"></i> Xuất Excel
                                 </button>
+                                <div class="search-filters-grid">
+                                    <!-- Search Input -->
+                                    <div class="search-group">
+                                       
+                                        <input type="text" id="retailSearchInput" placeholder="Nhập mã đơn hàng, tên khách hàng, sản phẩm..." 
+                                               oninput="handleRetailSearchInput()" onkeyup="handleRetailSearchInput()" class="search-input">
+                                    </div>
+                                    
+                                    <!-- Customer Filter -->
+                                    <div class="filter-group">
+                                       
+                                        <select id="retailCustomerFilter" onchange="handleRetailSearchInput()" class="filter-select">
+                                            <option value="">Tất cả khách hàng</option>
+                                            <!-- Customer options will be populated dynamically -->
+                                        </select>
+                                    </div>
+                                    
+                                    <!-- Store Filter -->
+                                    <div class="filter-group">
+                                       
+                                        <select id="retailStoreFilter" onchange="handleRetailSearchInput()" class="filter-select">
+                                            <option value="">Tất cả cửa hàng</option>
+                                            <!-- Store options will be populated dynamically -->
+                                        </select>
+                                    </div>
+                                    
+                                    <!-- Price Range Filter -->
+                                    <div class="filter-group">
+                                       
+                                        <select id="retailPriceRangeFilter" onchange="handleRetailSearchInput()" class="filter-select">
+                                            <option value="">Tất cả</option>
+                                            <option value="0-100000">Dưới 100k</option>
+                                            <option value="100000-500000">100k - 500k</option>
+                                            <option value="500000-1000000">500k - 1tr</option>
+                                            <option value="1000000-5000000">1tr - 5tr</option>
+                                            <option value="5000000-999999999">Trên 5tr</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <!-- Clear Filters Button -->
+                                    <div class="filter-group">
+                                        <button type="button" class="btn btn-outline-secondary" onclick="clearRetailSearchFilters()">
+                                            <i class="fas fa-times"></i> Xóa Bộ Lọc
+                                        </button>
+                                    </div>
+                                </div>
+                            
                             </div>
                         </div>
                         <div class="card-body">
@@ -482,7 +568,12 @@
                                             <th>STT</th>
                                             <th>Mã Đơn Hàng</th>
                                             <th>Khách Hàng</th>
-                                            <th>Sản Phẩm</th>
+                                            <th>Tên Sản Phẩm</th>
+                                            <th>Mã SKU</th>
+                                            <th>Số Lượng</th>
+                                            <th>Giá</th>
+                                            <th>Đơn Vị</th>
+                                            <th>Cửa Hàng</th>
                                             <th>Tổng Tiền</th>
                                             <th>Ngày Tạo</th>
                                             <th>Trạng Thái</th>
@@ -491,7 +582,7 @@
                                     </thead>
                                     <tbody id="retailOrdersTableBody">
                                         <tr>
-                                            <td colspan="8" class="text-center">
+                                            <td colspan="12" class="text-center">
                                                 <div class="empty-state">
                                                     <i class="fas fa-store"></i>
                                                     <p>Chưa có đơn hàng lẻ nào</p>
@@ -508,12 +599,92 @@
                 <!-- Wholesale Orders Section -->
                 <div id="wholesaleOrdersSection" class="order-section hidden">
                     <div class="card">
+                        <!-- Date Filter Section -->
+                        <div class="date-filter-section">
+                            <div class="date-inputs">
+                                <div class="date-group">
+                                    <label>Từ ngày:</label>
+                                    <input type="date" id="wholesaleFromDate" class="date-input">
+                                </div>
+                                <div class="date-group">
+                                    <label>Đến ngày:</label>
+                                    <input type="date" id="wholesaleToDate" class="date-input">
+                                </div>
+                            </div>
+                            <div class="filter-buttons">
+                                <button type="button" class="btn btn-primary" onclick="applyWholesaleDateFilter()">
+                                    <i class="fas fa-search"></i> Lọc
+                                </button>
+                                <button type="button" class="btn btn-warning" onclick="clearAllWholesaleFilters()">
+                                    <i class="fas fa-times"></i> Xóa Tất Cả
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Quick Filter Buttons -->
+                        <div class="quick-filters">
+                            <h4>Lọc nhanh:</h4>
+                            <div class="quick-filter-buttons">
+                                <button type="button" class="quick-btn" onclick="filterWholesaleByPeriod('today')">
+                                    <i class="fas fa-calendar-day"></i> Hôm Nay
+                                </button>
+                                <button type="button" class="quick-btn" onclick="filterWholesaleByPeriod('week')">
+                                    <i class="fas fa-calendar-week"></i> Tuần Này
+                                </button>
+                                <button type="button" class="quick-btn" onclick="filterWholesaleByPeriod('month')">
+                                    <i class="fas fa-calendar-alt"></i> Tháng Này
+                                </button>
+                            </div>
+                        </div>
+                        
                         <div class="card-header">
                             <h2><i class="fas fa-warehouse"></i> Danh Sách Đơn Hàng Sỉ</h2>
                             <div class="card-actions">
                                 <button type="button" class="btn btn-success" onclick="exportWholesaleOrders()">
                                     <i class="fas fa-download"></i> Xuất Excel
                                 </button>
+                                <div class="search-filters-grid">
+                                    <!-- Search Input -->
+                                    <div class="search-group">
+                                        <input type="text" id="wholesaleSearchInput" placeholder="Nhập mã đơn hàng, tên khách hàng, sản phẩm..." oninput="handleWholesaleSearchInput()" onkeyup="handleWholesaleSearchInput()" class="search-input">
+                                    </div>
+                                    
+                                    <!-- Customer Filter -->
+                                    <div class="filter-group">
+                                        <select id="wholesaleCustomerFilter" onchange="handleWholesaleSearchInput()" class="filter-select">
+                                            <option value="">Tất cả khách hàng</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <!-- Store Filter -->
+                                    <div class="filter-group">
+                                        <select id="wholesaleStoreFilter" onchange="handleWholesaleSearchInput()" class="filter-select">
+                                            <option value="">Tất cả cửa hàng</option>
+                                            <option value="cường dung">cường dung</option>
+                                            <option value="Góc Chesse nhỏ">Góc Chesse nhỏ</option>
+                                            <option value="cửa hàng test">cửa hàng test</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <!-- Price Range Filter -->
+                                    <div class="filter-group">
+                                        <select id="wholesalePriceRangeFilter" onchange="handleWholesaleSearchInput()" class="filter-select">
+                                            <option value="">Tất cả</option>
+                                            <option value="0-100000">Dưới 100k</option>
+                                            <option value="100000-500000">100k - 500k</option>
+                                            <option value="500000-1000000">500k - 1tr</option>
+                                            <option value="1000000-5000000">1tr - 5tr</option>
+                                            <option value="5000000-999999999">Trên 5tr</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <!-- Clear Filters Button -->
+                                    <div class="filter-group">
+                                        <button type="button" class="btn btn-outline-secondary" onclick="clearWholesaleSearchFilters()">
+                                            <i class="fas fa-times"></i> Xóa Bộ Lọc
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div class="card-body">
@@ -618,7 +789,7 @@
     <script src="../main/order-management.js"></script>
     
     <script>
-        // Global search handler function
+        // Global search handler function for TMĐT orders
         function handleSearchInput() {
             console.log('Search input triggered');
             
@@ -804,7 +975,8 @@
         }
         
         // Load retail orders with optional date filtering
-        function loadRetailOrders(fromDate = null, toDate = null) {
+        function loadRetailOrdersWithFilter(fromDate = null, toDate = null) {
+            console.log('🔄 Loading retail orders with date filter from order-management.html...');
             const tableBody = document.getElementById('retailOrdersTableBody');
             if (!tableBody) return;
             
@@ -821,12 +993,42 @@
                 return;
             }
             
-            window.database.ref(`stores/${storeId}/orders`).once('value')
-                .then(snapshot => {
-                    const orders = snapshot.val() || {};
-                    let retailOrders = Object.keys(orders)
-                        .map(key => ({ id: key, ...orders[key] }))
-                        .filter(order => order.type === 'retail' || (!order.type && !order.platform));
+            // Load from both locations: stores/{storeId}/orders and global orders
+            const storeOrdersPromise = window.database.ref(`stores/${storeId}/orders`).once('value');
+            const globalOrdersPromise = window.database.ref('orders').once('value');
+            
+            Promise.all([storeOrdersPromise, globalOrdersPromise])
+                .then(([storeSnapshot, globalSnapshot]) => {
+                    console.log('📦 Store orders snapshot:', storeSnapshot.val());
+                    console.log('📦 Global orders snapshot:', globalSnapshot.val());
+                    
+                    const storeOrders = storeSnapshot.val() || {};
+                    const globalOrders = globalSnapshot.val() || {};
+                    
+                    // Combine orders from both locations
+                    const allOrders = { ...storeOrders };
+                    
+                    // Add global orders that match our criteria
+                    Object.entries(globalOrders).forEach(([orderId, order]) => {
+                        if ((order.source === 'retail' || order.orderType === 'retail' || order.type === 'retail') && 
+                            order.storeId === storeId) {
+                            allOrders[orderId] = order;
+                        }
+                    });
+                    
+                    console.log('📦 Combined orders:', allOrders);
+                    
+                    let retailOrders = Object.keys(allOrders)
+                        .map(key => ({ id: key, ...allOrders[key] }))
+                        .filter(order => {
+                            // Filter for retail orders
+                            return order.type === 'retail' || 
+                                   order.source === 'retail' || 
+                                   order.orderType === 'retail' ||
+                                   (!order.type && !order.platform);
+                        });
+                    
+                    console.log('🏪 Filtered retail orders:', retailOrders);
                     
                     // Apply date filter if provided
                     if (fromDate && toDate) {
@@ -841,7 +1043,12 @@
                     
                     retailOrders.sort((a, b) => new Date(b.createdAt || b.orderDate) - new Date(a.createdAt || a.orderDate));
                     
+                    console.log('📊 Final retail orders to display:', retailOrders.length);
                     displayRetailOrders(retailOrders);
+                })
+                .catch(error => {
+                    console.error('❌ Error loading retail orders:', error);
+                    displayRetailOrders([]);
                 });
         }
         
@@ -950,30 +1157,98 @@
         function displayRetailOrders(orders) {
             const tableBody = document.getElementById('retailOrdersTableBody');
             if (orders.length === 0) {
-                tableBody.innerHTML = `<tr><td colspan="8" class="text-center"><div class="empty-state"><i class="fas fa-store"></i><p>Chưa có đơn hàng lẻ nào</p></div></td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="13" class="text-center"><div class="empty-state"><i class="fas fa-store"></i><p>Chưa có đơn hàng lẻ nào</p></div></td></tr>`;
                 return;
             }
             
-            const rows = orders.map((order, index) => `
-                <tr>
-                    <td>${index + 1}</td>
-                    <td><strong>${order.id}</strong></td>
-                    <td>${order.customerName || 'Khách lẻ'}</td>
-                    <td>${order.items ? order.items.length : 0} sản phẩm</td>
-                    <td><strong>${formatCurrency(order.total || 0)} VNĐ</strong></td>
-                    <td>${formatDate(new Date(order.createdAt || order.orderDate))}</td>
-                    <td><span class="status-badge">${getStatusText(order.paymentStatus || 'pending')}</span></td>
-                    <td>
-                        <button class="btn-action btn-view" onclick="viewOrderDetail('${order.id}')" title="Xem chi tiết">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                        <button class="btn-action btn-delete" onclick="deleteRetailOrder('${order.id}')" title="Xóa đơn hàng">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
-                </tr>
-            `).join('');
+            const rows = orders.map((order, index) => {
+                // Get first item for product details
+                const firstItem = order.items && order.items.length > 0 ? order.items[0] : {};
+                const productName = firstItem.name || order.productName || 'Sản phẩm';
+                const sku = firstItem.sku || order.sku || 'N/A';
+                const quantity = order.quantity || firstItem.quantity || 1;
+                const price = firstItem.price || order.price || order.unitPrice || 0;
+                const unit = order.unit || firstItem.unit || 'Cái';
+                
+                // Get store name - load from Firebase if storeId exists
+                let storeName = order.storeName || order.store || 'Cửa hàng chính';
+                
+                // If we have storeId, try to get actual store name
+                if (order.storeId && window.storesData && window.storesData[order.storeId]) {
+                    storeName = window.storesData[order.storeId].name || storeName;
+                }
+                
+                // Format date
+                const orderDate = order.createdAt || order.orderDate || new Date().toISOString();
+                const formattedDate = formatDate(new Date(orderDate));
+                
+                // Get status
+                const status = order.status || order.paymentStatus || 'pending';
+                const statusInfo = getStatusInfo(status);
+                
+                return `
+                    <tr>
+                        <td class="text-center">${index + 1}</td>
+                        <td class="order-id">${order.id}</td>
+                        <td class="customer-name">${order.customerName || 'Khách lẻ'}</td>
+                        <td class="product-name">${productName}</td>
+                        <td class="product-sku">${sku}</td>
+                        <td class="quantity text-center">${quantity}</td>
+                        <td class="price text-right">
+                            <span class="amount">${formatCurrency(price)}</span>
+                        </td>
+                        <td class="unit text-center">${unit}</td>
+                        <td class="store-name">${storeName}</td>
+                        <td class="total-amount text-right">
+                            <span class="amount">${formatCurrency(order.total || 0)}</span>
+                        </td>
+                        <td class="created-date text-center">${formattedDate}</td>
+                        <td class="status text-center">
+                            <span class="status-badge ${statusInfo.class}">
+                                <i class="${statusInfo.icon}"></i>
+                                ${statusInfo.text}
+                            </span>
+                        </td>
+                        <td class="actions text-center">
+                            <div class="action-buttons">
+                                <button class="btn btn-sm btn-primary" onclick="viewRetailOrder('${order.id}')" title="Xem chi tiết">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteRetailOrder('${order.id}')" title="Xóa">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
             tableBody.innerHTML = rows;
+        }
+        
+        // Helper function to get status information
+        function getStatusInfo(status) {
+            const statusMap = {
+                'pending': { text: 'Đang xử lý', class: 'status-pending', icon: 'fas fa-clock' },
+                'processing': { text: 'Đang giao', class: 'status-processing', icon: 'fas fa-truck' },
+                'completed': { text: 'Hoàn thành', class: 'status-completed', icon: 'fas fa-check-circle' },
+                'cancelled': { text: 'Đã hủy', class: 'status-cancelled', icon: 'fas fa-times-circle' }
+            };
+            return statusMap[status] || statusMap['pending'];
+        }
+        
+        // Helper function to format currency
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('vi-VN').format(amount) + ' VND';
+        }
+        
+        // Helper function to format date
+        function formatDate(date) {
+            return date.toLocaleDateString('vi-VN', {
+                day: '2-digit',
+                month: '2-digit', 
+                year: 'numeric'
+            });
         }
         
         function displayWholesaleOrdersForManagement(orders) {
@@ -1338,6 +1613,594 @@
                 }
             }, 500);
         });
+        
+        // Switch order view function
+        function switchOrderView(viewType) {
+            console.log('Switching to view:', viewType);
+            
+            // Hide all sections
+            document.querySelectorAll('.order-section').forEach(section => {
+                section.classList.add('hidden');
+            });
+            
+            // Remove active class from all buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected section and activate button
+            if (viewType === 'ecommerce') {
+                document.getElementById('ecommerceOrdersSection').classList.remove('hidden');
+                document.getElementById('ecommerceBtn').classList.add('active');
+                loadEcommerceOrders();
+            } else if (viewType === 'retail') {
+                document.getElementById('retailOrdersSection').classList.remove('hidden');
+                document.getElementById('retailBtn').classList.add('active');
+                loadRetailOrders(); // Load actual retail orders from Firebase
+            } else if (viewType === 'wholesale') {
+                document.getElementById('wholesaleOrdersSection').classList.remove('hidden');
+                document.getElementById('wholesaleBtn').classList.add('active');
+                // Load wholesale orders when implemented
+            }
+        }
+        
+        // Global search handler function for Retail orders
+        function handleRetailSearchInput() {
+            console.log('Retail search input triggered');
+            
+            // Get all filter values
+            const searchTerm = document.getElementById('retailSearchInput')?.value.toLowerCase().trim() || '';
+            const customerFilter = document.getElementById('retailCustomerFilter')?.value || '';
+            const storeFilter = document.getElementById('retailStoreFilter')?.value || '';
+            const priceRangeFilter = document.getElementById('retailPriceRangeFilter')?.value || '';
+            
+            console.log('Retail search term:', searchTerm);
+            console.log('Retail customer filter:', customerFilter);
+            console.log('Retail store filter:', storeFilter);
+            console.log('Retail price range filter:', priceRangeFilter);
+            
+            // Get current orders from the table and filter them
+            const tableBody = document.getElementById('retailOrdersTableBody');
+            const rows = tableBody.querySelectorAll('tr');
+            let visibleCount = 0;
+            
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length > 10) {
+                    const orderIdCell = cells[1]; // Mã Đơn Hàng column
+                    const customerCell = cells[2]; // Khách Hàng column
+                    const productNameCell = cells[3]; // Tên Sản Phẩm column
+                    const skuCell = cells[4]; // Mã SKU column
+                    const storeCell = cells[7]; // Cửa Hàng column
+                    const totalCell = cells[8]; // Tổng Tiền column
+                    
+                    let matches = true;
+                    
+                    // Text search filter
+                    if (searchTerm) {
+                        const searchableText = [
+                            orderIdCell?.textContent || '',
+                            customerCell?.textContent || '',
+                            productNameCell?.textContent || '',
+                            skuCell?.textContent || ''
+                        ].join(' ').toLowerCase();
+                        
+                        matches = matches && searchableText.includes(searchTerm);
+                    }
+                    
+                    // Customer filter
+                    if (customerFilter) {
+                        const customerText = customerCell?.textContent || '';
+                        matches = matches && customerText.includes(customerFilter);
+                    }
+                    
+                    // Store filter
+                    if (storeFilter) {
+                        const storeText = storeCell?.textContent || '';
+                        matches = matches && storeText.includes(storeFilter);
+                    }
+                    
+                    // Price range filter
+                    if (priceRangeFilter) {
+                        const totalText = totalCell?.textContent?.replace(/[^\d]/g, '') || '0';
+                        const total = parseInt(totalText);
+                        const [minPrice, maxPrice] = priceRangeFilter.split('-').map(Number);
+                        matches = matches && total >= minPrice && total <= maxPrice;
+                    }
+                    
+                    if (matches) {
+                        row.style.display = '';
+                        visibleCount++;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                }
+            });
+            
+            // Update search results info
+            updateRetailSearchResultsInfo(visibleCount);
+        }
+        
+        // Update retail search results info
+        function updateRetailSearchResultsInfo(matchCount) {
+            const searchResultsCount = document.getElementById('retailSearchResultsCount');
+            if (!searchResultsCount) return;
+            
+            const searchTerm = document.getElementById('retailSearchInput')?.value.toLowerCase().trim() || '';
+            const customerFilter = document.getElementById('retailCustomerFilter')?.value || '';
+            const storeFilter = document.getElementById('retailStoreFilter')?.value || '';
+            const priceRangeFilter = document.getElementById('retailPriceRangeFilter')?.value || '';
+            
+            const hasFilters = searchTerm || customerFilter || storeFilter || priceRangeFilter;
+            
+            if (hasFilters) {
+                searchResultsCount.innerHTML = `
+                    <i class="fas fa-filter"></i> 
+                    Tìm thấy <strong>${matchCount}</strong> đơn hàng lẻ
+                `;
+                searchResultsCount.className = 'search-results-info filtered';
+            } else {
+                searchResultsCount.innerHTML = `Hiển thị tất cả đơn hàng lẻ`;
+                searchResultsCount.className = 'search-results-info';
+            }
+        }
+        
+        // Clear retail search filters
+        function clearRetailSearchFilters() {
+            // Clear all filter inputs
+            const searchInput = document.getElementById('retailSearchInput');
+            const customerFilter = document.getElementById('retailCustomerFilter');
+            const storeFilter = document.getElementById('retailStoreFilter');
+            const priceRangeFilter = document.getElementById('retailPriceRangeFilter');
+            
+            if (searchInput) searchInput.value = '';
+            if (customerFilter) customerFilter.value = '';
+            if (storeFilter) storeFilter.value = '';
+            if (priceRangeFilter) priceRangeFilter.value = '';
+            
+            // Clear quick filter buttons
+            document.querySelectorAll('#retailOrdersSection .quick-btn').forEach(btn => btn.classList.remove('active'));
+            
+            // Show all retail orders
+            const tableBody = document.getElementById('retailOrdersTableBody');
+            const rows = tableBody.querySelectorAll('tr');
+            let totalCount = 0;
+            
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length > 10) {
+                    row.style.display = '';
+                    totalCount++;
+                }
+            });
+            
+            // Update display
+            updateRetailSearchResultsInfo(totalCount);
+            
+            console.log('Retail filters cleared');
+        }
+        
+        // Filter retail orders by period
+        function filterRetailByPeriod(period) {
+            console.log('Filtering retail orders by period:', period);
+            
+            // Clear other quick filter buttons and activate current one
+            document.querySelectorAll('#retailOrdersSection .quick-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            const today = new Date();
+            let startDate, endDate;
+            
+            switch(period) {
+                case 'today':
+                    startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                    endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                    break;
+                case 'week':
+                    const startOfWeek = new Date(today);
+                    startOfWeek.setDate(today.getDate() - today.getDay());
+                    startDate = new Date(startOfWeek.getFullYear(), startOfWeek.getMonth(), startOfWeek.getDate());
+                    endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                    break;
+                case 'month':
+                    startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+                    // Get last day of current month
+                    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+                    endDate = new Date(today.getFullYear(), today.getMonth(), lastDay);
+                    break;
+            }
+            
+            // Auto-populate date inputs
+            const fromDateInput = document.getElementById('retailFromDate');
+            const toDateInput = document.getElementById('retailToDate');
+            
+            if (fromDateInput) {
+                fromDateInput.value = startDate.toISOString().split('T')[0];
+            }
+            if (toDateInput) {
+                toDateInput.value = endDate.toISOString().split('T')[0];
+            }
+            
+            // Apply the date filter
+            applyRetailDateFilter();
+        }
+        
+        // Apply retail date range filter
+        function applyRetailDateFilter() {
+            console.log('Applying retail date range filter');
+            
+            const fromDateInput = document.getElementById('retailFromDate');
+            const toDateInput = document.getElementById('retailToDate');
+            
+            if (!fromDateInput || !toDateInput) {
+                console.error('Date input elements not found');
+                return;
+            }
+            
+            const fromDate = fromDateInput.value;
+            const toDate = toDateInput.value;
+            
+            if (!fromDate && !toDate) {
+                alert('Vui lòng chọn ít nhất một ngày để lọc');
+                return;
+            }
+            
+            // Clear quick filter buttons
+            document.querySelectorAll('#retailOrdersSection .quick-btn').forEach(btn => btn.classList.remove('active'));
+            
+            // Reload retail orders with date filter
+            loadRetailOrdersWithDateFilter(fromDate, toDate);
+        }
+
+        // Apply wholesale date range filter
+        function applyWholesaleDateFilter() {
+            console.log('Applying wholesale date range filter');
+            
+            const fromDateInput = document.getElementById('wholesaleFromDate');
+            const toDateInput = document.getElementById('wholesaleToDate');
+            
+            if (!fromDateInput || !toDateInput) {
+                console.error('Wholesale date input elements not found');
+                return;
+            }
+            
+            const fromDate = fromDateInput.value;
+            const toDate = toDateInput.value;
+            
+            if (!fromDate && !toDate) {
+                alert('Vui lòng chọn ít nhất một ngày để lọc');
+                return;
+            }
+            
+            // Clear quick filter buttons
+            document.querySelectorAll('#wholesaleOrdersSection .quick-btn').forEach(btn => btn.classList.remove('active'));
+            
+            // Reload wholesale orders with date filter
+            loadWholesaleOrdersWithDateFilter(fromDate, toDate);
+        }
+        
+        // Load retail orders with date filtering
+        async function loadRetailOrdersWithDateFilter(fromDate = null, toDate = null) {
+            console.log('🔄 Loading retail orders with date filter:', fromDate, toDate);
+            
+            try {
+                const storeId = localStorage.getItem('selectedStoreId');
+                console.log('🏪 Current store ID:', storeId);
+                
+                // Load stores data first to get store names
+                if (!window.storesData) {
+                    const storesSnapshot = await firebase.database().ref('stores').once('value');
+                    window.storesData = storesSnapshot.val() || {};
+                    console.log('🏪 Loaded stores data:', window.storesData);
+                }
+                
+                // Check all possible Firebase paths
+                const promises = [
+                    firebase.database().ref('orders').once('value'),
+                ];
+                
+                // Add store-specific path if store is selected
+                if (storeId) {
+                    promises.push(firebase.database().ref(`stores/${storeId}/orders`).once('value'));
+                }
+                
+                const snapshots = await Promise.all(promises);
+                const globalOrders = snapshots[0].val() || {};
+                const storeOrders = snapshots[1] ? snapshots[1].val() || {} : {};
+                
+                // Combine all orders
+                const allOrders = { ...globalOrders, ...storeOrders };
+                
+                // Filter for ONLY retail orders from selected store
+                const retailOrders = [];
+                Object.entries(allOrders).forEach(([orderId, order]) => {
+                    if (order && typeof order === 'object') {
+                        console.log('🔍 Checking order:', orderId, order);
+                        
+                        // Check if it's a retail order (has retail markers and NO platform/ecommerce markers)
+                        const isRetail = (order.type === 'retail' || order.source === 'retail' || order.orderType === 'retail');
+                        const isEcommerce = (order.platform || order.platformName);
+                        const hasCustomerName = order.customerName && order.customerName !== '';
+                        
+                        // Check if order belongs to selected store
+                        const belongsToStore = !storeId || order.storeId === storeId || 
+                                             (storeOrders[orderId] && storeId); // Order is in store-specific path
+                        
+                        console.log(`Order ${orderId}: isRetail=${isRetail}, isEcommerce=${isEcommerce}, hasCustomerName=${hasCustomerName}, belongsToStore=${belongsToStore}, storeId=${storeId}, order.storeId=${order.storeId}`);
+                        
+                        // Include retail orders OR orders with customer names (likely retail) that are NOT ecommerce AND belong to store
+                        if ((isRetail || hasCustomerName) && !isEcommerce && belongsToStore) {
+                            // Apply date filter if provided
+                            let includeOrder = true;
+                            
+                            if (fromDate || toDate) {
+                                const orderDate = new Date(order.createdAt || order.orderDate || order.date);
+                                
+                                if (fromDate) {
+                                    const fromDateTime = new Date(fromDate).getTime();
+                                    includeOrder = includeOrder && orderDate.getTime() >= fromDateTime;
+                                }
+                                
+                                if (toDate) {
+                                    const toDateTime = new Date(toDate + 'T23:59:59').getTime();
+                                    includeOrder = includeOrder && orderDate.getTime() <= toDateTime;
+                                }
+                            }
+                            
+                            if (includeOrder) {
+                                retailOrders.push({
+                                    id: orderId,
+                                    ...order
+                                });
+                            }
+                        }
+                    }
+                });
+                
+                console.log(`📦 Found ${retailOrders.length} retail orders after filtering`);
+                
+                // Sort by date (newest first)
+                retailOrders.sort((a, b) => {
+                    const dateA = new Date(a.createdAt || a.orderDate || a.date);
+                    const dateB = new Date(b.createdAt || b.orderDate || b.date);
+                    return dateB - dateA;
+                });
+                
+                // Display the filtered orders
+                displayRetailOrders(retailOrders);
+                
+            } catch (error) {
+                console.error('❌ Error loading retail orders with filter:', error);
+                const tableBody = document.getElementById('retailOrdersTableBody');
+                if (tableBody) {
+                    tableBody.innerHTML = `
+                        <tr><td colspan="13" class="text-center">
+                            <div class="empty-state">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <p>Lỗi tải đơn hàng</p>
+                            </div>
+                        </td></tr>
+                    `;
+                }
+            }
+        }
+        
+        // Clear all retail filters
+        function clearAllRetailFilters() {
+            console.log('Clearing all retail filters');
+            
+            // Clear date inputs
+            const fromDateInput = document.getElementById('retailFromDate');
+            const toDateInput = document.getElementById('retailToDate');
+            if (fromDateInput) fromDateInput.value = '';
+            if (toDateInput) toDateInput.value = '';
+            
+            // Clear other filters
+            clearRetailSearchFilters();
+        }
+
+        // Load retail orders from Firebase - check all possible locations
+        async function loadRetailOrders() {
+            console.log('🔄 Loading retail orders from all Firebase locations...');
+            
+            try {
+                const storeId = localStorage.getItem('selectedStoreId');
+                console.log('🏪 Current store ID:', storeId);
+                
+                // Load stores data first to get store names
+                if (!window.storesData) {
+                    const storesSnapshot = await firebase.database().ref('stores').once('value');
+                    window.storesData = storesSnapshot.val() || {};
+                    console.log('🏪 Loaded stores data:', window.storesData);
+                }
+                
+                // Check all possible Firebase paths
+                const promises = [
+                    firebase.database().ref('orders').once('value'),
+                ];
+                
+                // Add store-specific path if store is selected
+                if (storeId) {
+                    promises.push(firebase.database().ref(`stores/${storeId}/orders`).once('value'));
+                }
+                
+                const snapshots = await Promise.all(promises);
+                const globalOrders = snapshots[0].val() || {};
+                const storeOrders = snapshots[1] ? snapshots[1].val() || {} : {};
+                
+                console.log('📦 Global orders:', globalOrders);
+                console.log('📦 Store orders:', storeOrders);
+                
+                // Combine all orders
+                const allOrders = { ...globalOrders, ...storeOrders };
+                console.log('📦 Combined orders:', allOrders);
+                
+                // Filter for ONLY retail orders from selected store
+                const retailOrders = [];
+                Object.entries(allOrders).forEach(([orderId, order]) => {
+                    // Only include orders that are specifically retail
+                    if (order && typeof order === 'object') {
+                        console.log('🔍 Main loadRetailOrders - Checking order:', orderId, order);
+                        
+                        // Check if it's a retail order (has retail markers and NO platform/ecommerce/wholesale markers)
+                        const isRetail = (order.type === 'retail' || order.source === 'retail' || order.orderType === 'retail');
+                        const isEcommerce = (order.platform || order.platformName);
+                        const isWholesale = (order.type === 'wholesale' || order.source === 'wholesale' || order.orderType === 'wholesale');
+                        const hasCustomerName = order.customerName && order.customerName !== '';
+                        
+                        // Check if order belongs to selected store
+                        const belongsToStore = !storeId || order.storeId === storeId || 
+                                             (storeOrders[orderId] && storeId); // Order is in store-specific path
+                        
+                        console.log(`Order ${orderId}: isRetail=${isRetail}, isEcommerce=${isEcommerce}, isWholesale=${isWholesale}, hasCustomerName=${hasCustomerName}, belongsToStore=${belongsToStore}, storeId=${storeId}, order.storeId=${order.storeId}`);
+                        
+                        // Include retail orders OR orders with customer names (likely retail) that are NOT ecommerce AND NOT wholesale AND belong to store
+                        if ((isRetail || hasCustomerName) && !isEcommerce && !isWholesale && belongsToStore) {
+                            retailOrders.push({
+                                id: orderId,
+                                ...order
+                            });
+                        }
+                    }
+                });
+                
+                console.log(`📦 Found ${retailOrders.length} retail orders for store ${storeId}`);
+                
+                // Sort by date (newest first)
+                retailOrders.sort((a, b) => {
+                    const dateA = new Date(a.createdAt || a.orderDate || a.date);
+                    const dateB = new Date(b.createdAt || b.orderDate || b.date);
+                    return dateB - dateA;
+                });
+                
+                // Display the orders
+                displayRetailOrders(retailOrders);
+                
+            } catch (error) {
+                console.error('❌ Error loading retail orders:', error);
+                const tableBody = document.getElementById('retailOrdersTableBody');
+                if (tableBody) {
+                    tableBody.innerHTML = `
+                        <tr><td colspan="13" class="text-center">
+                            <div class="empty-state">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <p>Lỗi tải đơn hàng</p>
+                            </div>
+                        </td></tr>
+                    `;
+                }
+            }
+        }
+        
+        // View retail order details
+        function viewRetailOrder(orderId) {
+            console.log('Viewing retail order:', orderId);
+            showNotification('Chức năng xem chi tiết đơn hàng lẻ đang được phát triển', 'info');
+        }
+
+        // Delete retail order
+        async function deleteRetailOrder(orderId) {
+            if (!confirm('Bạn có chắc chắn muốn xóa đơn hàng này?')) {
+                return;
+            }
+            
+            try {
+                console.log('🗑️ Deleting retail order:', orderId);
+                
+                const storeId = localStorage.getItem('selectedStoreId');
+                console.log('🏪 Store ID for deletion:', storeId);
+                
+                // Delete from all possible Firebase locations
+                const deletePromises = [
+                    firebase.database().ref('orders').child(orderId).remove()
+                ];
+                
+                // Also delete from store-specific path if store is selected
+                if (storeId) {
+                    deletePromises.push(
+                        firebase.database().ref(`stores/${storeId}/orders`).child(orderId).remove()
+                    );
+                }
+                
+                await Promise.all(deletePromises);
+                
+                console.log('✅ Order deleted successfully from all Firebase locations');
+                showNotification('Đã xóa đơn hàng thành công!', 'success');
+                
+                // Reload retail orders to refresh the display
+                setTimeout(() => {
+                    loadRetailOrders();
+                }, 500); // Small delay to ensure Firebase sync
+                
+            } catch (error) {
+                console.error('❌ Error deleting retail order:', error);
+                showNotification('Lỗi khi xóa đơn hàng: ' + error.message, 'error');
+            }
+        }
+        
+        // Show notification function
+        function showNotification(message, type = 'info') {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.innerHTML = `
+                <span>${message}</span>
+                <button onclick="this.parentElement.remove()" style="background: none; border: none; color: inherit; font-size: 18px; cursor: pointer; margin-left: 10px;">&times;</button>
+            `;
+            
+            // Add styles
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 9999;
+                min-width: 300px;
+                padding: 16px 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                font-family: 'Segoe UI', sans-serif;
+                font-size: 14px;
+                font-weight: 500;
+                transform: translateX(100%);
+                transition: transform 0.3s ease;
+            `;
+            
+            // Set colors based on type
+            if (type === 'success') {
+                notification.style.backgroundColor = '#d4edda';
+                notification.style.color = '#155724';
+                notification.style.border = '1px solid #c3e6cb';
+            } else if (type === 'error') {
+                notification.style.backgroundColor = '#f8d7da';
+                notification.style.color = '#721c24';
+                notification.style.border = '1px solid #f5c6cb';
+            } else {
+                notification.style.backgroundColor = '#d1ecf1';
+                notification.style.color = '#0c5460';
+                notification.style.border = '1px solid #bee5eb';
+            }
+            
+            // Add to page
+            document.body.appendChild(notification);
+            
+            // Show notification
+            setTimeout(() => {
+                notification.style.transform = 'translateX(0)';
+            }, 100);
+            
+            // Auto remove after 3 seconds
+            setTimeout(() => {
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (notification.parentElement) {
+                        notification.remove();
+                    }
+                }, 300);
+            }, 3000);
+        }
     </script>
 </body>
 </html>
