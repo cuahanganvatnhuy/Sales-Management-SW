@@ -9,6 +9,17 @@ let currentEditOrderId = null;
 // Store selected order IDs globally
 let selectedOrderIds = [];
 
+// Search and filter state
+let searchFilters = {
+    searchTerm: '',
+    platform: '',
+    store: '',
+    priceRange: ''
+};
+
+// Debounce timer for search
+let searchDebounceTimer = null;
+
 // Status mapping
 const statusMap = {
     'pending': { text: 'Đang xử lý', class: 'status-pending', icon: 'fas fa-clock' },
@@ -54,11 +65,15 @@ function showNotification(message, type = 'info') {
 document.addEventListener('DOMContentLoaded', function() {
     loadData();
     setupEventListeners();
+    loadStoresForFilter();
+    loadCustomersForRetailFilter();
     
     // Listen for store context changes
     window.addEventListener('storeContextChanged', function() {
         console.log('Store context changed, reloading orders...');
         loadData();
+        loadStoresForFilter();
+        loadCustomersForRetailFilter();
     });
 });
 
@@ -625,6 +640,429 @@ function clearAllFilters() {
     filteredOrders = { ...ordersData };
     currentPage = 1;
     displayOrders();
+}
+
+// Load stores for filter dropdown
+async function loadStoresForFilter() {
+    try {
+        console.log('loadStoresForFilter called');
+        const storeFilter = document.getElementById('storeFilter');
+        const retailStoreFilter = document.getElementById('retailStoreFilter');
+        
+        if (!storeFilter && !retailStoreFilter) {
+            console.log('No store filter elements found');
+            return;
+        }
+        
+        console.log('Loading stores from Firebase...');
+        const snapshot = await firebase.database().ref('stores').once('value');
+        const stores = snapshot.val() || {};
+        
+        console.log('Raw stores data:', stores);
+        
+        // Update TMĐT store filter
+        if (storeFilter) {
+            storeFilter.innerHTML = '<option value="">Tất cả cửa hàng</option>';
+            Object.entries(stores).forEach(([storeId, store]) => {
+                const option = document.createElement('option');
+                option.value = store.name || `Cửa hàng ${storeId}`;
+                option.textContent = store.name || `Cửa hàng ${storeId}`;
+                storeFilter.appendChild(option);
+            });
+        }
+        
+        // Update Retail store filter
+        if (retailStoreFilter) {
+            retailStoreFilter.innerHTML = '<option value="">Tất cả cửa hàng</option>';
+            Object.entries(stores).forEach(([storeId, store]) => {
+                const option = document.createElement('option');
+                option.value = store.name || `Cửa hàng ${storeId}`;
+                option.textContent = store.name || `Cửa hàng ${storeId}`;
+                retailStoreFilter.appendChild(option);
+            });
+        }
+        
+        console.log('Stores loaded for filters:', Object.keys(stores).length);
+    } catch (error) {
+        console.error('Error loading stores for filter:', error);
+    }
+}
+
+// Load customers for retail filter dropdown
+async function loadCustomersForRetailFilter() {
+    try {
+        console.log('loadCustomersForRetailFilter called');
+        const customerFilter = document.getElementById('retailCustomerFilter');
+        
+        if (!customerFilter) {
+            console.log('retailCustomerFilter element not found');
+            return;
+        }
+        
+        console.log('Loading customers from Firebase...');
+        const snapshot = await firebase.database().ref('customers').once('value');
+        const customers = snapshot.val() || {};
+        
+        console.log('Raw customers data:', customers);
+        
+        // Clear existing options except "Tất cả khách hàng"
+        customerFilter.innerHTML = '<option value="">Tất cả khách hàng</option>';
+        
+        // Add customer options
+        Object.entries(customers).forEach(([customerId, customer]) => {
+            console.log('Adding customer:', customerId, customer);
+            const option = document.createElement('option');
+            option.value = customer.name || customer.customerName || `Khách hàng ${customerId}`;
+            option.textContent = customer.name || customer.customerName || `Khách hàng ${customerId}`;
+            customerFilter.appendChild(option);
+        });
+        
+        console.log('Customers loaded for filter:', Object.keys(customers).length);
+    } catch (error) {
+        console.error('Error loading customers for filter:', error);
+    }
+}
+
+// Display retail orders with comprehensive data
+function displayRetailOrders() {
+    console.log('🔄 displayRetailOrders called');
+    
+    const tbody = document.getElementById('retailOrdersTableBody');
+    if (!tbody) {
+        console.error('❌ retailOrdersTableBody element not found');
+        return;
+    }
+    
+    console.log('✅ Found retailOrdersTableBody element');
+    
+    // Enhanced sample data with more realistic retail orders
+    const sampleRetailOrders = [
+        {
+            id: 'retail_175654351028_3011kuzrh',
+            customerName: 'Hoàng Phúc',
+            productName: 'Áo thun cotton nam',
+            sku: 'AT001-XL-BLK',
+            quantity: '2',
+            unit: 'Cái',
+            storeName: 'Cửa hàng Quận 1',
+            total: 350000,
+            createdAt: '30/08/2025',
+            status: 'completed'
+        },
+        {
+            id: 'retail_175654440219_5o6qb0pj',
+            customerName: 'Phạm Hoàng Phúc',
+            productName: 'Quần jean nữ skinny',
+            sku: 'QJ002-M-BLU',
+            quantity: '1',
+            unit: 'Cái',
+            storeName: 'Cửa hàng Quận 3',
+            total: 450000,
+            createdAt: '30/08/2025',
+            status: 'processing'
+        },
+        {
+            id: 'retail_175654567890_abc123',
+            customerName: 'Nguyễn Thị Mai',
+            productName: 'Giày sneaker trắng',
+            sku: 'GS003-38-WHT',
+            quantity: '1',
+            unit: 'Đôi',
+            storeName: 'Cửa hàng Quận 7',
+            total: 890000,
+            createdAt: '29/08/2025',
+            status: 'completed'
+        },
+        {
+            id: 'retail_175654678901_def456',
+            customerName: 'Trần Văn Nam',
+            productName: 'Túi xách da thật',
+            sku: 'TX004-BRN-L',
+            quantity: '1',
+            unit: 'Cái',
+            storeName: 'Cửa hàng Quận 1',
+            total: 1200000,
+            createdAt: '29/08/2025',
+            status: 'pending'
+        },
+        {
+            id: 'retail_175654789012_ghi789',
+            customerName: 'Lê Thị Hoa',
+            productName: 'Đầm công sở',
+            sku: 'DCS005-S-NAV',
+            quantity: '2',
+            unit: 'Cái',
+            storeName: 'Cửa hàng Quận 5',
+            total: 680000,
+            createdAt: '28/08/2025',
+            status: 'completed'
+        },
+        {
+            id: 'retail_175654890123_jkl012',
+            customerName: 'Võ Minh Tuấn',
+            productName: 'Kính mát nam',
+            sku: 'KM006-BLK-UV',
+            quantity: '1',
+            unit: 'Cái',
+            storeName: 'Cửa hàng Quận 2',
+            total: 320000,
+            createdAt: '28/08/2025',
+            status: 'processing'
+        },
+        {
+            id: 'retail_175654901234_mno345',
+            customerName: 'Đặng Thị Lan',
+            productName: 'Ví da nữ cao cấp',
+            sku: 'VD007-PNK-S',
+            quantity: '1',
+            unit: 'Cái',
+            storeName: 'Cửa hàng Quận 4',
+            total: 280000,
+            createdAt: '27/08/2025',
+            status: 'completed'
+        },
+        {
+            id: 'retail_175655012345_pqr678',
+            customerName: 'Bùi Văn Đức',
+            productName: 'Áo khoác hoodie',
+            sku: 'AK008-L-GRY',
+            quantity: '1',
+            unit: 'Cái',
+            storeName: 'Cửa hàng Quận 6',
+            total: 520000,
+            createdAt: '27/08/2025',
+            status: 'cancelled'
+        }
+    ];
+    
+    if (sampleRetailOrders.length === 0) {
+        console.log('📝 No retail orders to display, showing empty state');
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="12" class="text-center">
+                    <div class="empty-state">
+                        <i class="fas fa-store"></i>
+                        <p>Chưa có đơn hàng lẻ nào</p>
+                    </div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    console.log('📊 Processing', sampleRetailOrders.length, 'retail orders');
+    
+    let ordersHTML = '';
+    let index = 1;
+    
+    for (const order of sampleRetailOrders) {
+        const statusInfo = statusMap[order.status] || statusMap['pending'];
+        
+        ordersHTML += `
+            <tr>
+                <td class="text-center">${index}</td>
+                <td class="order-id">${order.id}</td>
+                <td class="customer-name">${order.customerName}</td>
+                <td class="product-name">${order.productName}</td>
+                <td class="product-sku">${order.sku}</td>
+                <td class="quantity text-center">${order.quantity}</td>
+                <td class="unit text-center">${order.unit}</td>
+                <td class="store-name">${order.storeName}</td>
+                <td class="total-amount text-right">
+                    <span class="amount">${formatCurrency(order.total)}</span>
+                </td>
+                <td class="created-date text-center">${order.createdAt}</td>
+                <td class="status text-center">
+                    <span class="status-badge ${statusInfo.class}">
+                        <i class="${statusInfo.icon}"></i>
+                        ${statusInfo.text}
+                    </span>
+                </td>
+                <td class="actions text-center">
+                    <div class="action-buttons">
+                        <button class="btn btn-sm btn-primary" onclick="viewRetailOrder('${order.id}')" title="Xem chi tiết">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteRetailOrder('${order.id}')" title="Xóa">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+        index++;
+    }
+    
+    tbody.innerHTML = ordersHTML;
+    console.log('✅ Retail orders displayed successfully');
+}
+
+// View retail order details
+function viewRetailOrder(orderId) {
+    console.log('Viewing retail order:', orderId);
+    showNotification('Chức năng xem chi tiết đơn hàng lẻ đang được phát triển', 'info');
+}
+
+// Delete retail order
+function deleteRetailOrder(orderId) {
+    if (confirm('Bạn có chắc chắn muốn xóa đơn hàng này?')) {
+        console.log('Deleting retail order:', orderId);
+        showNotification('Chức năng xóa đơn hàng lẻ đang được phát triển', 'info');
+    }
+}
+
+// Debounced search function for real-time filtering
+function debouncedSearch() {
+    console.log('debouncedSearch called');
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(() => {
+        console.log('Executing search after delay');
+        applySearchFilters();
+    }, 300); // 300ms delay
+}
+
+// Expose functions to global scope
+window.debouncedSearch = debouncedSearch;
+window.applySearchFilters = applySearchFilters;
+
+// Apply search and filters
+function applySearchFilters() {
+    console.log('applySearchFilters called');
+    console.log('ordersData:', ordersData);
+    
+    // Get filter values
+    const searchTerm = document.getElementById('searchInput')?.value.toLowerCase().trim() || '';
+    const platformFilter = document.getElementById('platformFilter')?.value || '';
+    const storeFilter = document.getElementById('storeFilter')?.value || '';
+    const priceRangeFilter = document.getElementById('priceRangeFilter')?.value || '';
+    
+    console.log('Search term:', searchTerm);
+    
+    // Update search filters state
+    searchFilters = {
+        searchTerm,
+        platform: platformFilter,
+        store: storeFilter,
+        priceRange: priceRangeFilter
+    };
+    
+    // If no filters are applied, show all orders
+    if (!searchTerm && !platformFilter && !storeFilter && !priceRangeFilter) {
+        filteredOrders = { ...ordersData };
+        updateSearchResultsInfo(Object.keys(filteredOrders).length);
+        currentPage = 1;
+        displayOrders();
+        return;
+    }
+    
+    // Apply filters to orders
+    filteredOrders = {};
+    let matchCount = 0;
+    
+    Object.entries(ordersData).forEach(([orderId, order]) => {
+        let matches = true;
+        
+        // Search term filter (order ID, SKU, product name)
+        if (searchTerm) {
+            const searchableText = [
+                orderId,
+                order.orderId || '',
+                order.sku || '',
+                order.productName || '',
+                (order.items && order.items[0]) ? order.items[0].name : '',
+                (order.items && order.items[0]) ? order.items[0].sku : ''
+            ].join(' ').toLowerCase();
+            
+            console.log('Checking order:', orderId, 'searchableText:', searchableText);
+            matches = matches && searchableText.includes(searchTerm);
+            console.log('Match result:', matches);
+        }
+        
+        // Platform filter
+        if (platformFilter) {
+            const orderPlatform = order.platform || '';
+            matches = matches && orderPlatform === platformFilter;
+        }
+        
+        // Store filter
+        if (storeFilter) {
+            const orderStoreId = order.storeId || localStorage.getItem('selectedStoreId');
+            matches = matches && orderStoreId === storeFilter;
+        }
+        
+        // Price range filter
+        if (priceRangeFilter) {
+            const [minPrice, maxPrice] = priceRangeFilter.split('-').map(Number);
+            const orderTotal = order.total || 0;
+            matches = matches && orderTotal >= minPrice && orderTotal <= maxPrice;
+        }
+        
+        if (matches) {
+            filteredOrders[orderId] = order;
+            matchCount++;
+        }
+    });
+    
+    // Update search results info
+    updateSearchResultsInfo(matchCount);
+    
+    // Reset to first page and display
+    currentPage = 1;
+    displayOrders();
+}
+
+// Update search results info
+function updateSearchResultsInfo(matchCount) {
+    const searchResultsCount = document.getElementById('searchResultsCount');
+    if (!searchResultsCount) return;
+    
+    const totalOrders = Object.keys(ordersData).length;
+    const hasFilters = searchFilters.searchTerm || searchFilters.platform || 
+                      searchFilters.store || searchFilters.priceRange;
+    
+    if (hasFilters) {
+        searchResultsCount.innerHTML = `
+            <i class="fas fa-filter"></i> 
+            Tìm thấy <strong>${matchCount}</strong> đơn hàng 
+            trong tổng số <strong>${totalOrders}</strong> đơn hàng
+        `;
+        searchResultsCount.className = 'search-results-info filtered';
+    } else {
+        searchResultsCount.innerHTML = `Hiển thị tất cả <strong>${totalOrders}</strong> đơn hàng`;
+        searchResultsCount.className = 'search-results-info';
+    }
+}
+
+// Clear search filters
+function clearSearchFilters() {
+    // Clear all filter inputs
+    const searchInput = document.getElementById('searchInput');
+    const platformFilter = document.getElementById('platformFilter');
+    const storeFilter = document.getElementById('storeFilter');
+    const priceRangeFilter = document.getElementById('priceRangeFilter');
+    
+    if (searchInput) searchInput.value = '';
+    if (platformFilter) platformFilter.value = '';
+    if (storeFilter) storeFilter.value = '';
+    if (priceRangeFilter) priceRangeFilter.value = '';
+    
+    // Reset search filters state
+    searchFilters = {
+        searchTerm: '',
+        platform: '',
+        store: '',
+        priceRange: ''
+    };
+    
+    // Show all orders
+    filteredOrders = { ...ordersData };
+    currentPage = 1;
+    
+    // Update display
+    updateSearchResultsInfo(Object.keys(filteredOrders).length);
+    displayOrders();
+    
+    showNotification('Đã xóa tất cả bộ lọc', 'info');
 }
 
 // Toggle select all

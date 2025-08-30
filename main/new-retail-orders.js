@@ -352,10 +352,12 @@ function createRetailOrder(event) {
         
         lastOrderId = orderId;
         
-        // Create order object
+        // Create order object with proper fields for order-management.html compatibility
         const order = {
             id: orderId,
             type: 'retail',
+            source: 'retail',
+            orderType: 'retail',
             storeId: selectedStoreId,
             customerName: formData.customerName,
             customerPhone: formData.customerPhone,
@@ -367,7 +369,10 @@ function createRetailOrder(event) {
             shipping: formData.shipping,
             total: total,
             createdAt: new Date().toISOString(),
-            status: 'completed'
+            status: 'completed',
+            // Add fields that order-management.html expects
+            storeName: 'Cửa hàng chính', // Default store name
+            unit: formData.items[0]?.unit || 'Cái'
         };
         
         console.log('About to save order to Firebase:', order.id);
@@ -401,11 +406,23 @@ function saveRetailOrderToFirebase(order) {
         return;
     }
     
-    const ordersRef = window.database.ref(`stores/${order.storeId}/orders/${order.id}`);
-    console.log('Firebase ref path:', `stores/${order.storeId}/orders/${order.id}`);
+    // Save to both locations for compatibility
+    const storeOrderRef = window.database.ref(`stores/${order.storeId}/orders/${order.id}`);
+    const globalOrderRef = window.database.ref(`orders/${order.id}`);
+    
+    console.log('Firebase ref paths:', 
+        `stores/${order.storeId}/orders/${order.id}`, 
+        `orders/${order.id}`);
     
     console.log('Calling Firebase set...');
-    ordersRef.set(order)
+    
+    // Save to both locations simultaneously
+    const savePromises = [
+        storeOrderRef.set(order),
+        globalOrderRef.set(order)
+    ];
+    
+    Promise.all(savePromises)
         .then(async () => {
             console.log('Firebase save SUCCESS for order:', order.id);
             
@@ -995,9 +1012,16 @@ function deleteRetailOrder(orderId) {
         return;
     }
     
-    const orderRef = window.database.ref(`stores/${selectedStoreId}/orders/${orderId}`);
+    // Delete order from both Firebase locations
+    const storeOrderRef = window.database.ref(`stores/${selectedStoreId}/orders/${orderId}`);
+    const globalOrderRef = window.database.ref(`orders/${orderId}`);
     
-    orderRef.remove()
+    const deletePromises = [
+        storeOrderRef.remove(),
+        globalOrderRef.remove()
+    ];
+    
+    Promise.all(deletePromises)
         .then(() => {
             showNotification('Xóa đơn hàng thành công!', 'success');
             

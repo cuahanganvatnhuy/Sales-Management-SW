@@ -9,11 +9,53 @@ let orderReportData = {
 function initializeOrderReport() {
     console.log('Initializing Order Report Module...');
     
+    // Set default month and year for retail monthly report
+    setDefaultRetailMonthYear();
+    
     // Add a delay to ensure Firebase is ready
     setTimeout(() => {
         loadOrderReportData();
         setupOrderReportEventListeners();
     }, 1000);
+}
+
+// Set default month and year for retail monthly report
+function setDefaultRetailMonthYear() {
+    const now = new Date();
+    const currentMonth = now.getMonth() + 1; // getMonth() returns 0-11, so add 1
+    const currentYear = now.getFullYear();
+    
+    // Set default month
+    const monthSelect = document.getElementById('retailMonthSelect');
+    if (monthSelect) {
+        // Remove any existing selected attribute
+        Array.from(monthSelect.options).forEach(option => {
+            option.removeAttribute('selected');
+        });
+        // Set current month as selected
+        const currentMonthOption = monthSelect.querySelector(`option[value="${currentMonth}"]`);
+        if (currentMonthOption) {
+            currentMonthOption.setAttribute('selected', 'selected');
+            monthSelect.value = currentMonth.toString();
+        }
+    }
+    
+    // Set default year
+    const yearSelect = document.getElementById('retailYearSelect');
+    if (yearSelect) {
+        // Remove any existing selected attribute
+        Array.from(yearSelect.options).forEach(option => {
+            option.removeAttribute('selected');
+        });
+        // Set current year as selected
+        const currentYearOption = yearSelect.querySelector(`option[value="${currentYear}"]`);
+        if (currentYearOption) {
+            currentYearOption.setAttribute('selected', 'selected');
+            yearSelect.value = currentYear.toString();
+        }
+    }
+    
+    console.log(`Set default retail month/year to: ${currentMonth}/${currentYear}`);
 }
 
 // Load order data from Firebase
@@ -67,11 +109,19 @@ function loadOrderReportData() {
             setTimeout(() => {
                 loadStoresForFilter();
                 loadProductsForFilter();
+                // Load retail-specific filters
+                loadRetailStoresForFilter();
+                loadRetailProductsForFilter();
+                // Setup retail filter event listeners
+                setupRetailFilterEventListeners();
             }, 1500);
             // Try multiple times to ensure loading
             setTimeout(() => {
                 loadStoresForFilter();
                 loadProductsForFilter();
+                loadRetailStoresForFilter();
+                loadRetailProductsForFilter();
+                setupRetailFilterEventListeners();
             }, 3000);
         }, 500);
     });
@@ -103,15 +153,35 @@ function processOrderData(transactions, orders) {
                     const orderType = determineOrderTypeFromOrder(order);
                     console.log('Determined order type:', orderType, 'for order:', orderId);
             
+                    // Handle retail orders with items array
+                    let productName = 'N/A';
+                    let totalQuantity = 0;
+                    let unit = 'lỗi';
+                    
+                    if (order.items && Array.isArray(order.items) && order.items.length > 0) {
+                        // Multiple items - show first product name + count
+                        productName = order.items.length > 1 
+                            ? `${order.items[0].productName} (+${order.items.length - 1} khác)`
+                            : order.items[0].productName;
+                        totalQuantity = order.items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+                        unit = order.items[0].unit || 'lỗi';
+                    } else {
+                        // Single product order
+                        productName = order.productName || 'N/A';
+                        totalQuantity = order.quantity || 0;
+                        unit = order.unit || 'cái';
+                    }
+
                     const orderData = {
                         id: orderId,
                         orderId: order.id || orderId,
                         date: order.createdAt || order.orderDate || order.timestamp,
-                        productName: order.productName || 'N/A',
-                        quantity: order.quantity || 0,
+                        productName: productName,
+                        quantity: totalQuantity,
                         total: order.total || 0,
                         totalPrice: order.total || order.totalAmount || order.totalPrice || 0,
                         value: order.total || order.totalAmount || 0,
+                        unit: unit,
                         storeName: order.storeName || 'Không xác định',
                         status: order.status || 'completed',
                         platform: order.platform || 'N/A',
@@ -283,6 +353,17 @@ function setupOrderReportEventListeners() {
             element.addEventListener('change', () => generateRetailReport());
         }
     });
+    
+    // Retail order ID search filter
+    const retailOrderIdFilter = document.getElementById('statsRetailOrderIdFilter');
+    if (retailOrderIdFilter) {
+        retailOrderIdFilter.addEventListener('input', () => {
+            clearTimeout(retailOrderIdFilter.searchTimeout);
+            retailOrderIdFilter.searchTimeout = setTimeout(() => {
+                generateRetailReport();
+            }, 300); // Debounce 300ms
+        });
+    }
 
     // Wholesale filters
     const wholesaleFilters = ['statsWholesaleDateRange', 'statsWholesaleStoreFilter', 'statsWholesaleProductFilter'];
@@ -1638,6 +1719,9 @@ function populateFilterDropdowns() {
     
     // Populate store filter - Load directly from Firebase
     loadStoresForFilter();
+    
+    // Populate retail filters
+    populateRetailFilters();
 }
 
 // Load stores from Firebase for filter dropdown
@@ -1701,8 +1785,64 @@ function loadStoresForFilter() {
         
     }).catch(error => {
         console.error('❌ Error loading stores:', error);
-        setTimeout(loadStoresForFilter, 2000);
     });
+}
+
+// Populate retail filters (stores and products)
+function populateRetailFilters() {
+    console.log('=== POPULATING RETAIL FILTERS ===');
+    
+    // Populate retail store filter
+    const retailStoreFilter = document.getElementById('statsRetailStoreFilter');
+    if (retailStoreFilter && database) {
+        const storesRef = database.ref('stores');
+        storesRef.once('value').then(snapshot => {
+            const storesData = snapshot.val() || {};
+            console.log('📦 Retail stores data:', storesData);
+            
+            // Clear dropdown first
+            retailStoreFilter.innerHTML = '<option value="">Tất cả cửa hàng</option>';
+            
+            let addedCount = 0;
+            Object.entries(storesData).forEach(([storeId, storeData]) => {
+                const option = document.createElement('option');
+                option.value = storeData.name || storeId;
+                option.textContent = storeData.name || storeId;
+                retailStoreFilter.appendChild(option);
+                addedCount++;
+            });
+            
+            console.log(`✅ Retail store dropdown populated with ${addedCount} stores`);
+        }).catch(error => {
+            console.error('❌ Error loading retail stores:', error);
+        });
+    }
+    
+    // Populate retail product filter
+    const retailProductFilter = document.getElementById('statsRetailProductFilter');
+    if (retailProductFilter && database) {
+        const productsRef = database.ref('products');
+        productsRef.once('value').then(snapshot => {
+            const productsData = snapshot.val() || {};
+            console.log('📦 Retail products data:', productsData);
+            
+            // Clear dropdown first
+            retailProductFilter.innerHTML = '<option value="">Tất cả sản phẩm</option>';
+            
+            let addedCount = 0;
+            Object.entries(productsData).forEach(([productId, productData]) => {
+                const option = document.createElement('option');
+                option.value = productData.name || productId;
+                option.textContent = productData.name || productId;
+                retailProductFilter.appendChild(option);
+                addedCount++;
+            });
+            
+            console.log(`✅ Retail product dropdown populated with ${addedCount} products`);
+        }).catch(error => {
+            console.error('❌ Error loading retail products:', error);
+        });
+    }
 }
 
 // Load products from Firebase for filter dropdown
@@ -1994,6 +2134,7 @@ function updateRetailTable(data) {
             <td>${formatDate(order.date)}</td>
             <td>${order.productName}</td>
             <td>${order.quantity}</td>
+            <td>${order.unit || 'cái'}</td>
             <td>${formatCurrency(order.value)}</td>
             <td>${order.storeName}</td>
             <td><span class="status-badge ${order.status}">${getStatusText(order.status)}</span></td>
@@ -2097,6 +2238,16 @@ function applyFilters(data, orderType) {
     const productFilter = document.getElementById(`stats${orderType.charAt(0).toUpperCase() + orderType.slice(1)}ProductFilter`)?.value;
     if (productFilter && productFilter !== 'all') {
         filteredData = filteredData.filter(order => order.productId === productFilter);
+    }
+    
+    // Order ID filter (only for retail orders)
+    if (orderType === 'retail') {
+        const orderIdFilter = document.getElementById('statsRetailOrderIdFilter')?.value;
+        if (orderIdFilter && orderIdFilter.trim() !== '') {
+            filteredData = filteredData.filter(order => 
+                order.orderId && order.orderId.toLowerCase().includes(orderIdFilter.toLowerCase().trim())
+            );
+        }
     }
     
     // Platform filter (only for TMDT orders)
@@ -2408,6 +2559,1619 @@ window.initWholesaleReport = initWholesaleReport;
 window.exportTmdtReport = exportTmdtReport;
 window.exportRetailReport = exportRetailReport;
 window.exportWholesaleReport = exportWholesaleReport;
+
+// Toggle retail date filter
+function toggleRetailDateFilter() {
+    const dateType = document.getElementById('retailDateTypeSelect').value;
+    const monthYearFilters = document.getElementById('retailMonthYearFilters');
+    const customDateFilters = document.getElementById('retailCustomDateFilters');
+    
+    if (dateType === 'month') {
+        monthYearFilters.style.display = 'flex';
+        customDateFilters.style.display = 'none';
+    } else {
+        monthYearFilters.style.display = 'none';
+        customDateFilters.style.display = 'flex';
+    }
+}
+
+// Generate retail monthly report
+function generateRetailMonthlyReport() {
+    const dateType = document.getElementById('retailDateTypeSelect').value;
+    const month = document.getElementById('retailMonthSelect').value;
+    const year = document.getElementById('retailYearSelect').value;
+    const fromDate = document.getElementById('retailFromDateSelect').value;
+    const toDate = document.getElementById('retailToDateSelect').value;
+    const product = document.getElementById('retailProductFilter').value;
+    const store = document.getElementById('retailStoreFilter').value;
+    
+    console.log('=== RETAIL MONTHLY REPORT FILTER DEBUG ===');
+    console.log('Date type:', dateType);
+    console.log('Product filter value:', product);
+    console.log('Store filter value:', store);
+    console.log('Available retail orders:', orderReportData?.retail?.length || 0);
+    
+    // Debug first few retail orders
+    if (orderReportData?.retail?.length > 0) {
+        console.log('Sample retail orders:', orderReportData.retail.slice(0, 3));
+    }
+    
+    // Filter retail orders by all criteria
+    const filteredOrders = filterRetailOrdersByAllCriteria(dateType, month, year, fromDate, toDate, product, store);
+    
+    console.log('Filtered retail orders:', filteredOrders.length);
+    
+    // Generate statistics
+    const stats = generateRetailStatistics(filteredOrders);
+    
+    // Update summary cards
+    updateRetailMonthlySummary(stats);
+    
+    // Generate detailed tables
+    generateRetailProductSummary(filteredOrders, stats.totalRevenue);
+    generateRetailStoreSummary(filteredOrders, stats.totalRevenue);
+    generateRetailDailySummary(filteredOrders);
+}
+
+// Filter retail orders by all criteria
+function filterRetailOrdersByAllCriteria(dateType, month, year, fromDate, toDate, product, store) {
+    if (!orderReportData || !orderReportData.retail) return [];
+    
+    return orderReportData.retail.filter(order => {
+        const orderDate = new Date(order.date);
+        
+        // Date filtering
+        let dateMatch = true;
+        if (dateType === 'month') {
+            dateMatch = orderDate.getMonth() + 1 == month && orderDate.getFullYear() == year;
+        } else if (dateType === 'custom' && fromDate && toDate) {
+            const from = new Date(fromDate);
+            const to = new Date(toDate);
+            dateMatch = orderDate >= from && orderDate <= to;
+        }
+        
+        // Product filtering - check both productName and items array
+        let productMatch = !product;
+        if (product && !productMatch) {
+            // Check main product name
+            productMatch = order.productName === product;
+            
+            // Check items array if exists
+            if (!productMatch && order.items && Array.isArray(order.items)) {
+                productMatch = order.items.some(item => item.productName === product);
+            }
+        }
+        
+        // Store filtering
+        const storeMatch = !store || order.storeName === store;
+        
+        return dateMatch && productMatch && storeMatch;
+    });
+}
+
+// Generate retail statistics
+function generateRetailStatistics(orders) {
+    const stats = {
+        totalOrders: orders.length,
+        totalQuantity: 0,
+        totalWeight: 0, // Add separate weight calculation
+        totalRevenue: 0,
+        avgOrderValue: 0,
+        productSummary: {}
+    };
+    
+    orders.forEach(order => {
+        const quantity = order.quantity || 0;
+        const revenue = order.value || order.total || 0;
+        
+        stats.totalQuantity += quantity;
+        stats.totalRevenue += revenue;
+        
+        // Calculate actual weight based on product information
+        const weight = calculateProductWeight(order.productName, quantity);
+        stats.totalWeight += weight;
+        
+        // Debug logging
+        console.log('Order data:', {
+            id: order.id,
+            productName: order.productName,
+            quantity: quantity,
+            unit: order.unit,
+            value: revenue
+        });
+        
+        // Group by product
+        const productKey = `${order.productName}`;
+        if (!stats.productSummary[productKey]) {
+            stats.productSummary[productKey] = {
+                name: order.productName,
+                quantity: 0,
+                totalValue: 0,
+                unit: order.unit || 'cái'
+            };
+        }
+        
+        stats.productSummary[productKey].quantity += quantity;
+        stats.productSummary[productKey].totalValue += revenue;
+    });
+    
+    stats.avgOrderValue = stats.totalOrders > 0 ? stats.totalRevenue / stats.totalOrders : 0;
+    
+    console.log('=== RETAIL STATISTICS CALCULATED ===');
+    console.log('Total Orders:', stats.totalOrders);
+    console.log('Total Quantity:', stats.totalQuantity);
+    console.log('Total Weight:', stats.totalWeight.toFixed(1), 'kg');
+    console.log('Total Revenue:', stats.totalRevenue);
+    console.log('Avg Order Value:', stats.avgOrderValue);
+    
+    return stats;
+}
+
+// Load stores for retail filter dropdown
+function loadRetailStoresForFilter() {
+    const storeFilter = document.getElementById('retailStoreFilter');
+    if (!storeFilter || !database) return;
+    
+    const storesRef = database.ref('stores');
+    storesRef.once('value').then(snapshot => {
+        const storesData = snapshot.val() || {};
+        console.log('Loading retail stores for filter:', storesData);
+        
+        // Clear existing options except "Tất cả"
+        storeFilter.innerHTML = '<option value="">Tất cả cửa hàng</option>';
+        
+        // Add store options
+        Object.entries(storesData).forEach(([storeId, storeData]) => {
+            const option = document.createElement('option');
+            option.value = storeData.name || storeId; // Use store name as value for filtering
+            option.textContent = storeData.name || storeId;
+            storeFilter.appendChild(option);
+        });
+        
+        console.log('Populated retail store filter with', Object.keys(storesData).length, 'stores');
+    }).catch(error => {
+        console.error('Error loading retail stores for filter:', error);
+    });
+}
+
+// Load products for retail filter dropdown
+function loadRetailProductsForFilter() {
+    const productFilter = document.getElementById('retailProductFilter');
+    if (!productFilter || !database) return;
+    
+    const productsRef = database.ref('products');
+    productsRef.once('value').then(snapshot => {
+        const productsData = snapshot.val() || {};
+        console.log('Loading retail products for filter:', productsData);
+        
+        // Clear existing options except "Tất cả"
+        productFilter.innerHTML = '<option value="">Tất cả sản phẩm</option>';
+        
+        // Add product options
+        Object.entries(productsData).forEach(([productId, productData]) => {
+            const option = document.createElement('option');
+            option.value = productData.name || productId; // Use product name as value for filtering
+            option.textContent = productData.name || productId;
+            productFilter.appendChild(option);
+        });
+        
+        console.log('Populated retail product filter with', Object.keys(productsData).length, 'products');
+    }).catch(error => {
+        console.error('Error loading retail products for filter:', error);
+    });
+}
+
+// Setup event listeners for retail monthly report filters
+function setupRetailFilterEventListeners() {
+    console.log('Setting up retail filter event listeners...');
+    
+    // Date type filter (month/custom)
+    const dateTypeSelect = document.getElementById('retailDateTypeSelect');
+    if (dateTypeSelect) {
+        dateTypeSelect.addEventListener('change', () => {
+            console.log('Date type changed, regenerating retail report');
+            generateRetailMonthlyReport();
+        });
+    }
+    
+    // Month and year filters
+    const monthSelect = document.getElementById('retailMonthSelect');
+    const yearSelect = document.getElementById('retailYearSelect');
+    
+    if (monthSelect) {
+        monthSelect.addEventListener('change', () => {
+            console.log('Month changed, regenerating retail report');
+            generateRetailMonthlyReport();
+        });
+    }
+    
+    if (yearSelect) {
+        yearSelect.addEventListener('change', () => {
+            console.log('Year changed, regenerating retail report');
+            generateRetailMonthlyReport();
+        });
+    }
+    
+    // Product filter
+    const productFilter = document.getElementById('retailProductFilter');
+    if (productFilter) {
+        productFilter.addEventListener('change', () => {
+            console.log('Product filter changed:', productFilter.value);
+            generateRetailMonthlyReport();
+        });
+    }
+    
+    // Store filter
+    const storeFilter = document.getElementById('retailStoreFilter');
+    if (storeFilter) {
+        storeFilter.addEventListener('change', () => {
+            console.log('Store filter changed:', storeFilter.value);
+            generateRetailMonthlyReport();
+        });
+    }
+    
+    // Custom date range filters
+    const fromDateSelect = document.getElementById('retailFromDateSelect');
+    const toDateSelect = document.getElementById('retailToDateSelect');
+    
+    if (fromDateSelect) {
+        fromDateSelect.addEventListener('change', () => {
+            console.log('From date changed, regenerating retail report');
+            generateRetailMonthlyReport();
+        });
+    }
+    
+    if (toDateSelect) {
+        toDateSelect.addEventListener('change', () => {
+            console.log('To date changed, regenerating retail report');
+            generateRetailMonthlyReport();
+        });
+    }
+    
+    console.log('Retail filter event listeners setup complete');
+}
+
+// Helper function to get days in current period for forecasting
+function getDaysInCurrentPeriod() {
+    const dateType = document.getElementById('retailDateTypeSelect')?.value || 'month';
+    
+    if (dateType === 'month') {
+        const month = parseInt(document.getElementById('retailMonthSelect')?.value || new Date().getMonth() + 1);
+        const year = parseInt(document.getElementById('retailYearSelect')?.value || new Date().getFullYear());
+        return new Date(year, month, 0).getDate(); // Days in selected month
+    } else {
+        const fromDate = document.getElementById('retailFromDateSelect')?.value;
+        const toDate = document.getElementById('retailToDateSelect')?.value;
+        if (fromDate && toDate) {
+            const from = new Date(fromDate);
+            const to = new Date(toDate);
+            return Math.ceil((to - from) / (1000 * 60 * 60 * 24)) + 1;
+        }
+    }
+    return 30; // Default fallback
+}
+
+// Calculate product weight based on product name and quantity
+function calculateProductWeight(productName, quantity) {
+    if (!productName || !quantity) return 0;
+    
+    // Extract weight from product name (e.g., "phở mai kéo sợi 1kg" -> 1kg)
+    const weightMatch = productName.match(/(\d+(?:\.\d+)?)\s*kg/i);
+    if (weightMatch) {
+        const unitWeight = parseFloat(weightMatch[1]);
+        return unitWeight * quantity;
+    }
+    
+    // Extract weight in grams and convert to kg
+    const gramMatch = productName.match(/(\d+(?:\.\d+)?)\s*g(?:ram)?/i);
+    if (gramMatch) {
+        const unitWeightGrams = parseFloat(gramMatch[1]);
+        return (unitWeightGrams / 1000) * quantity; // Convert grams to kg
+    }
+    
+    // Default weight assumptions for common products (in kg per unit)
+    const defaultWeights = {
+        'phở': 1.0,
+        'bún': 0.5,
+        'mì': 0.5,
+        'bánh': 0.3,
+        'kẹo': 0.1,
+        'snack': 0.1
+    };
+    
+    // Check if product name contains any of the default weight keywords
+    const productLower = productName.toLowerCase();
+    for (const [keyword, weight] of Object.entries(defaultWeights)) {
+        if (productLower.includes(keyword)) {
+            return weight * quantity;
+        }
+    }
+    
+    // If no weight information found, assume 0.5kg per unit as default
+    return 0.5 * quantity;
+}
+
+// Update retail monthly summary cards
+function updateRetailMonthlySummary(stats) {
+    document.getElementById('totalRetailMonthlyOrders').textContent = stats.totalOrders;
+    document.getElementById('totalRetailMonthlyQuantity').textContent = `${stats.totalWeight.toFixed(1)} kg`;
+    document.getElementById('totalRetailMonthlyRevenue').textContent = formatCurrency(stats.totalRevenue);
+    document.getElementById('avgRetailMonthlyOrderValue').textContent = formatCurrency(stats.avgOrderValue);
+}
+
+// Generate retail product summary table
+function generateRetailProductSummary(orders, totalRevenue) {
+    const productSummaryMap = {};
+    orders.forEach(order => {
+        // Handle both single product and items array
+        if (order.items && Array.isArray(order.items)) {
+            order.items.forEach(item => {
+                const key = `${item.productName}-${item.sku}`;
+                if (!productSummaryMap[key]) {
+                    productSummaryMap[key] = {
+                        name: item.productName,
+                        sku: item.sku,
+                        quantity: 0,
+                        totalValue: 0,
+                        unit: item.unit || 'cái',
+                        totalWeight: 0
+                    };
+                }
+                const itemQuantity = item.quantity || 0;
+                productSummaryMap[key].quantity += itemQuantity;
+                productSummaryMap[key].totalValue += item.totalPrice || 0;
+                productSummaryMap[key].totalWeight += calculateProductWeight(item.productName, itemQuantity);
+            });
+        } else {
+            // Single product order
+            const key = `${order.productName}-${order.sku || 'N/A'}`;
+            if (!productSummaryMap[key]) {
+                productSummaryMap[key] = {
+                    name: order.productName,
+                    sku: order.sku || 'N/A',
+                    quantity: 0,
+                    totalValue: 0,
+                    unit: order.unit || 'cái',
+                    totalWeight: 0
+                };
+            }
+            const orderQuantity = order.quantity || 0;
+            productSummaryMap[key].quantity += orderQuantity;
+            productSummaryMap[key].totalValue += order.value || order.total || 0;
+            productSummaryMap[key].totalWeight += calculateProductWeight(order.productName, orderQuantity);
+        }
+    });
+    
+    const productSummary = Object.values(productSummaryMap);
+    const tableBody = document.getElementById('retailProductSummaryTable');
+    
+    if (productSummary.length === 0) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="9" style="text-align: center; color: #666; padding: 20px;">
+                    <i class="fas fa-inbox"></i><br>
+                    Không có dữ liệu sản phẩm
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    let tableHTML = '';
+    productSummary.forEach((product, index) => {
+        const percentage = totalRevenue > 0 ? ((product.totalValue / totalRevenue) * 100).toFixed(1) : '0.0';
+        // Calculate forecast based on monthly usage (assuming 30 days per month)
+        const monthlyForecast = (product.totalWeight * 30 / getDaysInCurrentPeriod()).toFixed(1);
+        
+        tableHTML += `
+            <tr>
+                <td>${index + 1}</td>
+                <td><strong>${product.name}</strong></td>
+                <td>${product.sku}</td>
+                <td class="text-right">${product.quantity}</td>
+                <td class="text-right"><strong>${product.totalWeight.toFixed(1)} kg</strong></td>
+                <td class="text-center">${product.unit}</td>
+                <td class="text-right">${formatCurrency(product.totalValue)}</td>
+                <td class="text-right">${percentage}%</td>
+                <td class="text-right" style="color: #007bff;"><strong>${monthlyForecast} kg/tháng</strong></td>
+            </tr>
+        `;
+    });
+    
+    tableBody.innerHTML = tableHTML;
+}
+
+// Generate retail store summary table
+function generateRetailStoreSummary(orders, totalRevenue) {
+    const storeSummaryMap = {};
+    let totalWeight = 0;
+    
+    orders.forEach(order => {
+        const storeKey = order.storeName || 'Không xác định';
+        if (!storeSummaryMap[storeKey]) {
+            storeSummaryMap[storeKey] = {
+                name: storeKey,
+                orderCount: 0,
+                quantity: 0,
+                totalValue: 0,
+                totalWeight: 0
+            };
+        }
+        
+        const orderQuantity = order.quantity || 0;
+        const orderWeight = calculateProductWeight(order.productName, orderQuantity);
+        
+        storeSummaryMap[storeKey].orderCount += 1;
+        storeSummaryMap[storeKey].quantity += orderQuantity;
+        storeSummaryMap[storeKey].totalValue += order.value || 0;
+        storeSummaryMap[storeKey].totalWeight += orderWeight;
+        totalWeight += orderWeight;
+    });
+    
+    // Convert to array and sort by weight consumption
+    const storeSummary = Object.values(storeSummaryMap)
+        .sort((a, b) => b.totalWeight - a.totalWeight);
+    
+    const tableBody = document.getElementById('retailStoreSummaryTable');
+    if (storeSummary.length === 0) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="7" style="text-align: center; color: #666; padding: 20px;">
+                    <i class="fas fa-inbox"></i><br>
+                    Không có dữ liệu cửa hàng
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    const tableRows = storeSummary.map((store, index) => {
+        const percentage = totalRevenue > 0 ? ((store.totalValue / totalRevenue) * 100).toFixed(1) : 0;
+        const warehouseEfficiency = totalWeight > 0 ? ((store.totalWeight / totalWeight) * 100).toFixed(1) : 0;
+        
+        return `
+            <tr>
+                <td>${index + 1}</td>
+                <td><strong>${store.name}</strong></td>
+                <td class="text-right">${store.orderCount}</td>
+                <td class="text-right"><strong>${store.totalWeight.toFixed(1)} kg</strong></td>
+                <td class="text-right">${formatCurrency(store.totalValue)}</td>
+                <td class="text-right">${percentage}%</td>
+                <td class="text-right" style="color: #28a745;"><strong>${warehouseEfficiency}%</strong></td>
+            </tr>
+        `;
+    }).join('');
+    
+    tableBody.innerHTML = tableRows;
+}
+
+// Generate retail daily summary table
+function generateRetailDailySummary(orders) {
+    const dailySummaryMap = {};
+    orders.forEach(order => {
+        const orderDate = new Date(order.date);
+        const dateKey = orderDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+        
+        if (!dailySummaryMap[dateKey]) {
+            dailySummaryMap[dateKey] = {
+                date: dateKey,
+                orderCount: 0,
+                quantity: 0,
+                totalValue: 0,
+                totalWeight: 0
+            };
+        }
+        
+        const orderQuantity = order.quantity || 0;
+        const orderWeight = calculateProductWeight(order.productName, orderQuantity);
+        
+        dailySummaryMap[dateKey].orderCount += 1;
+        dailySummaryMap[dateKey].quantity += orderQuantity;
+        dailySummaryMap[dateKey].totalValue += order.value || 0;
+        dailySummaryMap[dateKey].totalWeight += orderWeight;
+    });
+    
+    // Convert to array and sort by date
+    const dailySummary = Object.values(dailySummaryMap)
+        .sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    const tableBody = document.getElementById('retailDailySummaryTable');
+    if (dailySummary.length === 0) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="6" style="text-align: center; color: #666; padding: 20px;">
+                    <i class="fas fa-inbox"></i><br>
+                    Không có dữ liệu theo ngày
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    const tableRows = dailySummary.map((day, index) => {
+        const avgOrderValue = day.orderCount > 0 ? day.totalValue / day.orderCount : 0;
+        
+        // Calculate trend compared to previous day
+        let trend = '';
+        let trendColor = '#6c757d';
+        if (index < dailySummary.length - 1) {
+            const prevDay = dailySummary[index + 1];
+            const weightDiff = day.totalWeight - prevDay.totalWeight;
+            if (weightDiff > 0) {
+                trend = `↗ +${weightDiff.toFixed(1)} kg`;
+                trendColor = '#28a745';
+            } else if (weightDiff < 0) {
+                trend = `↘ ${weightDiff.toFixed(1)} kg`;
+                trendColor = '#dc3545';
+            } else {
+                trend = '→ Không đổi';
+            }
+        } else {
+            trend = '— Ngày đầu';
+        }
+        
+        return `
+            <tr>
+                <td>${formatDate(day.date)}</td>
+                <td class="text-right">${day.orderCount}</td>
+                <td class="text-right"><strong>${day.totalWeight.toFixed(1)} kg</strong></td>
+                <td class="text-right">${formatCurrency(day.totalValue)}</td>
+                <td class="text-right">${formatCurrency(avgOrderValue)}</td>
+                <td class="text-center" style="color: ${trendColor}; font-weight: bold;">${trend}</td>
+            </tr>
+        `;
+    }).join('');
+    
+    tableBody.innerHTML = tableRows;
+}
+
+// Print retail monthly report
+async function printRetailMonthlyReport() {
+    // Get current filter values
+    const dateType = document.getElementById('retailDateTypeSelect')?.value || 'month';
+    const month = parseInt(document.getElementById('retailMonthSelect')?.value || new Date().getMonth() + 1);
+    const year = parseInt(document.getElementById('retailYearSelect')?.value || new Date().getFullYear());
+    const fromDate = document.getElementById('retailFromDateSelect')?.value;
+    const toDate = document.getElementById('retailToDateSelect')?.value;
+    const product = document.getElementById('retailProductFilter')?.value;
+    const store = document.getElementById('retailStoreFilter')?.value;
+    
+    // Get filtered data
+    const filteredOrders = filterRetailOrdersByAllCriteria(dateType, month, year, fromDate, toDate, product, store);
+    
+    if (filteredOrders.length === 0) {
+        alert('Không có dữ liệu để in báo cáo. Vui lòng kiểm tra lại bộ lọc.');
+        return;
+    }
+    
+    // Get store information for selected store
+    let storeInfo = null;
+    if (store) {
+        // Try multiple ways to get store data
+        if (window.storesData) {
+            storeInfo = Object.values(window.storesData).find(s => s.name === store);
+        }
+        // Try from Firebase directly
+        if (!storeInfo && window.database) {
+            try {
+                const snapshot = await window.database.ref('stores').once('value');
+                const stores = snapshot.val() || {};
+                storeInfo = Object.values(stores).find(s => s.name === store);
+            } catch (error) {
+                console.log('Error loading store from Firebase:', error);
+            }
+        }
+        // If still not found, create mock data based on store name
+        if (!storeInfo) {
+            storeInfo = {
+                name: store,
+                address: `Địa chỉ ${store}`,
+                phone: '0123-456-789',
+                email: `${store.toLowerCase().replace(/\s+/g, '')}@company.com`
+            };
+        }
+        console.log('Selected store:', store);
+        console.log('Found store info:', storeInfo);
+    }
+    
+    // Generate print content
+    const printContent = generateDetailedPrintReport(filteredOrders, {
+        dateType, month, year, fromDate, toDate, product, store, storeInfo
+    });
+    
+    // Create print window
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.print();
+}
+
+// Generate detailed print report
+function generateDetailedPrintReport(orders, filters) {
+    const { dateType, month, year, fromDate, toDate, product, store, storeInfo } = filters;
+    
+    // Get period title
+    let periodTitle = '';
+    if (dateType === 'month') {
+        periodTitle = `Tháng ${month} ${year}`;
+    } else if (fromDate && toDate) {
+        periodTitle = `${formatDate(fromDate)} - ${formatDate(toDate)}`;
+    } else {
+        periodTitle = 'Tất cả thời gian';
+    }
+    
+    // Group orders by product for detailed summary
+    const productSummary = {};
+    let totalWeight = 0;
+    let totalRevenue = 0;
+    let totalOrders = orders.length;
+    
+    orders.forEach(order => {
+        const productKey = `${order.productName}-${order.sku || 'N/A'}`;
+        if (!productSummary[productKey]) {
+            productSummary[productKey] = {
+                name: order.productName,
+                sku: order.sku || 'N/A',
+                quantity: 0,
+                weight: 0,
+                revenue: 0,
+                orderCount: 0,
+                unit: order.unit || 'cái',
+                stores: new Set(),
+                platforms: new Set()
+            };
+        }
+        
+        const orderQuantity = order.quantity || 0;
+        const orderWeight = calculateProductWeight(order.productName, orderQuantity);
+        const orderRevenue = order.value || order.total || 0;
+        
+        productSummary[productKey].quantity += orderQuantity;
+        productSummary[productKey].weight += orderWeight;
+        productSummary[productKey].revenue += orderRevenue;
+        productSummary[productKey].orderCount += 1;
+        productSummary[productKey].stores.add(order.storeName || 'Không xác định');
+        productSummary[productKey].platforms.add(order.platformName || 'Không xác định');
+        
+        totalWeight += orderWeight;
+        totalRevenue += orderRevenue;
+    });
+    
+    const products = Object.values(productSummary);
+    
+    // Generate report ID
+    const reportId = 'RPT' + Date.now().toString().slice(-8);
+    const currentDate = new Date().toLocaleDateString('vi-VN');
+    
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Báo Cáo Thống Kê TMĐT - ${periodTitle}</title>
+    <style>
+        @page {
+            margin: 15mm;
+            size: A4;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #000;
+            margin: 0;
+            padding: 0;
+            background: #fff;
+        }
+        
+        .report-header {
+            text-align: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+        }
+        
+        .company-logo {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4);
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        
+        .report-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #666;
+            margin: 0 0 5px 0;
+        }
+        
+        .report-subtitle {
+            font-size: 12px;
+            color: #888;
+            margin: 0 0 20px 0;
+        }
+        
+        .report-meta {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            font-size: 11px;
+        }
+        
+        .meta-left {
+            text-align: left;
+        }
+        
+        .meta-right {
+            text-align: right;
+        }
+        
+        .meta-item {
+            margin: 3px 0;
+        }
+        
+        .period-title {
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+            margin: 20px 0;
+            padding: 10px;
+            border-top: 1px solid #ddd;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 10px;
+        }
+        
+        .data-table th {
+            background: #f8f9fa;
+            padding: 8px 4px;
+            text-align: center;
+            font-weight: bold;
+            border: 1px solid #ddd;
+            font-size: 9px;
+        }
+        
+        .data-table td {
+            padding: 6px 4px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+        
+        .text-left { text-align: left !important; }
+        .text-right { text-align: right !important; }
+        .text-center { text-align: center !important; }
+        
+        .total-summary {
+            margin: 20px 0;
+            padding: 10px;
+            border-top: 2px solid #28a745;
+            text-align: right;
+        }
+        
+        .total-amount {
+            font-size: 16px;
+            font-weight: bold;
+            color: #28a745;
+            margin-top: 10px;
+        }
+        
+        .report-footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+        }
+        
+        .footer-left {
+            color: #e74c3c;
+        }
+        
+        .footer-right {
+            text-align: right;
+            color: #666;
+        }
+        
+        .contact-info {
+            margin: 2px 0;
+        }
+        
+        .signature-section {
+            text-align: center;
+            margin-top: 20px;
+            color: #f39c12;
+        }
+        
+        @media print {
+            body { -webkit-print-color-adjust: exact; }
+            .data-table { break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <div class="report-header">
+        <div class="report-title">
+            <span class="company-logo"></span>
+            BÁO CÁO THỐNG KÊ ĐƠN HÀNG LẺ
+        </div>
+        <div class="report-subtitle">Hệ thống quản lý bán hàng</div>
+    </div>
+    
+    <div class="report-meta">
+        <div class="meta-left">
+            <div class="meta-item"><strong>Mã báo cáo:</strong></div>
+            <div class="meta-item"><strong>Ngày tạo:</strong></div>
+            <div class="meta-item"><strong>Tổng đơn hàng:</strong></div>
+            <div class="meta-item"><strong>Tổng sản phẩm:</strong></div>
+            <div class="meta-item"><strong>Cửa hàng:</strong></div>
+            <div class="meta-item"><strong>Sản phẩm:</strong></div>
+        </div>
+        <div class="meta-right">
+            <div class="meta-item">${reportId}</div>
+            <div class="meta-item">${currentDate}</div>
+            <div class="meta-item">${totalOrders} đơn</div>
+            <div class="meta-item">${products.length} loại</div>
+            <div class="meta-item">${store || 'Tất cả cửa hàng'}</div>
+            <div class="meta-item">${product || 'Tất cả sản phẩm'}</div>
+        </div>
+    </div>
+    
+    <div class="period-title">${periodTitle}</div>
+    
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th width="5%">STT</th>
+                <th width="25%">TÊN SẢN PHẨM</th>
+                <th width="15%">SKU</th>
+                <th width="8%">SỐ LƯỢNG</th>
+                <th width="5%">ĐƠN VỊ</th>
+                <th width="12%">THÀNH TIỀN</th>
+                <th width="6%">SỐ ĐƠN</th>
+                <th width="12%">SÀN TMĐT</th>
+                <th width="12%">CỬA HÀNG</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${products.map((product, index) => `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td class="text-left">${product.name}</td>
+                    <td>${product.sku}</td>
+                    <td class="text-right">${product.weight.toFixed(1)}</td>
+                    <td>kg</td>
+                    <td class="text-right">${formatCurrency(product.revenue)}</td>
+                    <td class="text-right">${product.orderCount}</td>
+                    <td class="text-left">${Array.from(product.platforms).join(', ')}</td>
+                    <td class="text-left">${Array.from(product.stores).join(', ')}</td>
+                </tr>
+            `).join('')}
+        </tbody>
+    </table>
+    
+    <div class="total-summary">
+        <div><strong>Tổng khối lượng: ${totalWeight.toFixed(1)} kg</strong></div>
+        <div class="total-amount">TỔNG CỘNG: ${formatCurrency(totalRevenue)}</div>
+    </div>
+    
+    <div class="report-footer">
+        <div class="footer-left">
+            <div style="font-weight: bold; margin-bottom: 5px;">📍 Địa chỉ công ty:</div>
+            <div class="contact-info">${storeInfo?.address || '123 Đường ABC, Quận XYZ, TP.HCM'}</div>
+            <div class="contact-info">📞 Hotline: ${storeInfo?.phone || '0123-456-789'}</div>
+            <div class="contact-info">📧 Email: ${storeInfo?.email || 'info@company.com'}</div>
+        </div>
+        <div class="footer-right">
+            <div style="margin-bottom: 10px;">👤 <strong>Người tạo:</strong></div>
+            <div style="margin-bottom: 5px;">📅 <strong>Ngày tạo:</strong> ${currentDate}</div>
+            <div class="signature-section">
+                <div>✍️ <strong>Chữ ký:</strong></div>
+            </div>
+        </div>
+    </div>
+    
+</body>
+</html>`;
+}
+
+// Wholesale Order Report Functions
+function toggleWholesaleDateFilter() {
+    const dateType = document.getElementById('wholesaleDateTypeSelect')?.value;
+    const monthYearFilters = document.getElementById('wholesaleMonthYearFilters');
+    const customDateFilters = document.getElementById('wholesaleCustomDateFilters');
+    
+    if (dateType === 'custom') {
+        monthYearFilters.style.display = 'none';
+        customDateFilters.style.display = 'flex';
+    } else {
+        monthYearFilters.style.display = 'flex';
+        customDateFilters.style.display = 'none';
+    }
+}
+
+// Generate wholesale monthly report
+async function generateWholesaleMonthlyReport() {
+    const dateType = document.getElementById('wholesaleDateTypeSelect')?.value || 'month';
+    const month = parseInt(document.getElementById('wholesaleMonthSelect')?.value || new Date().getMonth() + 1);
+    const year = parseInt(document.getElementById('wholesaleYearSelect')?.value || new Date().getFullYear());
+    const fromDate = document.getElementById('wholesaleFromDateSelect')?.value;
+    const toDate = document.getElementById('wholesaleToDateSelect')?.value;
+    const product = document.getElementById('wholesaleProductFilter')?.value;
+    const store = document.getElementById('wholesaleStoreFilter')?.value;
+    
+    // Get filtered data
+    const filteredOrders = filterWholesaleOrdersByAllCriteria(dateType, month, year, fromDate, toDate, product, store);
+    
+    if (filteredOrders.length === 0) {
+        showNotification('Không có dữ liệu đơn hàng sỉ trong khoảng thời gian đã chọn.', 'warning');
+        return;
+    }
+    
+    // Generate reports
+    generateWholesaleProductSummary(filteredOrders);
+    generateWholesaleStoreSummary(filteredOrders);
+    generateWholesaleDailySummary(filteredOrders, dateType, month, year, fromDate, toDate);
+    
+    showNotification('Đã tạo báo cáo thống kê đơn hàng sỉ thành công!', 'success');
+}
+
+// Filter wholesale orders by all criteria
+function filterWholesaleOrdersByAllCriteria(dateType, month, year, fromDate, toDate, product, store) {
+    if (!window.wholesaleOrdersData || !Array.isArray(window.wholesaleOrdersData)) {
+        console.log('No wholesale orders data available');
+        return [];
+    }
+    
+    return window.wholesaleOrdersData.filter(order => {
+        // Date filter
+        const orderDate = new Date(order.orderDate || order.createdAt);
+        let dateMatch = true;
+        
+        if (dateType === 'month') {
+            dateMatch = orderDate.getMonth() + 1 === month && orderDate.getFullYear() === year;
+        } else if (dateType === 'custom' && fromDate && toDate) {
+            const from = new Date(fromDate);
+            const to = new Date(toDate);
+            to.setHours(23, 59, 59, 999);
+            dateMatch = orderDate >= from && orderDate <= to;
+        }
+        
+        // Product filter
+        let productMatch = true;
+        if (product) {
+            productMatch = order.items && order.items.some(item => 
+                item.productName && item.productName.toLowerCase().includes(product.toLowerCase())
+            );
+        }
+        
+        // Store filter
+        let storeMatch = true;
+        if (store) {
+            storeMatch = order.storeName === store;
+        }
+        
+        return dateMatch && productMatch && storeMatch;
+    });
+}
+
+// Generate wholesale product summary
+function generateWholesaleProductSummary(orders) {
+    const productSummary = {};
+    let totalRevenue = 0;
+    
+    orders.forEach(order => {
+        if (order.items && Array.isArray(order.items)) {
+            order.items.forEach(item => {
+                const productKey = `${item.productName}-${item.sku || 'N/A'}`;
+                if (!productSummary[productKey]) {
+                    productSummary[productKey] = {
+                        name: item.productName,
+                        sku: item.sku || 'N/A',
+                        quantity: 0,
+                        weight: 0,
+                        revenue: 0,
+                        unit: item.unit || 'kg'
+                    };
+                }
+                
+                const itemQuantity = item.quantity || 0;
+                const itemWeight = calculateProductWeight(item.productName, itemQuantity);
+                const itemRevenue = item.total || (item.price * itemQuantity) || 0;
+                
+                productSummary[productKey].quantity += itemQuantity;
+                productSummary[productKey].weight += itemWeight;
+                productSummary[productKey].revenue += itemRevenue;
+                totalRevenue += itemRevenue;
+            });
+        }
+    });
+    
+    const tableBody = document.getElementById('wholesaleProductSummaryTable');
+    if (!tableBody) return;
+    
+    const products = Object.values(productSummary)
+        .sort((a, b) => b.revenue - a.revenue);
+    
+    const tableRows = products.map((product, index) => {
+        const revenuePercentage = totalRevenue > 0 ? (product.revenue / totalRevenue * 100).toFixed(1) : '0.0';
+        const forecastQuantity = Math.ceil(product.weight * 1.2); // 20% buffer
+        
+        return `
+            <tr>
+                <td>${index + 1}</td>
+                <td class="text-left"><strong>${product.name}</strong></td>
+                <td>${product.sku}</td>
+                <td class="text-right">${product.quantity.toFixed(1)}</td>
+                <td class="text-right weight-highlight"><strong>${product.weight.toFixed(1)}</strong></td>
+                <td class="text-center">${product.unit}</td>
+                <td class="text-right revenue-highlight">${formatCurrency(product.revenue)}</td>
+                <td class="text-center">${revenuePercentage}%</td>
+                <td class="text-right forecast-highlight">${forecastQuantity} kg</td>
+            </tr>
+        `;
+    }).join('');
+    
+    tableBody.innerHTML = tableRows;
+}
+
+// Generate wholesale store summary
+function generateWholesaleStoreSummary(orders) {
+    const storeSummary = {};
+    let totalRevenue = 0;
+    let totalWeight = 0;
+    
+    orders.forEach(order => {
+        const storeName = order.storeName || 'Không xác định';
+        if (!storeSummary[storeName]) {
+            storeSummary[storeName] = {
+                name: storeName,
+                orderCount: 0,
+                weight: 0,
+                revenue: 0
+            };
+        }
+        
+        storeSummary[storeName].orderCount += 1;
+        
+        if (order.items && Array.isArray(order.items)) {
+            order.items.forEach(item => {
+                const itemQuantity = item.quantity || 0;
+                const itemWeight = calculateProductWeight(item.productName, itemQuantity);
+                const itemRevenue = item.total || (item.price * itemQuantity) || 0;
+                
+                storeSummary[storeName].weight += itemWeight;
+                storeSummary[storeName].revenue += itemRevenue;
+                totalWeight += itemWeight;
+                totalRevenue += itemRevenue;
+            });
+        }
+    });
+    
+    const tableBody = document.getElementById('wholesaleStoreSummaryTable');
+    if (!tableBody) return;
+    
+    const stores = Object.values(storeSummary)
+        .sort((a, b) => b.revenue - a.revenue);
+    
+    const tableRows = stores.map((store, index) => {
+        const revenuePercentage = totalRevenue > 0 ? (store.revenue / totalRevenue * 100).toFixed(1) : '0.0';
+        const usageEfficiency = totalWeight > 0 ? (store.weight / totalWeight * 100).toFixed(1) : '0.0';
+        
+        return `
+            <tr>
+                <td>${index + 1}</td>
+                <td class="text-left"><strong>${store.name}</strong></td>
+                <td class="text-center">${store.orderCount}</td>
+                <td class="text-right weight-highlight">${store.weight.toFixed(1)} kg</td>
+                <td class="text-right revenue-highlight">${formatCurrency(store.revenue)}</td>
+                <td class="text-center">${revenuePercentage}%</td>
+                <td class="text-center efficiency-highlight">${usageEfficiency}%</td>
+            </tr>
+        `;
+    }).join('');
+    
+    tableBody.innerHTML = tableRows;
+}
+
+// Generate wholesale daily summary
+function generateWholesaleDailySummary(orders, dateType, month, year, fromDate, toDate) {
+    const dailySummary = {};
+    
+    orders.forEach(order => {
+        const orderDate = new Date(order.orderDate || order.createdAt);
+        const dateKey = orderDate.toISOString().split('T')[0];
+        
+        if (!dailySummary[dateKey]) {
+            dailySummary[dateKey] = {
+                date: dateKey,
+                orderCount: 0,
+                weight: 0,
+                revenue: 0
+            };
+        }
+        
+        dailySummary[dateKey].orderCount += 1;
+        
+        if (order.items && Array.isArray(order.items)) {
+            order.items.forEach(item => {
+                const itemQuantity = item.quantity || 0;
+                const itemWeight = calculateProductWeight(item.productName, itemQuantity);
+                const itemRevenue = item.total || (item.price * itemQuantity) || 0;
+                
+                dailySummary[dateKey].weight += itemWeight;
+                dailySummary[dateKey].revenue += itemRevenue;
+            });
+        }
+    });
+    
+    const tableBody = document.getElementById('wholesaleDailySummaryTable');
+    if (!tableBody) return;
+    
+    const days = Object.values(dailySummary)
+        .sort((a, b) => new Date(a.date) - new Date(b.date));
+    
+    const tableRows = days.map((day, index) => {
+        const avgOrderValue = day.orderCount > 0 ? day.revenue / day.orderCount : 0;
+        const prevDay = index > 0 ? days[index - 1] : null;
+        let trend = '➡️';
+        let trendColor = '#6c757d';
+        
+        if (prevDay) {
+            const prevAvg = prevDay.orderCount > 0 ? prevDay.revenue / prevDay.orderCount : 0;
+            if (avgOrderValue > prevAvg) {
+                trend = '📈';
+                trendColor = '#28a745';
+            } else if (avgOrderValue < prevAvg) {
+                trend = '📉';
+                trendColor = '#dc3545';
+            }
+        }
+        
+        return `
+            <tr>
+                <td class="text-center">${formatDate(day.date)}</td>
+                <td class="text-center">${day.orderCount}</td>
+                <td class="text-right weight-highlight">${day.weight.toFixed(1)} kg</td>
+                <td class="text-right revenue-highlight">${formatCurrency(day.revenue)}</td>
+                <td class="text-right">${formatCurrency(avgOrderValue)}</td>
+                <td class="text-center" style="color: ${trendColor}; font-weight: bold;">${trend}</td>
+            </tr>
+        `;
+    }).join('');
+    
+    tableBody.innerHTML = tableRows;
+}
+
+// Print wholesale monthly report
+async function printWholesaleMonthlyReport() {
+    // Get current filter values
+    const dateType = document.getElementById('wholesaleDateTypeSelect')?.value || 'month';
+    const month = parseInt(document.getElementById('wholesaleMonthSelect')?.value || new Date().getMonth() + 1);
+    const year = parseInt(document.getElementById('wholesaleYearSelect')?.value || new Date().getFullYear());
+    const fromDate = document.getElementById('wholesaleFromDateSelect')?.value;
+    const toDate = document.getElementById('wholesaleToDateSelect')?.value;
+    const product = document.getElementById('wholesaleProductFilter')?.value;
+    const store = document.getElementById('wholesaleStoreFilter')?.value;
+    
+    // Get filtered data
+    const filteredOrders = filterWholesaleOrdersByAllCriteria(dateType, month, year, fromDate, toDate, product, store);
+    
+    if (filteredOrders.length === 0) {
+        alert('Không có dữ liệu để in báo cáo. Vui lòng kiểm tra lại bộ lọc.');
+        return;
+    }
+    
+    // Get store information for selected store
+    let storeInfo = null;
+    if (store) {
+        // Try multiple ways to get store data
+        if (window.storesData) {
+            storeInfo = Object.values(window.storesData).find(s => s.name === store);
+        }
+        // Try from Firebase directly
+        if (!storeInfo && window.database) {
+            try {
+                const snapshot = await window.database.ref('stores').once('value');
+                const stores = snapshot.val() || {};
+                storeInfo = Object.values(stores).find(s => s.name === store);
+            } catch (error) {
+                console.log('Error loading store from Firebase:', error);
+            }
+        }
+        // If still not found, create mock data based on store name
+        if (!storeInfo) {
+            storeInfo = {
+                name: store,
+                address: `Địa chỉ ${store}`,
+                phone: '0123-456-789',
+                email: `${store.toLowerCase().replace(/\s+/g, '')}@company.com`
+            };
+        }
+    }
+    
+    // Generate print content
+    const printContent = generateWholesalePrintReport(filteredOrders, {
+        dateType, month, year, fromDate, toDate, product, store, storeInfo
+    });
+    
+    // Create print window
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.print();
+}
+
+// Generate wholesale print report
+function generateWholesalePrintReport(orders, filters) {
+    const { dateType, month, year, fromDate, toDate, product, store, storeInfo } = filters;
+    
+    // Get period title
+    let periodTitle = '';
+    if (dateType === 'month') {
+        periodTitle = `Tháng ${month} ${year}`;
+    } else if (fromDate && toDate) {
+        periodTitle = `${formatDate(fromDate)} - ${formatDate(toDate)}`;
+    } else {
+        periodTitle = 'Tất cả thời gian';
+    }
+    
+    // Group orders by product for detailed summary
+    const productSummary = {};
+    let totalWeight = 0;
+    let totalRevenue = 0;
+    let totalOrders = orders.length;
+    
+    orders.forEach(order => {
+        if (order.items && Array.isArray(order.items)) {
+            order.items.forEach(item => {
+                const productKey = `${item.productName}-${item.sku || 'N/A'}`;
+                if (!productSummary[productKey]) {
+                    productSummary[productKey] = {
+                        name: item.productName,
+                        sku: item.sku || 'N/A',
+                        quantity: 0,
+                        weight: 0,
+                        revenue: 0,
+                        orderCount: 0,
+                        unit: item.unit || 'kg',
+                        stores: new Set(),
+                        customers: new Set()
+                    };
+                }
+                
+                const itemQuantity = item.quantity || 0;
+                const itemWeight = calculateProductWeight(item.productName, itemQuantity);
+                const itemRevenue = item.total || (item.price * itemQuantity) || 0;
+                
+                productSummary[productKey].quantity += itemQuantity;
+                productSummary[productKey].weight += itemWeight;
+                productSummary[productKey].revenue += itemRevenue;
+                productSummary[productKey].orderCount += 1;
+                productSummary[productKey].stores.add(order.storeName || 'Không xác định');
+                productSummary[productKey].customers.add(order.customerName || 'Không xác định');
+                
+                totalWeight += itemWeight;
+                totalRevenue += itemRevenue;
+            });
+        }
+    });
+    
+    const products = Object.values(productSummary);
+    
+    // Generate report ID
+    const reportId = 'RPT' + Date.now().toString().slice(-8);
+    const currentDate = new Date().toLocaleDateString('vi-VN');
+    
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Báo Cáo Thống Kê Đơn Hàng Sỉ - ${periodTitle}</title>
+    <style>
+        @page {
+            margin: 15mm;
+            size: A4;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #000;
+            margin: 0;
+            padding: 0;
+            background: #fff;
+        }
+        
+        .report-header {
+            text-align: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+        }
+        
+        .company-logo {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4);
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        
+        .report-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #666;
+            margin: 0 0 5px 0;
+        }
+        
+        .report-subtitle {
+            font-size: 12px;
+            color: #888;
+            margin: 0 0 20px 0;
+        }
+        
+        .report-meta {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            font-size: 11px;
+        }
+        
+        .meta-left {
+            text-align: left;
+        }
+        
+        .meta-right {
+            text-align: right;
+        }
+        
+        .meta-item {
+            margin: 3px 0;
+        }
+        
+        .period-title {
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+            margin: 20px 0;
+            padding: 10px;
+            border-top: 1px solid #ddd;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 10px;
+        }
+        
+        .data-table th {
+            background: #f8f9fa;
+            padding: 8px 4px;
+            text-align: center;
+            font-weight: bold;
+            border: 1px solid #ddd;
+            font-size: 9px;
+        }
+        
+        .data-table td {
+            padding: 6px 4px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+        
+        .text-left { text-align: left !important; }
+        .text-right { text-align: right !important; }
+        .text-center { text-align: center !important; }
+        
+        .total-summary {
+            margin: 20px 0;
+            padding: 10px;
+            border-top: 2px solid #28a745;
+            text-align: right;
+        }
+        
+        .total-amount {
+            font-size: 16px;
+            font-weight: bold;
+            color: #28a745;
+            margin-top: 10px;
+        }
+        
+        .report-footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+        }
+        
+        .footer-left {
+            color: #e74c3c;
+        }
+        
+        .footer-right {
+            text-align: right;
+            color: #666;
+        }
+        
+        .contact-info {
+            margin: 2px 0;
+        }
+        
+        .signature-section {
+            text-align: center;
+            margin-top: 20px;
+            color: #f39c12;
+        }
+        
+        @media print {
+            body { -webkit-print-color-adjust: exact; }
+            .data-table { break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <div class="report-header">
+        <div class="report-title">
+            <span class="company-logo"></span>
+            BÁO CÁO THỐNG KÊ ĐƠN HÀNG SỈ
+        </div>
+        <div class="report-subtitle">Hệ thống quản lý bán hàng</div>
+    </div>
+    
+    <div class="report-meta">
+        <div class="meta-left">
+            <div class="meta-item"><strong>Mã báo cáo:</strong></div>
+            <div class="meta-item"><strong>Ngày tạo:</strong></div>
+            <div class="meta-item"><strong>Tổng đơn hàng:</strong></div>
+            <div class="meta-item"><strong>Tổng sản phẩm:</strong></div>
+            <div class="meta-item"><strong>Cửa hàng:</strong></div>
+            <div class="meta-item"><strong>Sản phẩm:</strong></div>
+        </div>
+        <div class="meta-right">
+            <div class="meta-item">${reportId}</div>
+            <div class="meta-item">${currentDate}</div>
+            <div class="meta-item">${totalOrders} đơn</div>
+            <div class="meta-item">${products.length} loại</div>
+            <div class="meta-item">${store || 'Tất cả cửa hàng'}</div>
+            <div class="meta-item">${product || 'Tất cả sản phẩm'}</div>
+        </div>
+    </div>
+    
+    <div class="period-title">${periodTitle}</div>
+    
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th width="5%">STT</th>
+                <th width="25%">TÊN SẢN PHẨM</th>
+                <th width="15%">SKU</th>
+                <th width="8%">SỐ LƯỢNG</th>
+                <th width="5%">ĐƠN VỊ</th>
+                <th width="12%">THÀNH TIỀN</th>
+                <th width="6%">SỐ ĐƠN</th>
+                <th width="12%">KHÁCH HÀNG</th>
+                <th width="12%">CỬA HÀNG</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${products.map((product, index) => `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td class="text-left">${product.name}</td>
+                    <td>${product.sku}</td>
+                    <td class="text-right">${product.weight.toFixed(1)}</td>
+                    <td>kg</td>
+                    <td class="text-right">${formatCurrency(product.revenue)}</td>
+                    <td class="text-right">${product.orderCount}</td>
+                    <td class="text-left">${Array.from(product.customers).join(', ')}</td>
+                    <td class="text-left">${Array.from(product.stores).join(', ')}</td>
+                </tr>
+            `).join('')}
+        </tbody>
+    </table>
+    
+    <div class="total-summary">
+        <div><strong>Tổng khối lượng: ${totalWeight.toFixed(1)} kg</strong></div>
+        <div class="total-amount">TỔNG CỘNG: ${formatCurrency(totalRevenue)}</div>
+    </div>
+    
+    <div class="report-footer">
+        <div class="footer-left">
+            <div style="font-weight: bold; margin-bottom: 5px;">📍 Địa chỉ công ty:</div>
+            <div class="contact-info">${storeInfo?.address || '123 Đường ABC, Quận XYZ, TP.HCM'}</div>
+            <div class="contact-info">📞 Hotline: ${storeInfo?.phone || '0123-456-789'}</div>
+            <div class="contact-info">📧 Email: ${storeInfo?.email || 'info@company.com'}</div>
+        </div>
+        <div class="footer-right">
+            <div style="margin-bottom: 10px;">👤 <strong>Người tạo:</strong></div>
+            <div style="margin-bottom: 5px;">📅 <strong>Ngày tạo:</strong> ${currentDate}</div>
+            <div class="signature-section">
+                <div>✍️ <strong>Chữ ký:</strong></div>
+            </div>
+        </div>
+    </div>
+    
+</body>
+</html>`;
+}
+
+// Load stores for wholesale statistics filter dropdown
+function loadWholesaleStoresForFilter() {
+    const storeFilter = document.getElementById('statsWholesaleStoreFilter');
+    if (!storeFilter || !database) return;
+    
+    const storesRef = database.ref('stores');
+    storesRef.once('value').then(snapshot => {
+        const storesData = snapshot.val() || {};
+        console.log('Loading wholesale stores for filter:', storesData);
+        
+        // Clear existing options except "Tất cả"
+        storeFilter.innerHTML = '<option value="all">Tất cả cửa hàng</option>';
+        
+        // Add store options
+        Object.entries(storesData).forEach(([storeId, storeData]) => {
+            const option = document.createElement('option');
+            option.value = storeData.name || storeId;
+            option.textContent = storeData.name || storeId;
+            storeFilter.appendChild(option);
+        });
+        
+        console.log('Populated wholesale store filter with', Object.keys(storesData).length, 'stores');
+    }).catch(error => {
+        console.error('Error loading wholesale stores for filter:', error);
+    });
+}
+
+// Load products for wholesale statistics filter dropdown
+function loadWholesaleProductsForFilter() {
+    const productFilter = document.getElementById('statsWholesaleProductFilter');
+    if (!productFilter || !database) return;
+    
+    const productsRef = database.ref('products');
+    productsRef.once('value').then(snapshot => {
+        const productsData = snapshot.val() || {};
+        console.log('Loading wholesale products for filter:', productsData);
+        
+        // Clear existing options except "Tất cả"
+        productFilter.innerHTML = '<option value="all">Tất cả sản phẩm</option>';
+        
+        // Add product options
+        Object.entries(productsData).forEach(([productId, productData]) => {
+            const option = document.createElement('option');
+            option.value = productData.name || productId;
+            option.textContent = productData.name || productId;
+            productFilter.appendChild(option);
+        });
+        
+        console.log('Populated wholesale product filter with', Object.keys(productsData).length, 'products');
+    }).catch(error => {
+        console.error('Error loading wholesale products for filter:', error);
+    });
+}
+
+// Export functions to global scope
+window.toggleRetailDateFilter = toggleRetailDateFilter;
+window.generateRetailMonthlyReport = generateRetailMonthlyReport;
+window.printRetailMonthlyReport = printRetailMonthlyReport;
+window.toggleWholesaleDateFilter = toggleWholesaleDateFilter;
+window.generateWholesaleMonthlyReport = generateWholesaleMonthlyReport;
+window.printWholesaleMonthlyReport = printWholesaleMonthlyReport;
+window.loadWholesaleStoresForFilter = loadWholesaleStoresForFilter;
+window.loadWholesaleProductsForFilter = loadWholesaleProductsForFilter;
 window.viewOrderDetails = viewOrderDetails;
 window.initializeOrderReport = initializeOrderReport;
 window.refreshCurrentOrderReportTab = refreshCurrentOrderReportTab;
