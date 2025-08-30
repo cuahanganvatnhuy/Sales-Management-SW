@@ -2111,6 +2111,9 @@
                     <div class="report-table-header">
                         <h3 class="report-table-title"><i class="fas fa-table"></i> Danh Sách Đơn Hàng Sỉ</h3>
                         <div class="table-actions">
+                            <div class="stats-filter-group">
+                                <input type="text" id="statsWholesaleOrderIdFilter" class="stats-filter-select" placeholder="Nhập mã đơn hàng...">
+                            </div>
                             <button class="btn btn-success" onclick="exportWholesaleReport()">
                                 <i class="fas fa-file-excel"></i> Xuất Excel
                             </button>
@@ -2138,6 +2141,175 @@
                         <ul class="pagination" id="wholesaleReportPagination">
                             <!-- Pagination will be generated here -->
                         </ul>
+                    </div>
+                </div>
+                
+                <!-- Monthly Statistics Report Section for Wholesale -->
+                <div class="monthly-stats-section">
+                    <div class="stats-header">
+                        <h3 class="stats-title">
+                            <i class="fas fa-chart-line"></i> Báo Cáo Thống Kê Hàng Tháng - Đơn Hàng Sỉ
+                        </h3>
+                        <div class="stats-actions">
+                            <button type="button" class="btn btn-primary" onclick="generateWholesaleMonthlyReport()">
+                                <i class="fas fa-sync-alt"></i> Tạo Báo Cáo
+                            </button>
+                            <button type="button" class="btn btn-success" onclick="printWholesaleMonthlyReport()">
+                                <i class="fas fa-print"></i> In Báo Cáo
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Filters -->
+                    <div class="monthly-filters">
+                        <div class="filter-row" style="display: flex; gap: 15px; align-items: end; flex-wrap: wrap;">
+                            <div class="filter-group" style="flex: 1; min-width: 150px;">
+                                <label>Loại Thời Gian:</label>
+                                <select id="wholesaleDateTypeSelect" class="form-control" onchange="toggleWholesaleDateFilter()">
+                                    <option value="month" selected>Theo Tháng</option>
+                                    <option value="custom">Tùy Chỉnh</option>
+                                </select>
+                            </div>
+                            <div class="filter-group" style="flex: 1; min-width: 150px;">
+                                <label>Sản Phẩm:</label>
+                                <select id="wholesaleProductFilter" class="form-control">
+                                    <option value="">Tất cả sản phẩm</option>
+                                    <!-- Options will be populated dynamically -->
+                                </select>
+                            </div>
+                            <div class="filter-group" style="flex: 1; min-width: 150px;">
+                                <label>Cửa Hàng:</label>
+                                <select id="wholesaleStoreFilter" class="form-control">
+                                    <option value="">Tất cả cửa hàng</option>
+                                    <!-- Options will be populated dynamically -->
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- Month/Year Filters -->
+                        <div id="wholesaleMonthYearFilters" class="filter-row" style="display: flex; gap: 15px; align-items: end; margin-top: 15px;">
+                            <div class="filter-group" style="flex: 1;">
+                                <label>Tháng:</label>
+                                <select id="wholesaleMonthSelect" class="form-control">
+                                    <option value="1">Tháng 1</option>
+                                    <option value="2">Tháng 2</option>
+                                    <option value="3">Tháng 3</option>
+                                    <option value="4">Tháng 4</option>
+                                    <option value="5">Tháng 5</option>
+                                    <option value="6">Tháng 6</option>
+                                    <option value="7">Tháng 7</option>
+                                    <option value="8" selected>Tháng 8</option>
+                                    <option value="9">Tháng 9</option>
+                                    <option value="10">Tháng 10</option>
+                                    <option value="11">Tháng 11</option>
+                                    <option value="12">Tháng 12</option>
+                                </select>
+                            </div>
+                            <div class="filter-group" style="flex: 1;">
+                                <label>Năm:</label>
+                                <select id="wholesaleYearSelect" class="form-control">
+                                    <option value="2024">2024</option>
+                                    <option value="2025" selected>2025</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- Custom Date Range Filters -->
+                        <div id="wholesaleCustomDateFilters" class="filter-row" style="display: none; gap: 15px; align-items: end; margin-top: 15px;">
+                            <div class="filter-group" style="flex: 1;">
+                                <label>Từ Ngày:</label>
+                                <input type="date" id="wholesaleFromDateSelect" class="form-control">
+                            </div>
+                            <div class="filter-group" style="flex: 1;">
+                                <label>Đến Ngày:</label>
+                                <input type="date" id="wholesaleToDateSelect" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Report Content -->
+                    <div class="report-content">
+                        <!-- Product Summary Table -->
+                        <div class="report-section">
+                            <h4><i class="fas fa-cube"></i> Thống Kê Theo Sản Phẩm</h4>
+                            <div class="table-container">
+                                <table class="report-table">
+                                    <thead>
+                                        <tr>
+                                            <th>STT</th>
+                                            <th>Tên Sản Phẩm</th>
+                                            <th>SKU</th>
+                                            <th>Số Lượng Bán</th>
+                                            <th>Khối Lượng Sử Dụng (kg)</th>
+                                            <th>Đơn Vị</th>
+                                            <th>Doanh Thu</th>
+                                            <th>% Tổng DT</th>
+                                            <th>Dự Báo Cần Nhập</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="wholesaleProductSummaryTable">
+                                        <tr>
+                                            <td colspan="9" style="text-align: center; padding: 20px;">
+                                                Nhấn "Tạo Báo Cáo" để xem dữ liệu
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Store Summary Table -->
+                        <div class="report-section">
+                            <h4><i class="fas fa-store"></i> Thống Kê Theo Cửa Hàng</h4>
+                            <div class="table-container">
+                                <table class="report-table">
+                                    <thead>
+                                        <tr>
+                                            <th>STT</th>
+                                            <th>Tên Cửa Hàng</th>
+                                            <th>Số Đơn Hàng</th>
+                                            <th>Khối Lượng Tiêu Thụ (kg)</th>
+                                            <th>Doanh Thu</th>
+                                            <th>% Tổng DT</th>
+                                            <th>Hiệu Suất Sử Dụng Kho</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="wholesaleStoreSummaryTable">
+                                        <tr>
+                                            <td colspan="7" style="text-align: center; padding: 20px;">
+                                                Nhấn "Tạo Báo Cáo" để xem dữ liệu
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Daily Summary Table -->
+                        <div class="report-section">
+                            <h4><i class="fas fa-calendar-day"></i> Thống Kê Theo Ngày</h4>
+                            <div class="table-container">
+                                <table class="report-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Ngày</th>
+                                            <th>Số Đơn Hàng</th>
+                                            <th>Khối Lượng Xuất Kho (kg)</th>
+                                            <th>Doanh Thu</th>
+                                            <th>Giá Trị TB/Đơn</th>
+                                            <th>Xu Hướng</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="wholesaleDailySummaryTable">
+                                        <tr>
+                                            <td colspan="6" style="text-align: center; padding: 20px;">
+                                                Nhấn "Tạo Báo Cáo" để xem dữ liệu
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -4003,9 +4175,10 @@
     
     <!-- Include warehouse report scripts -->
     <script src="../main/warehouse-export-report.js"></script>
-    <script src="../main/warehouse-import-report.js"></script>
-    <script src="../main/warehouse-adjustment-report.js"></script>
+    <script src="../main/warehouse-usage-report-enhanced.js"></script>
+    <script src="../main/warehouse-export-management.js"></script>
     <script src="../main/order-report.js"></script>
+    <script src="../main/wholesale-order-management.js"></script>
  
     
     <script>
@@ -4162,6 +4335,37 @@
                 currentListFilters.style.display = 'block';
             }
             
+            // Initialize wholesale order management when switching to wholesale tab
+        function switchToWholesaleOrdersView() {
+            hideAllWarehouseViews();
+            const wholesaleView = document.getElementById('wholesaleOrdersView');
+            if (wholesaleView) {
+                wholesaleView.style.display = 'block';
+                // Initialize wholesale order management
+                console.log('Switching to wholesale orders view...');
+                if (typeof initializeWholesaleOrderManagement === 'function') {
+                    console.log('Calling initializeWholesaleOrderManagement...');
+                    initializeWholesaleOrderManagement();
+                } else {
+                    console.error('initializeWholesaleOrderManagement function not found!');
+                }
+            }
+            updateViewButtonStates('wholesaleOrdersBtn');
+        }
+        
+        // Initialize wholesale order management on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set up wholesale order management if the view is active
+            if (typeof initializeWholesaleOrderManagement === 'function') {
+                // Wait for other scripts to load
+                setTimeout(() => {
+                    if (document.getElementById('wholesaleOrdersView')) {
+                        console.log('Initializing wholesale order management...');
+                        initializeWholesaleOrderManagement();
+                    }
+                }, 1000);
+            }
+        });    
             updateViewButtonStates('currentListViewBtn');
         }
         

@@ -9,6 +9,17 @@ let currentEditOrderId = null;
 // Store selected order IDs globally
 let selectedOrderIds = [];
 
+// Search and filter state
+let searchFilters = {
+    searchTerm: '',
+    platform: '',
+    store: '',
+    priceRange: ''
+};
+
+// Debounce timer for search
+let searchDebounceTimer = null;
+
 // Status mapping
 const statusMap = {
     'pending': { text: 'Đang xử lý', class: 'status-pending', icon: 'fas fa-clock' },
@@ -54,11 +65,13 @@ function showNotification(message, type = 'info') {
 document.addEventListener('DOMContentLoaded', function() {
     loadData();
     setupEventListeners();
+    loadStoresForFilter();
     
     // Listen for store context changes
     window.addEventListener('storeContextChanged', function() {
         console.log('Store context changed, reloading orders...');
         loadData();
+        loadStoresForFilter();
     });
 });
 
@@ -625,6 +638,194 @@ function clearAllFilters() {
     filteredOrders = { ...ordersData };
     currentPage = 1;
     displayOrders();
+}
+
+// Load stores for filter dropdown
+async function loadStoresForFilter() {
+    try {
+        console.log('loadStoresForFilter called');
+        const storeFilter = document.getElementById('storeFilter');
+        if (!storeFilter) {
+            console.log('storeFilter element not found');
+            return;
+        }
+        
+        console.log('Loading stores from Firebase...');
+        const snapshot = await firebase.database().ref('stores').once('value');
+        const stores = snapshot.val() || {};
+        
+        console.log('Raw stores data:', stores);
+        
+        // Clear existing options except "Tất cả cửa hàng"
+        storeFilter.innerHTML = '<option value="">Tất cả cửa hàng</option>';
+        
+        // Add store options
+        Object.entries(stores).forEach(([storeId, store]) => {
+            console.log('Adding store:', storeId, store);
+            const option = document.createElement('option');
+            option.value = store.name || `Cửa hàng ${storeId}`;  // Use store name as value for filtering
+            option.textContent = store.name || `Cửa hàng ${storeId}`;
+            storeFilter.appendChild(option);
+        });
+        
+        console.log('Stores loaded for filter:', Object.keys(stores).length);
+    } catch (error) {
+        console.error('Error loading stores for filter:', error);
+    }
+}
+
+// Debounced search function for real-time filtering
+function debouncedSearch() {
+    console.log('debouncedSearch called');
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(() => {
+        console.log('Executing search after delay');
+        applySearchFilters();
+    }, 300); // 300ms delay
+}
+
+// Expose functions to global scope
+window.debouncedSearch = debouncedSearch;
+window.applySearchFilters = applySearchFilters;
+
+// Apply search and filters
+function applySearchFilters() {
+    console.log('applySearchFilters called');
+    console.log('ordersData:', ordersData);
+    
+    // Get filter values
+    const searchTerm = document.getElementById('searchInput')?.value.toLowerCase().trim() || '';
+    const platformFilter = document.getElementById('platformFilter')?.value || '';
+    const storeFilter = document.getElementById('storeFilter')?.value || '';
+    const priceRangeFilter = document.getElementById('priceRangeFilter')?.value || '';
+    
+    console.log('Search term:', searchTerm);
+    
+    // Update search filters state
+    searchFilters = {
+        searchTerm,
+        platform: platformFilter,
+        store: storeFilter,
+        priceRange: priceRangeFilter
+    };
+    
+    // If no filters are applied, show all orders
+    if (!searchTerm && !platformFilter && !storeFilter && !priceRangeFilter) {
+        filteredOrders = { ...ordersData };
+        updateSearchResultsInfo(Object.keys(filteredOrders).length);
+        currentPage = 1;
+        displayOrders();
+        return;
+    }
+    
+    // Apply filters to orders
+    filteredOrders = {};
+    let matchCount = 0;
+    
+    Object.entries(ordersData).forEach(([orderId, order]) => {
+        let matches = true;
+        
+        // Search term filter (order ID, SKU, product name)
+        if (searchTerm) {
+            const searchableText = [
+                orderId,
+                order.orderId || '',
+                order.sku || '',
+                order.productName || '',
+                (order.items && order.items[0]) ? order.items[0].name : '',
+                (order.items && order.items[0]) ? order.items[0].sku : ''
+            ].join(' ').toLowerCase();
+            
+            console.log('Checking order:', orderId, 'searchableText:', searchableText);
+            matches = matches && searchableText.includes(searchTerm);
+            console.log('Match result:', matches);
+        }
+        
+        // Platform filter
+        if (platformFilter) {
+            const orderPlatform = order.platform || '';
+            matches = matches && orderPlatform === platformFilter;
+        }
+        
+        // Store filter
+        if (storeFilter) {
+            const orderStoreId = order.storeId || localStorage.getItem('selectedStoreId');
+            matches = matches && orderStoreId === storeFilter;
+        }
+        
+        // Price range filter
+        if (priceRangeFilter) {
+            const [minPrice, maxPrice] = priceRangeFilter.split('-').map(Number);
+            const orderTotal = order.total || 0;
+            matches = matches && orderTotal >= minPrice && orderTotal <= maxPrice;
+        }
+        
+        if (matches) {
+            filteredOrders[orderId] = order;
+            matchCount++;
+        }
+    });
+    
+    // Update search results info
+    updateSearchResultsInfo(matchCount);
+    
+    // Reset to first page and display
+    currentPage = 1;
+    displayOrders();
+}
+
+// Update search results info
+function updateSearchResultsInfo(matchCount) {
+    const searchResultsCount = document.getElementById('searchResultsCount');
+    if (!searchResultsCount) return;
+    
+    const totalOrders = Object.keys(ordersData).length;
+    const hasFilters = searchFilters.searchTerm || searchFilters.platform || 
+                      searchFilters.store || searchFilters.priceRange;
+    
+    if (hasFilters) {
+        searchResultsCount.innerHTML = `
+            <i class="fas fa-filter"></i> 
+            Tìm thấy <strong>${matchCount}</strong> đơn hàng 
+            trong tổng số <strong>${totalOrders}</strong> đơn hàng
+        `;
+        searchResultsCount.className = 'search-results-info filtered';
+    } else {
+        searchResultsCount.innerHTML = `Hiển thị tất cả <strong>${totalOrders}</strong> đơn hàng`;
+        searchResultsCount.className = 'search-results-info';
+    }
+}
+
+// Clear search filters
+function clearSearchFilters() {
+    // Clear all filter inputs
+    const searchInput = document.getElementById('searchInput');
+    const platformFilter = document.getElementById('platformFilter');
+    const storeFilter = document.getElementById('storeFilter');
+    const priceRangeFilter = document.getElementById('priceRangeFilter');
+    
+    if (searchInput) searchInput.value = '';
+    if (platformFilter) platformFilter.value = '';
+    if (storeFilter) storeFilter.value = '';
+    if (priceRangeFilter) priceRangeFilter.value = '';
+    
+    // Reset search filters state
+    searchFilters = {
+        searchTerm: '',
+        platform: '',
+        store: '',
+        priceRange: ''
+    };
+    
+    // Show all orders
+    filteredOrders = { ...ordersData };
+    currentPage = 1;
+    
+    // Update display
+    updateSearchResultsInfo(Object.keys(filteredOrders).length);
+    displayOrders();
+    
+    showNotification('Đã xóa tất cả bộ lọc', 'info');
 }
 
 // Toggle select all

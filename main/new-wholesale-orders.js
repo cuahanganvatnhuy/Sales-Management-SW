@@ -681,12 +681,58 @@ async function createWholesaleOrder(event) {
             throw new Error('Tổng tiền đơn hàng phải lớn hơn 0');
         }
         
+        // Get store name for the order
+        const storeName = window.selectedStoreData?.name || 'Không xác định';
+        
+        // Check if customer should be saved to database
+        const saveCustomerCheckbox = document.getElementById('saveCustomer');
+        const shouldSaveCustomer = saveCustomerCheckbox && saveCustomerCheckbox.checked;
+        let customerId = null;
+        
+        if (shouldSaveCustomer) {
+            console.log('Saving customer to database...');
+            // Check if customer already exists
+            const existingCustomersRef = window.database.ref(`stores/${selectedStoreId}/customers`);
+            const existingCustomersSnapshot = await existingCustomersRef.once('value');
+            const existingCustomers = existingCustomersSnapshot.val() || {};
+            
+            // Look for existing customer by name and phone
+            let existingCustomer = null;
+            Object.keys(existingCustomers).forEach(key => {
+                const customer = existingCustomers[key];
+                if (customer.name === customerName && customer.phone === customerPhone) {
+                    existingCustomer = { id: key, ...customer };
+                }
+            });
+            
+            if (existingCustomer) {
+                console.log('Customer already exists:', existingCustomer.id);
+                customerId = existingCustomer.id;
+            } else {
+                // Create new customer
+                const customerRef = window.database.ref(`stores/${selectedStoreId}/customers`).push();
+                const customerData = {
+                    name: customerName,
+                    phone: customerPhone,
+                    address: customerAddress,
+                    createdAt: new Date().toISOString(),
+                    totalOrders: 1,
+                    totalSpent: total
+                };
+                
+                await customerRef.set(customerData);
+                customerId = customerRef.key;
+                console.log('New customer saved with ID:', customerId);
+            }
+        }
+
         // Create order object
         const orderData = {
             type: 'wholesale',
             customerName,
             customerPhone,
             customerAddress,
+            customerId: customerId, // Add customer ID reference
             orderDate,
             items,
             subtotal,
@@ -697,7 +743,8 @@ async function createWholesaleOrder(event) {
             notes,
             paymentStatus: deposit >= total ? 'paid' : (deposit > 0 ? 'partial' : 'pending'),
             createdAt: new Date().toISOString(),
-            storeId: selectedStoreId
+            storeId: selectedStoreId,
+            storeName: storeName
         };
         
         console.log('Order data prepared:', orderData);
@@ -708,6 +755,25 @@ async function createWholesaleOrder(event) {
         
         const orderId = orderRef.key;
         console.log('Order saved with ID:', orderId);
+        
+        // Update customer statistics if customer was saved
+        if (customerId && shouldSaveCustomer) {
+            const customerRef = window.database.ref(`stores/${selectedStoreId}/customers/${customerId}`);
+            const customerSnapshot = await customerRef.once('value');
+            const customerData = customerSnapshot.val();
+            
+            if (customerData) {
+                const updatedCustomerData = {
+                    ...customerData,
+                    totalOrders: (customerData.totalOrders || 0) + 1,
+                    totalSpent: (customerData.totalSpent || 0) + total,
+                    lastOrderDate: new Date().toISOString()
+                };
+                
+                await customerRef.update(updatedCustomerData);
+                console.log('Customer statistics updated');
+            }
+        }
         
         // Update stock for all ordered products
         console.log('=== Updating product stock for wholesale order ===');

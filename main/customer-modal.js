@@ -43,6 +43,16 @@ function loadCustomersFromFirebase() {
         return;
     }
     
+    console.log('Loading customers for store:', storeId);
+    
+    // Try multiple possible customer storage locations
+    const possiblePaths = [
+        `stores/${storeId}/customers`,
+        `customers`,
+        `stores/${storeId}/orders`  // Extract customers from orders if no dedicated customer storage
+    ];
+    
+    // First try the store-specific customers path
     const customersRef = firebase.database().ref(`stores/${storeId}/customers`);
     
     customersRef.once('value')
@@ -50,6 +60,7 @@ function loadCustomersFromFirebase() {
             allCustomers = [];
             
             if (snapshot.exists()) {
+                console.log('Found customers in store-specific path');
                 snapshot.forEach(childSnapshot => {
                     const customer = {
                         id: childSnapshot.key,
@@ -57,6 +68,54 @@ function loadCustomersFromFirebase() {
                     };
                     allCustomers.push(customer);
                 });
+            } else {
+                console.log('No customers found in store-specific path, trying global customers');
+                // Try global customers path
+                return firebase.database().ref('customers').once('value');
+            }
+            
+            return null;
+        })
+        .then(globalSnapshot => {
+            if (globalSnapshot && globalSnapshot.exists()) {
+                console.log('Found customers in global path');
+                globalSnapshot.forEach(childSnapshot => {
+                    const customer = {
+                        id: childSnapshot.key,
+                        ...childSnapshot.val()
+                    };
+                    allCustomers.push(customer);
+                });
+            } else if (allCustomers.length === 0) {
+                console.log('No customers found, trying to extract from orders');
+                // Try to extract customers from existing orders
+                return firebase.database().ref(`stores/${storeId}/orders`).once('value');
+            }
+            
+            return null;
+        })
+        .then(ordersSnapshot => {
+            if (ordersSnapshot && ordersSnapshot.exists() && allCustomers.length === 0) {
+                console.log('Extracting customers from orders');
+                const customerMap = new Map();
+                
+                ordersSnapshot.forEach(orderSnapshot => {
+                    const order = orderSnapshot.val();
+                    if (order.customerName) {
+                        const customerId = order.customerId || `customer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                        if (!customerMap.has(order.customerName)) {
+                            customerMap.set(order.customerName, {
+                                id: customerId,
+                                name: order.customerName,
+                                phone: order.customerPhone || '',
+                                address: order.customerAddress || ''
+                            });
+                        }
+                    }
+                });
+                
+                allCustomers = Array.from(customerMap.values());
+                console.log('Extracted customers from orders:', allCustomers.length);
             }
             
             // Sort customers by name
@@ -64,6 +123,8 @@ function loadCustomersFromFirebase() {
             
             filteredCustomers = [...allCustomers];
             displayCustomers();
+            
+            console.log('Total customers loaded:', allCustomers.length);
         })
         .catch(error => {
             console.error('Error loading customers:', error);
