@@ -106,15 +106,9 @@ function loadProducts() {
                     allFields: Object.keys(product)
                 });
                 
-                // Temporarily disable store filtering for debugging
-                // TODO: Re-enable store filtering after fixing
-                // if (!selectedStoreId || !product.storeId || product.storeId === selectedStoreId) {
-                    allProducts.push(product);
-                    const productName = product.productName || product.name || product.title || 'Không có tên';
-                    console.log('Added product:', productName, 'ID:', product.id);
-                // } else {
-                //     console.log('Filtered out product:', product.productName, 'due to store mismatch');
-                // }
+                allProducts.push(product);
+                const productName = product.productName || product.name || product.title || 'Không có tên';
+                console.log('Added product:', productName, 'ID:', product.id);
             });
             console.log('Successfully loaded products after filtering:', allProducts.length);
             if (allProducts.length > 0) {
@@ -126,22 +120,13 @@ function loadProducts() {
         }
     }, (error) => {
         console.error('Error loading products:', error);
-        console.error('Error code:', error.code);
-        console.error('Error message:', error.message);
     });
 }
 
 // Load selling products from Firebase
 function loadSellingProducts() {
     return new Promise((resolve, reject) => {
-        const storeId = getSelectedStoreId();
-        if (!storeId) {
-            console.error('No store selected');
-            resolve([]);
-            return;
-        }
-
-        const sellingProductsRef = database.ref(`sellingProducts/${storeId}`);
+        const sellingProductsRef = database.ref('sellingProducts');
         sellingProductsRef.on('value', (snapshot) => {
             const data = snapshot.val();
             const products = [];
@@ -154,7 +139,6 @@ function loadSellingProducts() {
                 });
             }
             console.log('=== LOADED SELLING PRODUCTS ===');
-            console.log('Store ID:', storeId);
             console.log('Product count:', products.length);
             products.forEach((p, i) => {
                 console.log(`Selling Product ${i + 1}:`, {
@@ -511,19 +495,13 @@ function createSelectedProducts() {
         return;
     }
     
-    const storeId = getSelectedStoreId();
-    if (!storeId) {
-        showNotification('Vui lòng chọn cửa hàng trước', 'warning');
-        return;
-    }
-    
     const batch = {};
     const selectedProductsArray = Array.from(selectedProducts);
     
     selectedProductsArray.forEach(productId => {
         const product = allProducts.find(p => p.id === productId);
         if (product) {
-            const key = database.ref(`sellingProducts/${storeId}`).push().key;
+            const key = database.ref('sellingProducts').push().key;
             
             // Get the correct product name field
             const productName = product.productName || product.name || product.title || 'Không có tên';
@@ -542,7 +520,7 @@ function createSelectedProducts() {
             const importPrice = product.price || product.sellingPrice || product.costPrice || product.importPrice || 0;
             console.log(`Final import price for ${productName}: ${importPrice}`);
             
-            batch[`sellingProducts/${storeId}/${key}`] = {
+            batch[`sellingProducts/${key}`] = {
                 productId: productId,
                 productName: productName,
                 sku: product.sku,
@@ -591,20 +569,20 @@ function openSellingPriceModal(product = null, sellingProduct = null) {
     
     if (product) {
         // Adding new selling product
-        document.getElementById('modalTitle').textContent = 'Thiết Lập Giá Bán';
-        document.getElementById('productName').textContent = product.productName || 'Không có tên';
-        document.getElementById('productSku').textContent = product.sku || 'N/A';
-        document.getElementById('importPrice').textContent = formatCurrency(product.importPrice || 0);
+        document.getElementById('priceModalTitle').textContent = 'Thiết Lập Giá Bán';
+        document.getElementById('productNameDisplay').textContent = product.productName || 'Không có tên';
+        document.getElementById('productSkuDisplay').textContent = product.sku || 'N/A';
+        document.getElementById('importPriceDisplay').textContent = formatCurrency(product.importPrice || 0);
         
         // Store product data
         form.dataset.productId = product.id;
         form.dataset.mode = 'add';
     } else if (sellingProduct) {
         // Editing existing selling product
-        document.getElementById('modalTitle').textContent = 'Chỉnh Sửa Giá Bán';
-        document.getElementById('productName').textContent = sellingProduct.productName || 'Không có tên';
-        document.getElementById('productSku').textContent = sellingProduct.sku || 'N/A';
-        document.getElementById('importPrice').textContent = formatCurrency(sellingProduct.importPrice || 0);
+        document.getElementById('priceModalTitle').textContent = 'Chỉnh Sửa Giá Bán';
+        document.getElementById('productNameDisplay').textContent = sellingProduct.productName || 'Không có tên';
+        document.getElementById('productSkuDisplay').textContent = sellingProduct.sku || 'N/A';
+        document.getElementById('importPriceDisplay').textContent = formatCurrency(sellingProduct.importPrice || 0);
         
         // Fill existing data
         document.getElementById('sellingPrice').value = sellingProduct.sellingPrice || '';
@@ -629,9 +607,9 @@ function closeSellingPriceModal() {
 // Calculate profit and margin
 function calculateProfit() {
     const sellingPriceInput = document.getElementById('sellingPrice');
-    const importPriceText = document.getElementById('importPrice').textContent;
+    const importPriceText = document.getElementById('importPriceDisplay').textContent;
     const profitElement = document.getElementById('profitAmount');
-    const marginElement = document.getElementById('profitMargin');
+    const marginElement = document.getElementById('profitPercentage');
     
     const sellingPrice = parseFloat(sellingPriceInput.value) || 0;
     const importPrice = parseFloat(importPriceText.replace(/[^\d]/g, '')) || 0;
@@ -718,6 +696,11 @@ function saveSellingProduct() {
         database.ref(`sellingProducts/${sellingProductId}`).update(updatedData)
             .then(() => {
                 closeSellingPriceModal();
+                // Reload data to reflect changes
+                loadSellingProducts().then(() => {
+                    displaySellingProducts();
+                    updateStatistics();
+                });
                 showNotification('Đã cập nhật sản phẩm bán thành công', 'success');
             })
             .catch(error => {
@@ -761,23 +744,17 @@ function syncAllProducts() {
         return;
     }
     
-    const storeId = getSelectedStoreId();
-    if (!storeId) {
-        showNotification('Vui lòng chọn cửa hàng trước', 'warning');
-        return;
-    }
-    
-    console.log('Starting sync for store:', storeId);
+    console.log('Starting sync for all products');
     
     const batch = {};
     availableProducts.forEach(product => {
-        const key = database.ref(`sellingProducts/${storeId}`).push().key;
+        const key = database.ref('sellingProducts').push().key;
         console.log(`Creating selling product with key: ${key} for product: ${product.productName}`);
         
         // Try multiple price fields
         const importPrice = product.price || product.sellingPrice || product.costPrice || product.importPrice || 0;
         
-        batch[`sellingProducts/${storeId}/${key}`] = {
+        batch[`sellingProducts/${key}`] = {
             id: key,
             productId: product.id || '',
             productName: product.productName || product.name || product.title || 'Sản phẩm không tên',
@@ -802,9 +779,9 @@ function syncAllProducts() {
             
             // Force reload data from Firebase
             setTimeout(() => {
-                loadSellingProducts().then(products => {
-                    console.log('Reloaded selling products:', products.length);
-                    sellingProducts = products;
+                loadSellingProducts().then(() => {
+                    console.log('Reloaded selling products:', sellingProducts.length);
+                    sellingProducts = sellingProducts;
                     filteredSellingProducts = [...sellingProducts];
                     displaySellingProducts();
                     updateStatistics();
@@ -932,13 +909,7 @@ function deleteSellingProduct(sellingProductId) {
         return;
     }
     
-    const storeId = getSelectedStoreId();
-    if (!storeId) {
-        showNotification('Vui lòng chọn cửa hàng', 'warning');
-        return;
-    }
-    
-    database.ref(`sellingProducts/${storeId}/${sellingProductId}`).remove()
+    database.ref(`sellingProducts/${sellingProductId}`).remove()
         .then(() => {
             // Remove from local array
             const index = sellingProducts.findIndex(p => p.id === sellingProductId);
@@ -1285,14 +1256,8 @@ function getSelectedStoreId() {
 // Update selling price directly from table
 function updateSellingPrice(sellingProductId, newPrice) {
     const price = parseFloat(newPrice) || 0;
-    const storeId = getSelectedStoreId();
     
-    if (!storeId) {
-        showNotification('Vui lòng chọn cửa hàng', 'warning');
-        return;
-    }
-    
-    database.ref(`sellingProducts/${storeId}/${sellingProductId}`).update({
+    database.ref(`sellingProducts/${sellingProductId}`).update({
         sellingPrice: price,
         updatedAt: new Date().toISOString()
     }).then(() => {
@@ -1313,14 +1278,8 @@ function updateSellingPrice(sellingProductId, newPrice) {
 
 // Update product status directly from table
 function updateProductStatus(sellingProductId, newStatus) {
-    const storeId = getSelectedStoreId();
     
-    if (!storeId) {
-        showNotification('Vui lòng chọn cửa hàng', 'warning');
-        return;
-    }
-    
-    database.ref(`sellingProducts/${storeId}/${sellingProductId}`).update({
+    database.ref(`sellingProducts/${sellingProductId}`).update({
         status: newStatus,
         updatedAt: new Date().toISOString()
     }).then(() => {
@@ -1513,15 +1472,9 @@ function deleteSelectedProducts() {
         return;
     }
     
-    const storeId = getSelectedStoreId();
-    if (!storeId) {
-        showNotification('Vui lòng chọn cửa hàng', 'warning');
-        return;
-    }
-    
     const batch = {};
     selectedSellingProducts.forEach(productId => {
-        batch[`sellingProducts/${storeId}/${productId}`] = null;
+        batch[`sellingProducts/${productId}`] = null;
     });
     
     database.ref().update(batch)
@@ -1560,13 +1513,7 @@ function deleteAllProducts() {
         return;
     }
     
-    const storeId = getSelectedStoreId();
-    if (!storeId) {
-        showNotification('Vui lòng chọn cửa hàng', 'warning');
-        return;
-    }
-    
-    database.ref(`sellingProducts/${storeId}`).remove()
+    database.ref('sellingProducts').remove()
         .then(() => {
             sellingProducts = [];
             filteredSellingProducts = [];

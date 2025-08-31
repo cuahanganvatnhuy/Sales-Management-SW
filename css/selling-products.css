@@ -1344,8 +1344,7 @@ tr:hover {
 
 /* Profit Display */
 .profit-display {
-    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-    color: white;
+    color: rgb(146, 24, 24);
     border-radius: 8px;
     padding: 1.5rem;
     margin-bottom: 1.5rem;
@@ -1364,7 +1363,7 @@ tr:hover {
 
 .profit-row label {
     margin-bottom: 0;
-    color: white;
+    color: rgb(0, 0, 0);
     opacity: 0.9;
 }
 
