@@ -96,6 +96,64 @@
             font-weight: 700;
             min-width: 200px;
         }
+        
+        /* Orders container scrollable styles */
+        .orders-scrollable {
+            max-height: 70vh;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1rem;
+            background: #f8fafc;
+        }
+        
+        .orders-scrollable::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .orders-scrollable::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        
+        .orders-scrollable::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        
+        .orders-scrollable::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        
+        /* Order form styling */
+        .order-form-card {
+            margin-bottom: 1.5rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            padding: 17px;
+        }
+        
+        .order-form-card:hover {
+            border-color: #10b981;
+            box-shadow: 0 4px 16px rgba(16, 185, 129, 0.1);
+        }
+        
+        .order-form-header {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 10px 10px 0 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .order-form-body {
+            padding: 1.5rem;
+        }
     </style>
 </head>
 <body>
@@ -269,7 +327,7 @@
                             <div id="pdfUploadContainer"></div>
 
                             <!-- Dynamic Order Forms -->
-                            <div id="salesOrderFormsContainer" class="orders-container">
+                            <div id="salesOrderFormsContainer" class="orders-container orders-scrollable">
                                 <div class="alert alert-info">
                                     <i class="fas fa-info-circle"></i>
                                     <p>Nhập số lượng đơn hàng bán và nhấn "Xác Nhận" để tạo các form đơn hàng.</p>
@@ -312,6 +370,7 @@
                                         <th class="name-col">Sản Phẩm</th>
                                         <th class="sku-col">SKU</th>
                                         <th class="price-col">Số Lượng</th>
+                                        <th class="price-col">Giá Nhập (VNĐ)</th>
                                         <th class="price-col">Giá Bán (VNĐ)</th>
                                         <th class="price-col">Lợi Nhuận</th>
                                         <th class="price-col">Tổng Tiền</th>
@@ -360,12 +419,8 @@
     <script src="../main/navbar.js"></script>
     <script src="../main/header.js"></script>
     <script src="../main/searchable-select.js"></script>
-    <script src="../main/sales-orders.js"></script>
-    <script src="../main/delete-sales-order-form.js"></script>
-    <script src="../main/method-selection.js"></script>
-    <script src="../main/tiktok-sales-order-processor.js"></script>
-    <script src="../main/sales-order-type-selection.js"></script>
-    <script src="../main/excel-sales-order-processor.js"></script>
+    <script src="../main/sales-orders-tmdt-excel.js"></script>
+    <script src="../main/sales-orders-tmdt.js"></script>
     <script>
         // Load components using XMLHttpRequest
         function loadComponent(url, elementId, callback) {

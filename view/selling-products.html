@@ -399,11 +399,24 @@
                 };
             }
 
+            if (typeof window.toggleSalesOrderSubmenu === 'undefined') {
+                window.toggleSalesOrderSubmenu = function(event) {
+                    event.preventDefault();
+                    const submenu = document.getElementById('salesOrderSubmenu');
+                    if (submenu) {
+                        submenu.classList.toggle('show');
+                    } else {
+                        console.log('Sales order submenu not found!');
+                    }
+                };
+            }
+
             // Close submenu when clicking outside
             document.addEventListener('click', function(e) {
                 const invoiceSubmenu = document.getElementById('invoiceSubmenu');
                 const orderSubmenu = document.getElementById('orderSubmenu');
                 const productSubmenu = document.getElementById('productSubmenu');
+                const salesOrderSubmenu = document.getElementById('salesOrderSubmenu');
                 const hasSubmenu = e.target.closest('.has-submenu');
                 
                 if (invoiceSubmenu && !hasSubmenu) {
@@ -416,6 +429,10 @@
                 
                 if (productSubmenu && !hasSubmenu) {
                     productSubmenu.classList.remove('show');
+                }
+                
+                if (salesOrderSubmenu && !hasSubmenu) {
+                    salesOrderSubmenu.classList.remove('show');
                 }
             });
 

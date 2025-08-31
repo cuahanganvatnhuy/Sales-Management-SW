@@ -127,7 +127,7 @@ function loadProducts() {
 function loadSellingProducts() {
     return new Promise((resolve, reject) => {
         const sellingProductsRef = database.ref('sellingProducts');
-        sellingProductsRef.on('value', (snapshot) => {
+        sellingProductsRef.once('value', (snapshot) => {
             const data = snapshot.val();
             const products = [];
             if (data) {
@@ -831,6 +831,18 @@ function displaySellingProducts() {
         const inventory = originalProduct ? (originalProduct.inventory || originalProduct.stock || originalProduct.quantity || 0) : 0;
         const unit = originalProduct ? (originalProduct.unit || originalProduct.unitName || 'cái') : 'cái';
         
+        // Update selling product inventory to match original product (only once)
+        if (originalProduct && product.inventory !== inventory) {
+            product.inventory = inventory;
+            // Update in Firebase silently without triggering reload
+            database.ref(`sellingProducts/${product.id}`).update({
+                inventory: inventory,
+                currentStock: inventory
+            }).catch(error => {
+                console.error('Error updating inventory:', error);
+            });
+        }
+        
         // Debug: Log selling product vs original product
         console.log(`Displaying ${product.productName}:`, {
             sellingProduct: {
@@ -862,13 +874,16 @@ function displaySellingProducts() {
                        onchange="updateSellingPrice('${product.id}', getNumericValue(this.value))"
                        onblur="this.value = this.value ? formatCurrency(getNumericValue(this.value)) : ''">
             </td>
-            <td class="text-center" style="color: #374151 !important;">${product.inventory || inventory}</td>
+            <td class="text-center" style="color: #374151 !important;">${inventory}</td>
             <td class="text-center" style="color: #374151 !important;">${product.unit || unit}</td>
             <td class="text-center" style="color: #374151 !important;">
                 <span class="purchase-count">${product.purchaseCount || 0}</span>
             </td>
             <td class="text-center" style="color: #374151 !important;">
-                <span class="status-badge status-${product.status || 'inactive'}">
+                <span class="status-badge status-${product.status || 'inactive'}" 
+                      onclick="toggleProductStatus('${product.id}', '${product.status || 'inactive'}')" 
+                      style="cursor: pointer;" 
+                      title="Click để thay đổi trạng thái">
                     ${(product.status || 'inactive') === 'active' ? 'Đang bán' : 'Tạm dừng'}
                 </span>
             </td>
@@ -1276,25 +1291,33 @@ function updateSellingPrice(sellingProductId, newPrice) {
     });
 }
 
+// Toggle product status when clicking on status badge
+function toggleProductStatus(sellingProductId, currentStatus) {
+    const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+    updateProductStatus(sellingProductId, newStatus);
+}
+
 // Update product status directly from table
 function updateProductStatus(sellingProductId, newStatus) {
+    console.log('🔥 Updating product status:', sellingProductId, 'to:', newStatus);
     
     database.ref(`sellingProducts/${sellingProductId}`).update({
         status: newStatus,
         updatedAt: new Date().toISOString()
     }).then(() => {
-        console.log('Updated product status:', newStatus);
+        console.log('✅ Updated product status:', newStatus);
         // Update local data
         const product = sellingProducts.find(p => p.id === sellingProductId);
         if (product) {
             product.status = newStatus;
             updateStatistics();
+            displaySellingProducts(); // Refresh display to show new status
         }
         // Show success notification
         const statusText = newStatus === 'active' ? 'Đang bán' : 'Tạm dừng';
         showNotification(`Đã lưu trạng thái: ${statusText}`, 'success');
     }).catch(error => {
-        console.error('Error updating product status:', error);
+        console.error('❌ Error updating product status:', error);
         showNotification('Có lỗi khi cập nhật trạng thái', 'error');
     });
 }
@@ -1739,6 +1762,7 @@ window.getNumericValue = getNumericValue;
 window.selectStore = selectStore;
 window.updateSellingPrice = updateSellingPrice;
 window.updateProductStatus = updateProductStatus;
+window.toggleProductStatus = toggleProductStatus;
 window.formatNumber = formatNumber;
 window.toggleSellingProductSelection = toggleSellingProductSelection;
 window.toggleSelectAllSellingProducts = toggleSelectAllSellingProducts;

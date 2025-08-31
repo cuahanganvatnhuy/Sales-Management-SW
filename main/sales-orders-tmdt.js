@@ -3,6 +3,54 @@
 let salesOrdersData = {};
 let sellingProductsData = {};
 
+// Show loading function - fallback if not defined elsewhere
+function showLoading(show = true) {
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    if (loadingOverlay) {
+        if (show) {
+            loadingOverlay.classList.remove('hidden');
+        } else {
+            loadingOverlay.classList.add('hidden');
+        }
+    }
+}
+
+// Show notification function - fallback if not defined elsewhere
+function showNotification(message, type = 'info') {
+    const notification = document.getElementById('notification');
+    if (!notification) {
+        console.log(`${type.toUpperCase()}: ${message}`);
+        return;
+    }
+    
+    const icon = notification.querySelector('.notification-icon');
+    const messageEl = notification.querySelector('.notification-message');
+    
+    // Set icon based on type
+    const icons = {
+        success: 'fas fa-check-circle',
+        error: 'fas fa-exclamation-circle',
+        warning: 'fas fa-exclamation-triangle',
+        info: 'fas fa-info-circle'
+    };
+    
+    icon.className = `notification-icon ${icons[type] || icons.info}`;
+    messageEl.textContent = message;
+    
+    // Remove existing type classes and add new one
+    notification.className = `notification ${type}`;
+    
+    // Show notification
+    setTimeout(() => {
+        notification.classList.remove('hidden');
+    }, 100);
+    
+    // Auto hide after 5 seconds
+    setTimeout(() => {
+        notification.classList.add('hidden');
+    }, 5000);
+}
+
 // Format currency (135000 -> 135.000)
 function formatCurrency(amount) {
     const numAmount = typeof amount === 'string' ? Number(amount) : amount;
@@ -155,22 +203,79 @@ function getSelectedStoreId() {
     return storeId;
 }
 
-// Load selling products from Firebase
+
 async function loadSellingProducts() {
     try {
-        let snapshot;
-        if (typeof getStoreDataPath === 'function') {
-            const sellingProductsPath = getStoreDataPath('sellingProducts');
-            console.log('📁 Loading selling products from path:', sellingProductsPath);
-            snapshot = await database.ref(sellingProductsPath).once('value');
-        } else {
-            snapshot = await database.ref('sellingProducts').once('value');
+        console.log('🔥 Starting loadSellingProducts function...');
+        console.log('🔥 Firebase database object:', database);
+        
+        // Always load from sellingProducts table for correct business logic
+        const sellingProductsRef = database.ref('sellingProducts');
+        console.log('🔥 Created reference to sellingProducts:', sellingProductsRef);
+        
+        const snapshot = await sellingProductsRef.once('value');
+        console.log('🔥 Got snapshot from Firebase:', snapshot);
+        
+        const data = snapshot.val();
+        console.log('🔥 Raw selling products data from Firebase:', data);
+        console.log('🔥 Data type:', typeof data);
+        console.log('🔥 Data keys:', data ? Object.keys(data) : 'No data');
+        
+        sellingProductsData = {};
+        if (data) {
+            Object.keys(data).forEach(key => {
+                const product = {
+                    id: key,
+                    ...data[key]
+                };
+                console.log(`🔥 Checking product ${key}:`, {
+                    productName: product.productName,
+                    status: product.status,
+                    statusType: typeof product.status,
+                    currentStock: product.currentStock,
+                    inventory: product.inventory,
+                    productId: product.productId
+                });
+                
+                // Only include products with status "active" (matching selling-products.js logic)
+                if (product.status === 'active') {
+                    console.log(`✅ Product ${key} included - status matches "active"`);
+                    sellingProductsData[key] = product;
+                } else {
+                    console.log(`❌ Product ${key} excluded - status: "${product.status}" !== "active"`);
+                }
+            });
         }
-        sellingProductsData = snapshot.val() || {};
-        console.log('Selling products loaded:', Object.keys(sellingProductsData).length, 'products');
-        console.log('Raw Firebase data (TMDT):', sellingProductsData);
+        
+        console.log('🔥 === LOADED SELLING PRODUCTS (TMDT) ===');
+        console.log('🔥 Product count:', Object.keys(sellingProductsData).length);
+        console.log('🔥 Filtered sellingProductsData:', sellingProductsData);
+        Object.entries(sellingProductsData).forEach(([id, p], i) => {
+            console.log(`🔥 Selling Product ${i + 1}:`, {
+                id: id,
+                productId: p.productId,
+                productName: p.productName,
+                sku: p.sku,
+                sellingPrice: p.sellingPrice,
+                importPrice: p.importPrice,
+                status: p.status
+            });
+        });
+        console.log('🔥 === END SELLING PRODUCTS (TMDT) ===');
+        
+        // Force regenerate forms if they exist
+        const container = document.getElementById('salesOrderFormsContainer');
+        if (container && container.innerHTML.trim() !== '' && !container.innerHTML.includes('alert-info')) {
+            const orderCountInput = document.getElementById('orderCount');
+            if (orderCountInput && orderCountInput.value) {
+                generateSalesOrderForms();
+            }
+        }
+        
     } catch (error) {
-        console.error('Error loading selling products:', error);
+        console.error('🔥 Error loading selling products:', error);
+        console.error('🔥 Error details:', error.message);
+        console.error('🔥 Error stack:', error.stack);
         showNotification('Lỗi tải danh sách sản phẩm bán!', 'error');
     }
 }
@@ -236,11 +341,16 @@ function generateSalesOrderForms() {
         return;
     }
     
-    showLoading(true);
+    // Check if showLoading function exists
+    if (typeof showLoading === 'function') {
+        showLoading(true);
+    }
     
     setTimeout(() => {
         generateSalesOrderFormsContent(orderCount, container);
-        showLoading(false);
+        if (typeof showLoading === 'function') {
+            showLoading(false);
+        }
         showNotification(`Đã tạo ${orderCount} form đơn hàng bán!`, 'success');
     }, 300);
 }
@@ -283,16 +393,16 @@ function generateSalesOrderFormsContent(orderCount, container) {
                                placeholder="Nhập số lượng">
                     </div>
                     <div class="form-group">
-                        <label for="salesPrice_${i}" id="salesPriceLabel_${i}">Giá Bán:</label>
-                        <input type="text" id="salesPrice_${i}" name="salesPrice_${i}" readonly 
-                               placeholder="Giá bán sẽ tự động cập nhật">
+                        <label for="importPrice_${i}">Giá Nhập:</label>
+                        <input type="text" id="importPrice_${i}" name="importPrice_${i}" readonly 
+                               placeholder="Giá nhập">
                     </div>
                 </div>
                 <div class="form-row profit-row">
                     <div class="form-group">
-                        <label for="importPrice_${i}">Giá Nhập:</label>
-                        <input type="text" id="importPrice_${i}" name="importPrice_${i}" readonly 
-                               placeholder="Giá nhập">
+                        <label for="salesPrice_${i}" id="salesPriceLabel_${i}">Giá Bán:</label>
+                        <input type="text" id="salesPrice_${i}" name="salesPrice_${i}" readonly 
+                               placeholder="Giá bán sẽ tự động cập nhật">
                     </div>
                     <div class="form-group">
                         <label for="profit_${i}">Lợi Nhuận:</label>
@@ -315,6 +425,11 @@ function generateSalesOrderFormsContent(orderCount, container) {
 
 // Initialize SearchableSelect for selling product dropdowns
 function initializeSalesProductSelects(orderCount) {
+    console.log('=== INITIALIZING PRODUCT SELECTS ===');
+    console.log('Order count:', orderCount);
+    console.log('Selling products data:', sellingProductsData);
+    console.log('Number of selling products:', Object.keys(sellingProductsData).length);
+    
     const productData = Object.keys(sellingProductsData).map(id => ({
         id: id,
         name: sellingProductsData[id].productName,
@@ -322,24 +437,48 @@ function initializeSalesProductSelects(orderCount) {
         importPrice: sellingProductsData[id].importPrice
     }));
     
+    console.log('Product data for dropdown:', productData);
+    
     for (let i = 1; i <= orderCount; i++) {
         const container = document.getElementById(`salesProductSelect_${i}`);
+        console.log(`Container for product ${i}:`, container);
+        
         if (container) {
-            const searchableSelect = new SearchableSelect(container, {
-                placeholder: 'Chọn sản phẩm bán...',
-                searchPlaceholder: 'Tìm kiếm sản phẩm...',
-                noResultsText: 'Không tìm thấy sản phẩm nào'
-            });
-            
-            searchableSelect.setData(productData);
-            
-            searchableSelect.onSelect = (selectedProduct) => {
-                const hiddenInput = document.getElementById(`salesProduct_${i}`);
-                hiddenInput.value = selectedProduct.id;
-                updateSalesOrderPrice(i, selectedProduct.id);
-            };
+            // Check if SearchableSelect is available
+            if (typeof SearchableSelect === 'undefined') {
+                console.error('SearchableSelect is not defined! Creating simple select instead.');
+                // Create simple select as fallback
+                let selectHTML = '<select class="form-control" onchange="handleProductSelection(' + i + ', this.value)">';
+                selectHTML += '<option value="">Chọn sản phẩm bán...</option>';
+                productData.forEach(product => {
+                    selectHTML += `<option value="${product.id}">${product.name}</option>`;
+                });
+                selectHTML += '</select>';
+                container.innerHTML = selectHTML;
+            } else {
+                const searchableSelect = new SearchableSelect(container, {
+                    placeholder: 'Chọn sản phẩm bán...',
+                    searchPlaceholder: 'Tìm kiếm sản phẩm...',
+                    noResultsText: 'Không tìm thấy sản phẩm nào'
+                });
+                
+                searchableSelect.setData(productData);
+                
+                searchableSelect.onSelect = (selectedProduct) => {
+                    const hiddenInput = document.getElementById(`salesProduct_${i}`);
+                    hiddenInput.value = selectedProduct.id;
+                    updateSalesOrderPrice(i, selectedProduct.id);
+                };
+            }
         }
     }
+}
+
+// Fallback function for simple select
+function handleProductSelection(orderIndex, productId) {
+    const hiddenInput = document.getElementById(`salesProduct_${orderIndex}`);
+    hiddenInput.value = productId;
+    updateSalesOrderPrice(orderIndex, productId);
 }
 
 // Update sales order price when product is selected
@@ -457,8 +596,15 @@ async function createSalesOrders(event) {
             break;
         }
         
-        // Check stock availability
-        const currentStock = sellingProduct.currentStock || 0;
+        // Check stock availability - get from original products table
+        console.log('🔥 Checking stock for product:', sellingProduct.productName);
+        console.log('🔥 Selling product data:', sellingProduct);
+        
+        // Get stock from selling products table (independent inventory management)
+        const currentStock = sellingProduct.currentStock || sellingProduct.inventory || 0;
+        
+        console.log('🔥 Final current stock:', currentStock, 'Required quantity:', quantity);
+        
         if (currentStock < quantity) {
             showNotification(`Không đủ tồn kho cho sản phẩm ${sellingProduct.productName}! Tồn kho: ${currentStock}, Yêu cầu: ${quantity}`, 'error');
             hasError = true;
@@ -506,7 +652,9 @@ async function createSalesOrders(event) {
     if (hasError) return;
     
     try {
-        showLoading(true);
+        if (typeof showLoading === 'function') {
+            showLoading(true);
+        }
         console.log('=== Creating TMĐT sales orders ===');
         console.log('Sales orders to create:', salesOrders.length);
         
@@ -519,17 +667,17 @@ async function createSalesOrders(event) {
                 await orderRef.set(salesOrderData);
                 console.log('Sales order saved with ID:', orderRef.key, 'Order ID:', salesOrderData.orderId);
                 
-                // Update stock in selling products
-                await updateSellingProductStock(salesOrderData.productId, -salesOrderData.quantity);
+                // Stock management will be handled separately by selling products module
+                console.log('✅ Order saved successfully - stock management delegated to selling products module');
             }
         } else {
-            console.log('Saving to global sales orders (fallback)');
+            // Save to global salesOrders collection
             for (const salesOrderData of salesOrders) {
                 const orderRef = database.ref('salesOrders').push();
                 await orderRef.set(salesOrderData);
                 
-                // Update stock in selling products
-                await updateSellingProductStock(salesOrderData.productId, -salesOrderData.quantity);
+                // Stock management will be handled separately by selling products module
+                console.log('✅ Order saved successfully - stock management delegated to selling products module');
             }
         }
         
@@ -568,7 +716,9 @@ async function createSalesOrders(event) {
         
         showNotification(errorMessage, 'error');
     } finally {
-        showLoading(false);
+        if (typeof showLoading === 'function') {
+            showLoading(false);
+        }
     }
 }
 
@@ -600,6 +750,99 @@ async function updateSellingProductStock(productId, quantityChange) {
     } catch (error) {
         console.error('Error updating product stock:', error);
         // Don't throw error to avoid breaking order creation
+    }
+}
+
+// Update original product stock (where inventory is actually managed)
+async function updateOriginalProductStock(productId, quantityChange) {
+    try {
+        console.log('🔥 Updating original product stock for:', productId, 'Change:', quantityChange);
+        
+        const productRef = database.ref(`products/${productId}`);
+        const snapshot = await productRef.once('value');
+        const product = snapshot.val();
+        
+        console.log('🔥 Product data from Firebase:', product);
+        
+        if (product) {
+            const currentStock = product.currentStock || product.inventory || product.stock || 0;
+            const newStock = Math.max(0, currentStock + quantityChange);
+            
+            console.log('🔥 Stock calculation:', {
+                currentStock: currentStock,
+                quantityChange: quantityChange,
+                newStock: newStock
+            });
+            
+            // Update multiple stock fields to ensure consistency
+            const updateData = {
+                currentStock: newStock,
+                inventory: newStock,
+                stock: newStock,
+                lastUpdated: new Date().toISOString()
+            };
+            
+            console.log('🔥 Update data to send:', updateData);
+            
+            await productRef.update(updateData);
+            
+            console.log(`✅ Updated original product stock for ${product.name || product.productName}: ${currentStock} -> ${newStock}`);
+            
+            // Verify the update worked
+            const verifySnapshot = await productRef.once('value');
+            const updatedProduct = verifySnapshot.val();
+            console.log('🔥 Verified updated product:', updatedProduct);
+        } else {
+            console.log('❌ Original product not found:', productId);
+        }
+    } catch (error) {
+        console.error('❌ Error updating original product stock:', error);
+        // Don't throw error to avoid breaking order creation
+    }
+}
+
+// Select creation method for TMDT orders
+function selectCreationMethod(method) {
+    console.log('Selected creation method:', method);
+    
+    // Update button states
+    const buttons = document.querySelectorAll('.btn-method');
+    buttons.forEach(btn => btn.classList.remove('active'));
+    
+    const activeBtn = document.getElementById(`${method}MethodBtn`);
+    if (activeBtn) {
+        activeBtn.classList.add('active');
+    }
+    
+    // Show/hide relevant sections based on method
+    const excelUploadGroup = document.getElementById('excelUploadGroup');
+    const pdfUploadContainer = document.getElementById('pdfUploadContainer');
+    const salesOrderFormsContainer = document.getElementById('salesOrderFormsContainer');
+    const orderCountGroup = document.getElementById('orderCount')?.closest('.form-group');
+    
+    if (method === 'manual') {
+        // Show manual order creation
+        if (excelUploadGroup) excelUploadGroup.style.display = 'none';
+        if (pdfUploadContainer) pdfUploadContainer.style.display = 'none';
+        if (salesOrderFormsContainer) salesOrderFormsContainer.style.display = 'block';
+        if (orderCountGroup) orderCountGroup.style.display = 'block';
+    } else if (method === 'excel') {
+        // Show Excel upload
+        if (excelUploadGroup) excelUploadGroup.style.display = 'block';
+        if (pdfUploadContainer) pdfUploadContainer.style.display = 'none';
+        if (salesOrderFormsContainer) salesOrderFormsContainer.style.display = 'none';
+        if (orderCountGroup) orderCountGroup.style.display = 'none'; // Hide order count for Excel
+        
+        // Initialize TMDT Excel upload if not already done
+        if (typeof initializeTmdtExcelUpload === 'function') {
+            initializeTmdtExcelUpload();
+        }
+    } else if (method === 'pdf') {
+        // Show PDF upload
+        if (excelUploadGroup) excelUploadGroup.style.display = 'none';
+        if (pdfUploadContainer) pdfUploadContainer.style.display = 'block';
+        if (salesOrderFormsContainer) salesOrderFormsContainer.style.display = 'none';
+        if (orderCountGroup) orderCountGroup.style.display = 'none'; // Hide order count for PDF
     }
 }
 
@@ -764,7 +1007,9 @@ async function deleteSelectedSalesOrders() {
     }
     
     try {
-        showLoading(true);
+        if (typeof showLoading === 'function') {
+            showLoading(true);
+        }
         
         for (const orderId of orderIds) {
             await deleteSalesOrderById(orderId);
@@ -777,6 +1022,8 @@ async function deleteSelectedSalesOrders() {
         console.error('Error deleting selected sales orders:', error);
         showNotification('Lỗi xóa đơn hàng bán đã chọn!', 'error');
     } finally {
-        showLoading(false);
+        if (typeof showLoading === 'function') {
+            showLoading(false);
+        }
     }
 }
