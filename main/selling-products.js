@@ -244,96 +244,50 @@ function formatCurrency(amount) {
     }).format(amount);
 }
 
-// Open product selection modal
-function openProductSelectionModal() {
-    console.log('=== Opening Product Selection Modal ===');
-    const modal = document.getElementById('productSelectionModal');
-    const productList = document.getElementById('productList');
-    
-    if (!modal) {
-        console.error('Modal element not found');
-        return;
-    }
-    
-    if (!productList) {
-        console.error('Product list element not found');
-        return;
-    }
-    
-    // Clear existing selections
-    selectedProducts.clear();
-    updateSelectedCount();
-    
-    // Clear existing list
-    productList.innerHTML = '';
-    
-    // Debug logging
-    console.log('All products:', allProducts.length);
-    console.log('Selling products:', sellingProducts.length);
-    
-    // Force wait for data if not loaded yet
-    if (allProducts.length === 0) {
-        console.log('No products loaded yet, waiting...');
-        productList.innerHTML = '<p class="no-products">Đang tải sản phẩm...</p>';
-        setTimeout(() => {
-            if (allProducts.length > 0) {
-                openProductSelectionModal(); // Retry
-            } else {
-                productList.innerHTML = '<p class="no-products">Không thể tải sản phẩm. Vui lòng thử lại.</p>';
-            }
-        }, 2000);
-        modal.style.display = 'block';
-        return;
-    }
-    
-    // Debug: Log detailed product information
-    console.log('=== ALL PRODUCTS ===');
-    allProducts.forEach((p, i) => {
-        console.log(`Product ${i + 1}:`, {
-            id: p.id,
-            name: p.productName || p.name || 'No name',
-            sku: p.sku || 'No SKU',
-            status: p.status || 'No status',
-            storeId: p.storeId || 'No store ID'
-        });
-    });
-    
-    // Get products not yet in selling products
-    const availableProducts = allProducts.filter(product => {
-        const isInSelling = sellingProducts.some(sp => sp.productId === product.id);
-        console.log(`Product ${product.id} (${product.productName || product.name || 'no name'}) is ${isInSelling ? 'ALREADY IN' : 'NOT IN'} selling products`);
-        return !isInSelling;
-    });
-    
-    console.log('=== FILTERED PRODUCTS ===');
-    console.log(`Showing ${availableProducts.length} of ${allProducts.length} products`);
-    availableProducts.forEach((p, i) => {
-        console.log(`Available ${i + 1}:`, {
-            id: p.id,
-            name: p.productName || p.name || 'No name',
-            sku: p.sku || 'No SKU'
-        });
-    });
-    console.log('=== END PRODUCT DEBUGGING ===');
-    
-    if (availableProducts.length === 0) {
-        if (allProducts.length === 0) {
-            productList.innerHTML = '<p class="no-products">Chưa có sản phẩm nào trong hệ thống. Vui lòng thêm sản phẩm trước.</p>';
-        } else {
-            productList.innerHTML = '<p class="no-products">Tất cả sản phẩm đã được thêm vào danh sách bán</p>';
+// Export function to get all selling products for other modules
+function getAllSellingProducts() {
+    return new Promise((resolve, reject) => {
+        console.log('getAllSellingProducts called');
+        
+        if (!database) {
+            console.error('Database not available');
+            reject(new Error('Database not available'));
+            return;
         }
-    } else {
-        console.log('Creating product items for', availableProducts.length, 'products');
-        availableProducts.forEach((product, index) => {
-            console.log(`Creating item ${index + 1}:`, product.productName || product.name || product.title);
-            const productItem = createProductListItemWithCheckbox(product, index);
-            productList.appendChild(productItem);
-        });
-        console.log('Product items added to DOM');
-    }
-    
-    modal.style.display = 'block';
+        
+        const storeId = localStorage.getItem('selectedStoreId');
+        console.log('Store ID from localStorage:', storeId);
+        
+        // Load all selling products if no store selected, or filter by store
+        let query = database.ref('sellingProducts');
+        if (storeId) {
+            query = query.orderByChild('storeId').equalTo(storeId);
+        }
+        
+        query.once('value')
+            .then(snapshot => {
+                const products = {};
+                snapshot.forEach(childSnapshot => {
+                    const product = childSnapshot.val();
+                    if (product) { // Include all products, regardless of stock
+                        products[childSnapshot.key] = {
+                            ...product,
+                            id: childSnapshot.key,
+                            stock: product.stock || 0 // Ensure stock is a number
+                        };
+                    }
+                });
+                
+                console.log('Loaded selling products:', Object.keys(products).length);
+                resolve(products);
+            })
+            .catch(error => {
+                console.error('Error loading selling products:', error);
+                reject(error);
+            });
+    });
 }
+
 
 // Create product list item with checkbox for selection modal
 function createProductListItemWithCheckbox(product, index) {
@@ -1737,15 +1691,19 @@ function searchOriginalProducts() {
 }
 
 // Global functions for HTML onclick events
-window.openProductSelectionModal = openProductSelectionModal;
-window.closeProductSelectionModal = closeProductSelectionModal;
 window.toggleProductSelection = toggleProductSelection;
 window.selectAllProducts = selectAllProducts;
 window.clearAllSelections = clearAllSelections;
 window.createSelectedProducts = createSelectedProducts;
 window.switchActiveButton = switchActiveButton;
 window.showSyncConfirmModal = showSyncConfirmModal;
-window.closeSyncConfirmModal = closeSyncConfirmModal;
+window.toggleSellingProductSelection = toggleSellingProductSelection;
+window.toggleSelectAllSellingProducts = toggleSelectAllSellingProducts;
+window.deleteSelectedProducts = deleteSelectedProducts;
+window.deleteAllProducts = deleteAllProducts;
+window.filterProducts = filterProducts;
+window.searchOriginalProducts = searchOriginalProducts;
+window.sortTable = sortTable;
 window.confirmSync = confirmSync;
 window.openSellingPriceModal = openSellingPriceModal;
 window.closeSellingPriceModal = closeSellingPriceModal;
@@ -1771,3 +1729,4 @@ window.deleteAllProducts = deleteAllProducts;
 window.filterProducts = filterProducts;
 window.searchOriginalProducts = searchOriginalProducts;
 window.sortTable = sortTable;
+window.getAllSellingProducts = getAllSellingProducts;

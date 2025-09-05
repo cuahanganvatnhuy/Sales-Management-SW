@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bán Lẻ - Sales Management System</title>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="../style/man.css">
+    <link rel="stylesheet" href="../css/sales-orders-retail.css">
+
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-compat.js"></script>
+    <style>
+        /* Notification Styles */
+        .notification {
+            position: fixed;
+            top: 12%;
+            right: 20px;
+            z-index: 9999;
+            min-width: 300px;
+            max-width: 500px;
+            padding: 16px 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            transform: translateX(100%);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+        }
+        
+        .notification:not(.hidden) {
+            transform: translateX(0);
+        }
+        
+        .notification.hidden {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        
+        .notification.success {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            border-left: 4px solid #065f46;
+        }
+        
+        .notification.error {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            border-left: 4px solid #991b1b;
+        }
+        
+        .notification.warning {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            border-left: 4px solid #92400e;
+        }
+        
+        .notification.info {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            border-left: 4px solid #1d4ed8;
+        }
+        
+        .notification-icon {
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        
+        .notification-message {
+            flex: 1;
+            line-height: 1.4;
+        }
+        
+        /* Responsive */
+        @media (max-width: 640px) {
+            .notification {
+                top: 10px;
+                right: 10px;
+                left: 10px;
+                min-width: auto;
+                max-width: none;
+            }
+        }
+        .btn-large {
+            padding: 12px 32px;
+            font-size: 14px;
+            font-weight: 700;
+            min-width: 200px;
+        }
+        
+        /* Orders container scrollable styles */
+        .orders-scrollable {
+            max-height: 70vh;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1rem;
+            background: #f8fafc;
+        }
+        
+        .orders-scrollable::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .orders-scrollable::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        
+        .orders-scrollable::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        
+        .orders-scrollable::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        
+        /* Order form styling */
+        .order-form-card {
+            margin-bottom: 1.5rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            padding: 17px;
+        }
+        
+        .order-form-card:hover {
+            border-color: #10b981;
+            box-shadow: 0 4px 16px rgba(16, 185, 129, 0.1);
+        }
+        
+        .order-form-header {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 10px 10px 0 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .order-form-body {
+            padding: 1.5rem;
+        }
+        
+        /* Order Type Navigation */
+        .order-type-nav {
+            margin-bottom: 20px;
+            margin-left: 20px;
+        }
+        
+        /* Table Header Styling */
+        .table-header {
+            color: black;
+        }
+        
+        .date-col {
+            color: rgb(24, 100, 1);
+        }
+        
+        /* Order Summary Styling */
+        .order-summary {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+        }
+        
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .summary-row:last-child {
+            border-bottom: none;
+            font-weight: bold;
+            font-size: 1.1em;
+            color: #059669;
+        }
+        
+        .summary-label {
+            font-weight: 500;
+        }
+        
+        .summary-value {
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        .summary-inputs-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            padding: 1rem 0;
+        }
+        
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .input-label {
+            font-weight: 500;
+            color: #374151;
+            font-size: 0.9em;
+        }
+        
+        .input-large {
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+        
+        .input-large:focus {
+            outline: none;
+            border-color: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+        }
+        
+        @media (max-width: 768px) {
+            .summary-inputs-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Đang xử lý...</p>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div id="notification" class="notification hidden">
+        <div class="notification-content">
+            <i class="notification-icon"></i>
+            <span class="notification-message"></span>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Navbar Component -->
+        <div id="navbar-container">
+            <!-- Navbar will be loaded here -->
+        </div>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header Component -->
+            <div id="header-container">
+                <!-- Header will be loaded here -->
+            </div>
+
+            <!-- Content -->
+            <div class="content">
+                <!-- Add Order Form -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-shopping-bag"></i> Tạo Đơn Hàng Bán Lẻ</h2>
+                    </div>
+                                <!-- Order Type Selection -->
+                                <div class="order-type-selection order-type-nav">
+                                    <div class="order-type-buttons">
+                                        <button type="button" class="btn btn-order-type" id="ecommerceTypeBtn" onclick="window.location.href='./sales-orders-tmdt.html'">
+                                            <i class="fas fa-shopping-cart"></i> TMĐT Bán
+                                        </button>
+                                        <button type="button" class="btn btn-order-type active" id="retailTypeBtn" onclick="selectOrderType('retail')">
+                                            <i class="fas fa-store"></i> Bán Lẻ
+                                        </button>
+                                        <button type="button" class="btn btn-order-type" id="wholesaleTypeBtn" onclick="window.location.href='./sales-orders-wholesale.html'">
+                                            <i class="fas fa-warehouse"></i> Bán Sỉ
+                                        </button>
+                                    </div>
+                                </div>
+                    <div class="card-body">
+                        <form id="addRetailOrderForm" class="order-form" onsubmit="createRetailOrdersHandler(event)">
+                            <!-- Customer Information -->
+                            <div class="form-section">
+                                <h3><i class="fas fa-user"></i> Thông Tin Khách Hàng</h3>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="customerName">Tên Khách Hàng *</label>
+                                        <input type="text" id="customerName" name="customerName" 
+                                               placeholder="Nhập tên khách hàng">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="customerPhone">Số Điện Thoại</label>
+                                        <input type="tel" id="customerPhone" name="customerPhone" 
+                                               placeholder="Nhập số điện thoại">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Order Info -->
+                            <div class="form-section">
+                                <h3><i class="fas fa-calendar"></i> Thông Tin Đơn Hàng Bán Lẻ</h3>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="orderDate">Ngày Bán *</label>
+                                        <input type="date" id="orderDate" name="orderDate" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="orderTime">Giờ Bán *</label>
+                                        <input type="time" id="orderTime" name="orderTime" required>
+                                    </div>
+
+                                    <!-- Manual Order Creation -->
+                                    <div class="form-group" id="manualOrderGroup">
+                                        <label for="orderCount">Số Lượng sản phẩm:</label>
+                                        <div class="input-with-button">
+                                            <input type="number" id="orderCount" name="orderCount" 
+                                                   min="1" max="50" required value="1"
+                                                   placeholder="Nhập số lượng đơn hàng"
+                                                   onkeypress="if(event.key==='Enter') generateRetailOrderFormsWrapper()">
+                                            <button type="button" class="btn btn-primary btn-confirm" 
+                                                    onclick="generateRetailOrderFormsWrapper()">
+                                                <i class="fas fa-check"></i> Xác Nhận
+                                            </button>
+                                        </div>
+                                        <small class="form-hint">Nhập số lượng sàn phần đơn hàng bán lẻ bạn muốn tạo </small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Dynamic Order Forms -->
+                            <div id="retailOrderFormsContainer" class="orders-container orders-scrollable">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i>
+                                    <p>Nhập số lượng đơn hàng bán lẻ và nhấn "Xác Nhận" để tạo các form đơn hàng.</p>
+                                </div>
+                            </div>
+
+                            <!-- Order Summary -->
+                            <div class="form-section">
+                                <h3><i class="fas fa-calculator"></i> Tổng Kết Đơn Hàng</h3>
+                                <div class="order-summary">
+                                    <div class="summary-row">
+                                        <span class="summary-label">Tạm Tính:</span>
+                                        <span class="summary-value" id="retailSubtotal">0 VNĐ</span>
+                                    </div>
+
+                                    <!-- Input fields in one row -->
+                                    <div class="summary-inputs-row">
+                                        <div class="input-group">
+                                            <label class="input-label">Giảm Giá:</label>
+                                            <input type="text" id="retailDiscount" 
+                                                   onchange="updateRetailSummary()" oninput="formatNumberInput(this)" 
+                                                   class="input-large" placeholder="Ví dụ: 10.000">
+                                        </div>
+                                        <div class="input-group">
+                                            <label class="input-label">Phí Vận Chuyển:</label>
+                                            <input type="text" id="retailShipping" 
+                                                   onchange="updateRetailSummary()" oninput="formatNumberInput(this)"
+                                                   class="input-large" placeholder="Ví dụ: 25.000">
+                                        </div>
+                                    </div>
+
+                                    <div class="summary-row">
+                                        <span class="summary-label">Tổng Cộng:</span>
+                                        <span class="summary-value" id="retailTotal">0 VNĐ</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <div class="form-actions">
+                                <button type="button" class="btn btn-secondary" onclick="clearRetailForm()">
+                                    <i class="fas fa-undo"></i> Làm Mới
+                                </button>
+                                <button type="submit" class="btn btn-primary btn-large">
+                                    <i class="fas fa-save"></i> Tạo Tất Cả Đơn Hàng Bán Lẻ
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Retail Orders List -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-list"></i> Danh Sách Đơn Hàng Bán Lẻ</h2>
+                    </div>
+                    <div class="card-body">
+                        <!-- Bulk Actions -->
+                        <div class="bulk-actions hidden" id="bulkActions">
+                            <button type="button" class="btn btn-danger" onclick="deleteSelectedRetailOrders()">
+                                <i class="fas fa-trash"></i> Xóa Đã Chọn (<span id="selectedCount">0</span>)
+                            </button>
+                        </div>
+
+                        <!-- Orders Table Container -->
+                        <div class="table-container orders-table-container">
+                            <table class="products-table" id="retailOrdersTable">
+                                <thead>
+                                    <tr class="table-header">
+                                        <th class="checkbox-col">
+                                            <input type="checkbox" id="selectAll" onchange="toggleSelectAll()" title="Chọn tất cả">
+                                        </th>
+                                        <th class="stt-col">STT</th>
+                                        <th class="order-id-col">Mã ĐH</th>
+                                        <th class="customer-col">Khách Hàng</th>
+                                        <th class="phone-col">SĐT</th>
+                                        <th class="name-col">Sản Phẩm</th>
+                                        <th class="sku-col">SKU</th>
+                                        <th class="price-col">Số Lượng</th>
+                                        <th class="price-col">Giá Bán (VNĐ)</th>
+                                        <th class="price-col">Tổng Tiền</th>
+                                        <th class="store-col">Cửa Hàng</th>
+                                        <th class="date-col">Ngày Bán</th>
+                                        <th class="action-col">Thao Tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="retailOrdersContainer">
+                                    <!-- Dữ liệu đơn hàng bán lẻ sẽ được hiển thị ở đây -->
+                                </tbody>
+                            </table>
+
+                            <div id="emptyState" class="empty-state hidden">
+                                <div class="empty-icon">
+                                    <i class="fas fa-shopping-bag"></i>
+                                </div>
+                                <h3>Chưa có đơn hàng bán lẻ nào</h3>
+                                <p>Hãy tạo đơn hàng bán lẻ đầu tiên của bạn!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../main/firebase.js"></script>
+    <script src="../main/submenu.js"></script>
+    <script src="../main/store-context.js"></script>
+    <script src="../main/navbar.js"></script>
+    <script src="../main/header.js"></script>
+    <script src="../main/searchable-select.js"></script>
+    <script src="../main/sales-orders-retail.js"></script>
+    <script>
+        // Load components using XMLHttpRequest
+        function loadComponent(url, elementId, callback) {
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', url, true);
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4) {
+                    if (xhr.status === 200) {
+                        document.getElementById(elementId).innerHTML = xhr.responseText;
+                        if (callback) callback();
+                    } else {
+                        console.error('Failed to load component:', url, xhr.status);
+                    }
+                }
+            };
+            xhr.send();
+        }
+        
+        // Set default date and time to today
+        function setDefaultDate() {
+            const today = new Date();
+            const dateString = today.toISOString().split('T')[0];
+            const timeString = today.toTimeString().split(' ')[0].substring(0, 5);
+            document.getElementById('orderDate').value = dateString;
+            document.getElementById('orderTime').value = timeString;
+        }
+        
+        // Format number input with thousands separator
+        function formatNumberInput(input) {
+            let value = input.value.replace(/[^\d]/g, '');
+            if (value) {
+                value = parseInt(value).toLocaleString('vi-VN');
+            }
+            input.value = value;
+            updateRetailSummary();
+        }
+        
+        // Update retail order summary
+        function updateRetailSummary() {
+            let subtotal = 0;
+            
+            // Calculate subtotal from all order forms
+            const orderForms = document.querySelectorAll('[id^="retailOrderTotal_"]');
+            orderForms.forEach(totalElement => {
+                const totalText = totalElement.textContent.replace(/[^\d]/g, '');
+                if (totalText) {
+                    subtotal += parseInt(totalText);
+                }
+            });
+            
+            // Get discount and shipping values
+            const discountInput = document.getElementById('retailDiscount');
+            const shippingInput = document.getElementById('retailShipping');
+            
+            const discount = discountInput ? parseInt(discountInput.value.replace(/[^\d]/g, '') || 0) : 0;
+            const shipping = shippingInput ? parseInt(shippingInput.value.replace(/[^\d]/g, '') || 0) : 0;
+            
+            // Calculate total
+            const total = subtotal - discount + shipping;
+            
+            // Update display
+            document.getElementById('retailSubtotal').textContent = subtotal.toLocaleString('vi-VN') + ' VNĐ';
+            document.getElementById('retailTotal').textContent = total.toLocaleString('vi-VN') + ' VNĐ';
+        }
+        
+        // Clear retail form
+        function clearRetailForm() {
+            document.getElementById('addRetailOrderForm').reset();
+            setDefaultDate();
+            document.getElementById('retailOrderFormsContainer').innerHTML = `
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    <p>Nhập số lượng đơn hàng bán lẻ và nhấn "Xác Nhận" để tạo các form đơn hàng.</p>
+                </div>
+            `;
+            updateRetailSummary();
+        }
+        
+        // Load components when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set default date
+            setDefaultDate();
+            
+            // Load navbar first
+            loadComponent('../components/navbar.html', 'navbar-container', function() {
+                console.log('Navbar loaded');
+                // Initialize navbar functionality
+                if (typeof initializeNavbar === 'function') {
+                    initializeNavbar();
+                }
+            });
+            
+            // Load header
+            loadComponent('../components/header.html', 'header-container', function() {
+                console.log('Header loaded');
+                // Initialize header functionality after loading
+                if (typeof initializeHeader === 'function') {
+                    initializeHeader();
+                }
+            });
+            
+            // Initialize retail orders system
+            if (typeof initializeRetailOrdersSystem === 'function') {
+                initializeRetailOrdersSystem();
+            } else {
+                console.log('Waiting for retail orders system to load...');
+                setTimeout(() => {
+                    if (typeof initializeRetailOrdersSystem === 'function') {
+                        initializeRetailOrdersSystem();
+                    }
+                }, 1000);
+            }
+            
+            // Auto-generate retail order forms with default count of 1
+            setTimeout(() => {
+                if (typeof generateRetailOrderForms === 'function') {
+                    generateRetailOrderForms();
+                }
+            }, 1500);
+        });
+        
+        // Expose functions to global scope for HTML onclick handlers
+        window.generateRetailOrderFormsWrapper = function() {
+            console.log('generateRetailOrderFormsWrapper called');
+            console.log('window.generateRetailOrderForms:', typeof window.generateRetailOrderForms);
+            console.log('generateRetailOrderForms:', typeof generateRetailOrderForms);
+            
+            if (typeof window.generateRetailOrderForms === 'function') {
+                window.generateRetailOrderForms();
+            } else if (typeof generateRetailOrderForms === 'function') {
+                generateRetailOrderForms();
+            } else {
+                console.error('generateRetailOrderForms function not found');
+                // Try to call from module namespace
+                if (window.salesOrdersRetailModule && typeof window.salesOrdersRetailModule.generateRetailOrderForms === 'function') {
+                    window.salesOrdersRetailModule.generateRetailOrderForms();
+                } else {
+                    alert('Chức năng tạo form đơn hàng chưa sẵn sàng. Vui lòng refresh trang và thử lại!');
+                }
+            }
+        };
+        
+        window.createRetailOrdersHandler = async function(event) {
+            event.preventDefault();
+            console.log('🚀 Create retail orders button clicked');
+            
+            try {
+                // Check multiple ways to access the function
+                let createOrdersFunction = null;
+                
+                if (window.salesOrdersRetailModule?.createRetailOrders) {
+                    createOrdersFunction = window.salesOrdersRetailModule.createRetailOrders;
+                    console.log('✅ Found function in salesOrdersRetailModule');
+                } else if (typeof createRetailOrders === 'function') {
+                    createOrdersFunction = createRetailOrders;
+                    console.log('✅ Found function in global scope');
+                } else {
+                    console.error('❌ createRetailOrders function not found anywhere');
+                    console.log('Available functions:', Object.keys(window.salesOrdersRetailModule || {}));
+                    showNotification('Lỗi: Không tìm thấy function tạo đơn hàng!', 'error');
+                    return;
+                }
+                
+                await createOrdersFunction(event);
+            } catch (error) {
+                console.error('Error in createRetailOrdersHandler:', error);
+                showNotification('Lỗi tạo đơn hàng: ' + error.message, 'error');
+            }
+        };
+        
+        window.deleteSelectedRetailOrders = function() {
+            if (typeof deleteSelectedRetailOrders === 'function') {
+                deleteSelectedRetailOrders();
+            } else {
+                console.error('deleteSelectedRetailOrders function not found');
+            }
+        };
+        
+        window.toggleSelectAll = function() {
+            if (typeof toggleSelectAll === 'function') {
+                toggleSelectAll();
+            } else {
+                console.error('toggleSelectAll function not found');
+            }
+        };
+    </script>
+</body>
+</html>
