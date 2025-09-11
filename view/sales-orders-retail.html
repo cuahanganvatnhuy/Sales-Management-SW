@@ -326,7 +326,40 @@
                                         <label for="orderTime">Giờ Bán *</label>
                                         <input type="time" id="orderTime" name="orderTime" required>
                                     </div>
+                                        <div class="form-group">
+                                        <label for="salesChannel">Kênh Bán *</label>
+                                        <select id="salesChannel" name="salesChannel" required onchange="togglePlatformSelection()">
+                                            <option value="offline">Bán Lẻ Trực Tiếp</option>
+                                            <option value="tmdt">Sàn TMĐT</option>
+                                        </select>
+                                    </div>
+                                </div>
 
+                                <!-- Platform Selection (Hidden by default) -->
+                                <div class="form-row platform-selection-row" id="platformSelectionRow">
+                                    <div class="form-group">
+                                        <label for="platform">Chọn Sàn TMĐT *</label>
+                                        <select id="platform" name="platform">
+                                            <option value="">-- Chọn Sàn --</option>
+                                            <option value="shopee">Shopee</option>
+                                            <option value="lazada">Lazada</option>
+                                            <option value="tiktok">TikTok Shop</option>
+                                            <option value="sendo">Sendo</option>
+                                            <option value="tiki">Tiki</option>
+                                            <option value="facebook">Facebook Shop</option>
+                                            <option value="zalo">Zalo Shop</option>
+                                            <option value="other">Khác</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>&nbsp;</label>
+                                        <button type="button" class="btn btn-info" onclick="openPlatformFeesConfig()">
+                                            <i class="fas fa-cog"></i> Cài Đặt Phí Sàn
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
                                     <!-- Manual Order Creation -->
                                     <div class="form-group" id="manualOrderGroup">
                                         <label for="orderCount">Số Lượng sản phẩm:</label>
@@ -340,7 +373,7 @@
                                                 <i class="fas fa-check"></i> Xác Nhận
                                             </button>
                                         </div>
-                                        <small class="form-hint">Nhập số lượng sàn phần đơn hàng bán lẻ bạn muốn tạo </small>
+                                        <small class="form-hint">Nhập số lượng đơn hàng bán lẻ bạn muốn tạo</small>
                                     </div>
                                 </div>
                             </div>

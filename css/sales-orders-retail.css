@@ -1,5 +1,14 @@
 /* Sales Orders Retail CSS - Modern Design */
 
+/* ===== PLATFORM SELECTION ===== */
+.platform-selection-row {
+    display: none;
+}
+
+.platform-selection-row.show {
+    display: flex;
+}
+
 /* ===== ORDER TYPE NAVIGATION ===== */
 .order-type-navigation {
     margin-bottom: 30px;

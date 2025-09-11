@@ -506,13 +506,26 @@
             // Initialize wholesale orders
             setTimeout(() => {
                 console.log('=== Attempting to initialize wholesale orders ===');
-                console.log('initWholesaleOrders function exists:', typeof initWholesaleOrders === 'function');
+                console.log('initializeWholesaleOrdersPage function exists:', typeof initializeWholesaleOrdersPage === 'function');
                 
-                if (typeof initWholesaleOrders === 'function') {
-                    console.log('Calling initWholesaleOrders()...');
-                    initWholesaleOrders();
+                // Add debug button to create sample data
+                const debugButton = document.createElement('button');
+                debugButton.textContent = 'Tạo đơn hàng sỉ mẫu (Debug)';
+                debugButton.style.cssText = 'position: fixed; top: 10px; right: 10px; z-index: 9999; background: #007bff; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer;';
+                debugButton.onclick = () => {
+                    if (typeof createSampleWholesaleOrder === 'function') {
+                        createSampleWholesaleOrder();
+                    } else {
+                        console.error('createSampleWholesaleOrder not found');
+                    }
+                };
+                document.body.appendChild(debugButton);
+                
+                if (typeof initializeWholesaleOrdersPage === 'function') {
+                    console.log('Calling initializeWholesaleOrdersPage()...');
+                    initializeWholesaleOrdersPage();
                 } else {
-                    console.error('initWholesaleOrders function not found! Available functions:', Object.keys(window).filter(key => key.includes('wholesale')));
+                    console.error('initializeWholesaleOrdersPage function not found! Available functions:', Object.keys(window).filter(key => key.includes('wholesale')));
                     
                     // Try to call loadWholesaleOrders directly
                     if (typeof loadWholesaleOrders === 'function') {
@@ -534,7 +547,6 @@
                 console.log('Payment status functions exported to global scope');
             }, 500);
         });
-    </div>
 
     <!-- Modal Styles -->
     <style>

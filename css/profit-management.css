@@ -1,0 +1,2208 @@
+/* Profit Management Styles */
+
+/* External Costs Button */
+.btn-external-costs {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    margin-left: 10px;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-external-costs:hover {
+    background: linear-gradient(135deg, #218838, #1ea085);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.btn-external-costs i {
+    font-size: 16px;
+}
+
+/* External Costs Modal Styles */
+#external-costs-modal .modal-header {
+    background: linear-gradient(135deg, #28a745, #20c997);
+}
+
+#external-costs-modal .modal-header h2 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+#external-costs-modal .store-selector {
+    margin-bottom: 25px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+#external-costs-modal .store-selector label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 8px;
+    display: block;
+}
+
+#external-costs-modal .store-selector select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    font-size: 14px;
+    background: white;
+}
+
+#external-costs-modal h3 {
+    color: #333;
+    margin: 25px 0 20px 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #e9ecef;
+}
+
+#external-costs-modal .fee-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 15px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background: #fafafa;
+    transition: all 0.2s ease;
+    margin-bottom: 15px;
+}
+
+#external-costs-modal .fee-group:hover {
+    border-color: #28a745;
+    background: #f8fff8;
+}
+
+#external-costs-modal .fee-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+#external-costs-modal .fee-header input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+#external-costs-modal .fee-header label {
+    font-weight: 500;
+    color: #333;
+    cursor: pointer;
+    margin: 0;
+    flex: 1;
+}
+
+#external-costs-modal .delete-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease;
+}
+
+#external-costs-modal .delete-btn:hover {
+    background: #c82333;
+}
+
+#external-costs-modal .fee-inputs {
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+    margin-top: 5px;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+}
+
+#external-costs-modal .fee-type-selector {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 8px;
+    padding: 6px 8px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    border: 1px solid #e9ecef;
+}
+
+#external-costs-modal .fee-type-selector input[type="radio"] {
+    margin-right: 5px;
+    width: 14px;
+    height: 14px;
+    transform: scale(0.8);
+}
+
+#external-costs-modal .fee-type-selector label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #495057;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+
+#external-costs-modal .fee-type-selector input[type="radio"]:checked + label {
+    color: #28a745;
+    font-weight: 600;
+}
+
+#external-costs-modal .fee-inputs input[type="number"] {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    width: 100%;
+}
+
+#external-costs-modal .custom-cost-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 15px;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+#external-costs-modal .custom-cost-form input[type="text"],
+#external-costs-modal .custom-cost-form input[type="number"] {
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+#external-costs-modal .custom-cost-form button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background 0.2s ease;
+}
+
+#external-costs-modal .custom-cost-form button:first-of-type {
+    background: #28a745;
+    color: white;
+}
+
+#external-costs-modal .custom-cost-form button:first-of-type:hover {
+    background: #218838;
+}
+
+#external-costs-modal .custom-cost-form button:last-of-type {
+    background: #6c757d;
+    color: white;
+}
+
+#external-costs-modal .custom-cost-form button:last-of-type:hover {
+    background: #5a6268;
+}
+
+#external-costs-modal #add-custom-external-cost-btn {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    margin-top: 10px;
+}
+
+#external-costs-modal #add-custom-external-cost-btn:hover {
+    background: linear-gradient(135deg, #218838, #1ea085);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+#external-costs-modal .modal-footer button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+#external-costs-modal .modal-footer button:first-child {
+    background: #28a745;
+    color: white;
+}
+
+#external-costs-modal .modal-footer button:first-child:hover {
+    background: #218838;
+}
+
+#external-costs-modal .modal-footer button:last-child {
+    background: #6c757d;
+    color: white;
+}
+
+#external-costs-modal .modal-footer button:last-child:hover {
+    background: #5a6268;
+}
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f8f9fa;
+    color: #333;
+    line-height: 1.6;
+}
+
+.main-content {
+    margin-left: 250px;
+    margin-top: 80px;
+    padding: 20px;
+    min-height: calc(100vh - 80px);
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* Page Header */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+
+    padding: 30px;
+    border-radius: 15px;
+    color: white;
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+}
+
+.header-left h1 {
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.header-left p {
+    font-size: 1.1rem;
+    opacity: 0.9;
+}
+
+.date-range-picker {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 20px;
+    border-radius: 10px;
+    backdrop-filter: blur(10px);
+}
+
+.date-range-picker label {
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.form-control {
+    padding: 10px 15px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.form-control::placeholder {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Buttons */
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+}
+
+.btn-primary {
+    background: linear-gradient(45deg, #28a745, #20c997);
+    color: white;
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+}
+
+.btn-outline {
+    background: transparent;
+    color: #667eea;
+    border: 2px solid #667eea;
+}
+
+.btn-outline:hover {
+    background: #667eea;
+    color: white;
+    transform: translateY(-2px);
+}
+
+/* Profit View Navigation */
+.profit-view-navigation {
+    margin-bottom: 30px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+}
+
+.view-nav-buttons {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.view-nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    color: #495057;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 160px;
+    justify-content: center;
+}
+
+.view-nav-btn:hover {
+    background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+    border-color: #adb5bd;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.view-nav-btn.active {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    border-color: #28a745;
+    color: white;
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+}
+
+.view-nav-btn.active:hover {
+    background: linear-gradient(135deg, #218838 0%, #1ea085 100%);
+    border-color: #1e7e34;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+}
+
+.view-nav-btn i {
+    font-size: 16px;
+}
+
+.view-nav-btn span {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+/* Responsive design for navigation */
+@media (max-width: 768px) {
+    .view-nav-buttons {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+    
+    .view-nav-btn {
+        min-width: auto;
+        padding: 10px 15px;
+    }
+    
+    .view-nav-btn span {
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .view-nav-buttons {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Fee Breakdown Grid */
+.fee-breakdown-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin: 20px 0;
+    padding: 20px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 12px;
+    border: 1px solid #dee2e6;
+}
+
+.fee-breakdown-grid .stat-card {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 15px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.fee-breakdown-grid .stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* Fee Card Colors */
+.fee-transaction { border-left: 4px solid #007bff; }
+.fee-commission { border-left: 4px solid #28a745; }
+.fee-shipping { border-left: 4px solid #ffc107; }
+.fee-discount { border-left: 4px solid #17a2b8; }
+.fee-seller-discount { border-left: 4px solid #20c997; }
+.fee-tiktok-discount { border-left: 4px solid #e83e8c; }
+.fee-return { border-left: 4px solid #dc3545; }
+.fee-subsidy { border-left: 4px solid #198754; }
+.fee-affiliate { border-left: 4px solid #6f42c1; }
+.fee-voucher { border-left: 4px solid #fd7e14; }
+.fee-vat { border-left: 4px solid #6610f2; }
+.fee-income-tax { border-left: 4px solid #d63384; }
+.fee-seller-discount-main { border-left: 4px solid #0dcaf0; }
+.fee-other { border-left: 4px solid #6c757d; }
+/* Chi phí bên ngoài */
+.fee-staff-cost { border-left: 4px solid #795548; }
+.fee-rent-cost { border-left: 4px solid #ff5722; }
+.fee-utility-cost { border-left: 4px solid #ffeb3b; }
+.fee-insurance-cost { border-left: 4px solid #2196f3; }
+.fee-equipment-cost { border-left: 4px solid #9c27b0; }
+.fee-marketing-cost { border-left: 4px solid #ff9800; }
+.fee-shipping-cost { border-left: 4px solid #17a2b8; }
+.fee-packaging-cost { border-left: 4px solid #6f42c1; }
+.fee-storage-cost { border-left: 4px solid #fd7e14; }
+.fee-admin-cost { border-left: 4px solid #6c757d; }
+
+.fee-breakdown-grid .stat-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: white;
+    margin-bottom: 10px;
+}
+
+.fee-transaction .stat-icon { background: #007bff; }
+.fee-commission .stat-icon { background: #28a745; }
+.fee-shipping .stat-icon { background: #ffc107; }
+.fee-discount .stat-icon { background: #17a2b8; }
+.fee-seller-discount .stat-icon { background: #20c997; }
+.fee-tiktok-discount .stat-icon { background: #e83e8c; }
+.fee-return .stat-icon { background: #dc3545; }
+.fee-subsidy .stat-icon { background: #198754; }
+.fee-affiliate .stat-icon { background: #6f42c1; }
+.fee-voucher .stat-icon { background: #fd7e14; }
+.fee-vat .stat-icon { background: #6610f2; }
+.fee-income-tax .stat-icon { background: #d63384; }
+.fee-seller-discount-main .stat-icon { background: #0dcaf0; }
+.fee-other .stat-icon { background: #6c757d; }
+/* Chi phí bên ngoài icons */
+.fee-staff-cost .stat-icon { background: #795548; }
+.fee-rent-cost .stat-icon { background: #ff5722; }
+.fee-utility-cost .stat-icon { background: #ffeb3b; color: #333; }
+.fee-insurance-cost .stat-icon { background: #2196f3; }
+.fee-equipment-cost .stat-icon { background: #9c27b0; }
+.fee-marketing-cost .stat-icon { background: #ff9800; }
+.fee-shipping-cost .stat-icon { background: #17a2b8; }
+.fee-packaging-cost .stat-icon { background: #6f42c1; }
+.fee-storage-cost .stat-icon { background: #fd7e14; }
+.fee-admin-cost .stat-icon { background: #6c757d; }
+
+.fee-breakdown-grid h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 8px;
+}
+
+.fee-breakdown-grid .stat-value {
+    font-size: 16px;
+    font-weight: 700;
+    color: #212529;
+}
+
+/* Fee Filter Section */
+.fee-filter-section {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin: 20px 0;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.fee-filter-section .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.fee-filter-section h3 {
+    color: #2c3e50;
+    font-size: 18px;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.filter-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-filter {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-filter:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.fee-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+}
+
+.fee-filter-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 0px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.fee-filter-item:hover {
+    background: #e9ecef;
+    border-color: #dee2e6;
+}
+
+.fee-filter-item input[type="checkbox"] {
+    display: none;
+}
+
+.checkmark {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #6c757d;
+    border-radius: 4px;
+    margin-right: 10px;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.fee-filter-item input[type="checkbox"]:checked + .checkmark {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    border-color: #28a745;
+}
+
+.fee-filter-item input[type="checkbox"]:checked + .checkmark::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-weight: bold;
+    font-size: 12px;
+}
+
+.fee-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: #495057;
+}
+
+.fee-filter-item input[type="checkbox"]:checked ~ .fee-name {
+    color: #28a745;
+    font-weight: 600;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .fee-breakdown-grid {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+        padding: 15px;
+    }
+    
+    .fee-filter-grid {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 10px;
+    }
+    
+    .fee-filter-section .section-header {
+        flex-direction: column;
+        gap: 15px;
+        align-items: flex-start;
+    }
+    
+    .platform-controls {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .platform-buttons {
+        justify-content: center;
+    }
+    
+    .view-nav-buttons {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .view-nav-buttons {
+        grid-template-columns: 1fr;
+    }
+    
+    .fee-breakdown-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Profit Views */
+.profit-view {
+    display: none;
+}
+
+.profit-view.active {
+    display: block;
+}
+
+.view-header {
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.view-header h2 {
+    color: #2c3e50;
+    font-size: 28px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.view-header p {
+    color: #6c757d;
+    font-size: 16px;
+    margin: 0;
+}
+
+/* Platform Selector */
+.platform-selector {
+    margin-bottom: 25px;
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.platform-controls {
+    display: flex;
+    align-items: flex-end;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.platform-select-group {
+    flex: 1;
+    min-width: 250px;
+}
+
+.platform-select-group label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 16px;
+}
+
+.platform-select-group select {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 14px;
+    background: white;
+    color: #495057;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.platform-select-group select:focus {
+    outline: none;
+    border-color: #28a745;
+    box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1);
+}
+
+.platform-select-group select:hover {
+    border-color: #adb5bd;
+}
+
+.btn-platform-fees {
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+}
+
+.btn-platform-fees:hover {
+    background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+}
+
+/* External Cost Filter Items */
+.fee-filter-item.external-cost {
+    background-color: #f8f9fa;
+    border-left: 3px solid #28a745;
+}
+
+.fee-filter-item.external-cost .fee-name {
+    color: #155724;
+    font-weight: 500;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 5% auto;
+    padding: 0;
+    border: none;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 600px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 8px 8px 0 0;
+    position: relative;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 1.2em;
+    font-weight: 600;
+}
+
+.close {
+    color: white;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    position: absolute;
+    right: 15px;
+    top: 15px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.close:hover,
+.close:focus {
+    opacity: 0.7;
+}
+
+.modal-body {
+    padding: 20px;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.info-group {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.info-group:last-child {
+    border-bottom: none;
+}
+
+.info-group label {
+    font-weight: 600;
+    color: #333;
+    flex: 1;
+}
+
+.info-group .value {
+    flex: 1;
+    text-align: right;
+    color: #666;
+}
+
+.profit-info {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 6px;
+    margin-top: 10px;
+    border-bottom: none !important;
+}
+
+.profit-info .value.profit-positive {
+    color: #28a745;
+    font-weight: bold;
+}
+
+.profit-info .value.profit-negative {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+/* Fee breakdown styling */
+.fees-section {
+    background: #fff8e1;
+    padding: 15px;
+    border-radius: 6px;
+    margin: 10px 0;
+    border: 1px solid #ffecb3;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.fees-section label {
+    color: #e65100;
+    font-weight: bold;
+    margin-bottom: 10px;
+    text-align: left;
+}
+
+.fees-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.fee-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: white;
+    border-radius: 4px;
+    border: 1px solid #ffe0b2;
+}
+
+.fee-item .fee-name {
+    color: #bf360c;
+    font-size: 0.9em;
+}
+
+.fee-item .fee-amount {
+    color: #d84315;
+    font-weight: 600;
+}
+
+.fee-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    background: #ffecb3;
+    border-radius: 4px;
+    border: 2px solid #ffc107;
+    margin-top: 5px;
+}
+
+.fee-total .fee-name {
+    color: #e65100;
+}
+
+.fee-total .fee-amount {
+    color: #bf360c;
+    font-size: 1.1em;
+}
+
+/* Responsive modal */
+@media (max-width: 768px) {
+    .modal-content {
+        width: 95%;
+        margin: 10% auto;
+    }
+    
+    .info-group {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+    
+    .info-group .value {
+        text-align: left;
+    }
+    
+    .fees-section {
+        padding: 12px;
+    }
+    
+    .fee-item, .fee-total {
+        padding: 6px 10px;
+    }
+}
+
+/* Platform Fees Form */
+.platform-fees-form {
+    margin-top: 20px;
+}
+
+.platform-fees-form h4 {
+    color: #2c3e50;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 18px;
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 10px;
+}
+
+.fees-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.fee-item {
+    position: relative;
+}
+
+.fee-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.fee-checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.fee-label {
+    font-weight: 600;
+    color: #333;
+    cursor: pointer;
+    margin: 0;
+}
+
+.fee-item input[type="number"] {
+    transition: all 0.3s ease;
+}
+
+.fee-item input[type="number"]:disabled {
+    background-color: #f5f5f5;
+    color: #999;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.fee-item input[type="number"]:enabled {
+    background-color: #fff;
+    color: #333;
+    border-color: #007bff;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 14px;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #28a745;
+    box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1);
+}
+
+.form-group small {
+    display: block;
+    margin-top: 5px;
+    color: #6c757d;
+    font-size: 12px;
+    font-style: italic;
+}
+
+/* Modal Buttons */
+.btn-primary {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #218838 0%, #1ea085 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+    background: #545b62;
+    transform: translateY(-2px);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .platform-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .platform-select-group {
+        min-width: auto;
+    }
+    
+    .modal-content {
+        width: 95%;
+        margin: 5% auto;
+    }
+    
+    .fees-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .modal-footer {
+        flex-direction: column;
+    }
+}
+
+/* Statistics Grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 25px;
+    margin-bottom: 40px;
+}
+
+.stat-card {
+    background: white;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 5px 25px rgba(0, 0, 0, 0.08);
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    transition: all 0.3s ease;
+    border-left: 5px solid;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
+}
+
+.stat-card.total-profit {
+    border-left-color: #ffd700;
+}
+
+.stat-card.tmdt-profit {
+    border-left-color: #007bff;
+}
+
+.stat-card.wholesale-profit {
+    border-left-color: #28a745;
+}
+
+.stat-card.retail-profit {
+    border-left-color: #dc3545;
+}
+
+.stat-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: white;
+}
+
+.total-profit .stat-icon {
+    background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+}
+
+.tmdt-profit { 
+    border-left: 4px solid #28a745; 
+}
+.tmdt-profit .stat-icon { 
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%); 
+}
+
+.tmdt-cost { 
+    border-left: 4px solid #6c757d; 
+}
+.tmdt-cost .stat-icon { 
+    background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%); 
+}
+
+.tmdt-revenue { 
+    border-left: 4px solid #007bff; 
+}
+.tmdt-revenue .stat-icon { 
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); 
+}
+
+.tmdt-fees { 
+    border-left: 4px solid #dc3545; 
+}
+.tmdt-fees .stat-icon { 
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); 
+}
+
+.tmdt-gross-profit { 
+    border-left: 4px solid #17a2b8; 
+}
+.tmdt-gross-profit .stat-icon { 
+    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%); 
+}
+
+.stat-content h3 {
+    font-size: 1rem;
+    color: #666;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.stat-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 5px;
+}
+
+.stat-change {
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.stat-change.positive {
+    color: #28a745;
+}
+
+.stat-change.negative {
+    color: #dc3545;
+}
+
+.stat-percentage {
+    font-size: 0.9rem;
+    color: #666;
+    font-weight: 500;
+}
+
+/* Charts Section */
+.charts-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    margin-bottom: 40px;
+}
+
+.chart-container {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 25px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+}
+
+.chart-header {
+    padding: 25px 30px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-bottom: 1px solid #dee2e6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.chart-header h3 {
+    font-size: 1.3rem;
+    color: #333;
+    font-weight: 600;
+}
+
+.chart-controls select {
+    padding: 8px 15px;
+    border: 2px solid #dee2e6;
+    border-radius: 6px;
+    background: white;
+    color: #333;
+    font-size: 14px;
+}
+
+.chart-content {
+    padding: 30px;
+    height: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Analysis Section */
+.analysis-section {
+    margin-bottom: 40px;
+}
+
+.analysis-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 25px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+}
+
+.analysis-header {
+    padding: 25px 30px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.analysis-header h3 {
+    font-size: 1.4rem;
+    font-weight: 600;
+}
+
+.analysis-content {
+    padding: 30px;
+}
+
+/* Table Sections */
+.table-section {
+    margin-bottom: 40px;
+}
+
+.table-section h4 {
+    font-size: 1.2rem;
+    color: #333;
+    margin-bottom: 20px;
+    font-weight: 600;
+}
+
+.table-container {
+    overflow-x: auto;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.profit-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
+
+.profit-table th {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 15px 20px;
+    text-align: left;
+    font-weight: 600;
+    color: #333;
+    border-bottom: 2px solid #dee2e6;
+    font-size: 14px;
+}
+
+.profit-table td {
+    padding: 15px 20px;
+    border-bottom: 1px solid #f1f3f4;
+    font-size: 14px;
+}
+
+.profit-table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.profit-table .text-right {
+    text-align: right;
+}
+
+.profit-table .text-center {
+    text-align: center;
+}
+
+/* Monthly Comparison */
+.comparison-section {
+    margin-top: 30px;
+}
+
+.monthly-comparison {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.month-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 25px;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 5px 20px rgba(102, 126, 234, 0.3);
+    transition: transform 0.3s ease;
+}
+
+.month-card:hover {
+    transform: translateY(-3px);
+}
+
+.month-card h5 {
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.month-card .profit-amount {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.month-card .profit-change {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+/* Platform Fees Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    -webkit-backdrop-filter: blur(5px);
+    backdrop-filter: blur(5px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    max-width: 80%;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+.modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px 30px;
+    border-radius: 12px 12px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.modal-header .close {
+    font-size: 24px;
+    cursor: pointer;
+    opacity: 0.8;
+    transition: opacity 0.3s ease;
+}
+
+.modal-header .close:hover {
+    opacity: 1;
+}
+
+.modal-body {
+    padding: 30px;
+}
+
+.modal-footer {
+    padding: 20px 30px;
+    border-top: 1px solid #e9ecef;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+/* Fees Selection Section */
+.fees-selection-section {
+    margin-bottom: 30px;
+}
+
+.fees-selection-section h4 {
+    color: #333;
+    margin-bottom: 20px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.fees-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 15px;
+}
+
+.fee-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 15px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background: #fafafa;
+    transition: all 0.2s ease;
+}
+
+.fee-item:hover {
+    border-color: #007bff;
+    background: #f8f9ff;
+}
+
+.fee-checkbox-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.fee-checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.fee-label {
+    font-weight: 500;
+    color: #333;
+    cursor: pointer;
+    margin: 0;
+}
+
+.fee-input-wrapper {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    padding: 10px;
+    margin-top: 5px;
+}
+
+.fee-input-wrapper.hidden {
+    display: none;
+}
+
+.fee-input-wrapper input {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    width: 100%;
+}
+
+.fee-input-wrapper small {
+    margin-top: 5px;
+    color: #666;
+    font-size: 12px;
+}
+
+.fee-type-selector {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 8px;
+    padding: 6px 8px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    border: 1px solid #e9ecef;
+}
+
+.fee-type-selector input[type="radio"] {
+    margin-right: 5px;
+    width: 14px;
+    height: 14px;
+    transform: scale(0.8);
+}
+
+.fee-type-selector label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #495057;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+
+.fee-type-selector input[type="radio"]:checked + label {
+    color: #28a745;
+    font-weight: 600;
+}
+
+/* Add Custom Fee Section */
+.add-fee-section {
+    margin-top: 20px;
+    text-align: center;
+    padding: 15px;
+    border-top: 1px dashed #ddd;
+}
+
+.add-fee-btn {
+    padding: 10px 20px;
+    border: 2px dashed #007bff;
+    background: transparent;
+    color: #007bff;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.add-fee-btn:hover {
+    background: #007bff;
+    color: white;
+    border-style: solid;
+}
+
+.add-fee-form {
+    margin-top: 15px;
+    padding: 20px;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+}
+
+.add-fee-form .form-row {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.add-fee-form .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+/* TMĐT Orders Detail Table Styles */
+.profit-positive {
+    color: #28a745;
+    font-weight: bold;
+}
+
+.profit-negative {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+/* Table Header Actions */
+.table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.table-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.btn-action {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.3s ease;
+}
+
+.btn-select-all {
+    background: #17a2b8;
+    color: white;
+}
+
+.btn-select-all:hover {
+    background: #138496;
+}
+
+.btn-delete-selected {
+    background: #dc3545;
+    color: white;
+}
+
+.btn-delete-selected:hover:not(:disabled) {
+    background: #c82333;
+}
+
+.btn-delete-selected:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.btn-delete-all {
+    background: #fd7e14;
+    color: white;
+}
+
+.btn-delete-all:hover {
+    background: #e8690b;
+}
+
+.btn-view-detail {
+    background: #007bff;
+    color: white;
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
+.btn-view-detail:hover {
+    background: #0056b3;
+}
+
+/* Order Detail Modal */
+.order-detail-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+}
+
+.order-detail-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    max-width: 80%;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.order-detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #f8f9fa;
+}
+
+.order-detail-header h3 {
+    margin: 0;
+    color: #333;
+}
+
+.close-modal {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.close-modal:hover {
+    color: #333;
+}
+
+.order-detail-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.info-group {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+}
+
+.info-group label {
+    font-weight: bold;
+    color: #666;
+    font-size: 12px;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.info-group .value {
+    font-size: 16px;
+    color: #333;
+}
+
+.profit-info {
+    grid-column: 1 / -1;
+    background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
+    border-left: 4px solid #2196f3;
+}
+
+/* Checkbox styling */
+.profit-table input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .table-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .table-actions {
+        justify-content: center;
+    }
+    
+    .order-detail-info {
+        grid-template-columns: 1fr;
+    }
+    
+    .order-detail-content {
+        padding: 20px;
+        margin: 10px;
+        width: calc(100% - 20px);
+    }
+}
+
+.add-fee-form label {
+    font-weight: 500;
+    color: #333;
+    font-size: 14px;
+}
+
+.add-fee-form input {
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.2s ease;
+}
+
+.add-fee-form input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+}
+
+.add-fee-form .form-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 10px;
+}
+
+.add-fee-form .btn-sm {
+    padding: 6px 12px;
+    font-size: 13px;
+}
+
+/* Custom Fee Item */
+.custom-fee-item {
+    background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+    border: 1px solid #bbdefb;
+    position: relative;
+}
+
+.custom-fee-item .remove-fee-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: #ff4757;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.custom-fee-item .remove-fee-btn:hover {
+    background: #ff3742;
+    transform: scale(1.1);
+}
+
+/* Platform Selection Section */
+.platform-selection-section {
+    border-top: 2px solid #e9ecef;
+    padding-top: 25px;
+}
+
+.platform-selection-section h4 {
+    color: #333;
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.platform-selection-section select {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 16px;
+    background: white;
+    cursor: pointer;
+    transition: border-color 0.3s ease;
+}
+
+.platform-selection-section select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* Button Styles */
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #5a6268;
+    transform: translateY(-1px);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+/* Loading Overlay */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.loading-overlay.hidden {
+    display: none;
+}
+
+.loading-spinner {
+    text-align: center;
+    color: white;
+}
+
+.loading-spinner i {
+    font-size: 3rem;
+    margin-bottom: 20px;
+    color: #667eea;
+}
+
+.loading-spinner p {
+    font-size: 1.2rem;
+    font-weight: 500;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .charts-section {
+        grid-template-columns: 1fr;
+    }
+    
+    .main-content {
+        margin-left: 0;
+        padding: 15px;
+    }
+}
+
+@media (max-width: 768px) {
+    .page-header {
+        flex-direction: column;
+        gap: 20px;
+        text-align: center;
+    }
+    
+    .date-range-picker {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .stat-card {
+        padding: 20px;
+    }
+    
+    .chart-content {
+        height: 300px;
+        padding: 20px;
+    }
+    
+    .analysis-content {
+        padding: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .header-left h1 {
+        font-size: 1.8rem;
+    }
+    
+    .stat-value {
+        font-size: 1.5rem;
+    }
+    
+    .profit-table th,
+    .profit-table td {
+        padding: 10px 15px;
+        font-size: 13px;
+    }
+}
+
+/* Utility Classes */
+.text-success {
+    color: #28a745 !important;
+}
+
+.text-danger {
+    color: #dc3545 !important;
+}
+
+.text-warning {
+    color: #ffc107 !important;
+}
+
+.text-info {
+    color: #17a2b8 !important;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

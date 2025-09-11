@@ -3,6 +3,123 @@
 let retailOrdersData = {};
 let sellingProductsData = {};
 
+// Toggle platform selection based on sales channel
+function togglePlatformSelection() {
+    const salesChannel = document.getElementById('salesChannel').value;
+    const platformRow = document.getElementById('platformSelectionRow');
+    const platformSelect = document.getElementById('platform');
+    
+    if (salesChannel === 'tmdt') {
+        platformRow.classList.add('show');
+        platformSelect.required = true;
+    } else {
+        platformRow.classList.remove('show');
+        platformSelect.required = false;
+        platformSelect.value = '';
+    }
+    
+    // Recalculate profits when channel changes
+    recalculateAllProfits();
+}
+
+// Open platform fees configuration (redirect to profit management)
+function openPlatformFeesConfig() {
+    const platform = document.getElementById('platform').value;
+    if (!platform) {
+        showNotification('Vui lòng chọn sàn TMĐT trước!', 'warning');
+        return;
+    }
+    
+    // Open profit management page with TMDT tab
+    window.open('../view/profit-management.html#tmdt', '_blank');
+}
+
+// Calculate order profit with platform fees integration
+function calculateOrderProfitWithPlatformFees(order) {
+    const sellingPrice = parseFloat(order.sellingPrice || 0);
+    const importPrice = parseFloat(order.importPrice || 0);
+    const quantity = parseInt(order.quantity || 1);
+    
+    // Base profit before fees
+    const baseProfit = (sellingPrice - importPrice) * quantity;
+    
+    // Check if this is TMDT order
+    const salesChannel = document.getElementById('salesChannel')?.value;
+    if (salesChannel !== 'tmdt') {
+        return baseProfit; // No fees for offline retail
+    }
+    
+    // Get platform fees from settings
+    const platform = document.getElementById('platform')?.value || order.platform;
+    const platformFees = getPlatformFeesFromStorage(platform);
+    
+    if (!platformFees || Object.keys(platformFees).length === 0) {
+        return baseProfit; // No fees configured
+    }
+    
+    // Calculate total fees
+    let totalFees = 0;
+    const totalRevenue = sellingPrice * quantity;
+    
+    // Transaction fee
+    if (platformFees.transactionFee) {
+        if (platformFees.transactionFee.type === 'percent') {
+            totalFees += totalRevenue * (platformFees.transactionFee.value / 100);
+        } else {
+            totalFees += platformFees.transactionFee.value;
+        }
+    }
+    
+    // Commission fee
+    if (platformFees.commissionFee) {
+        if (platformFees.commissionFee.type === 'percent') {
+            totalFees += totalRevenue * (platformFees.commissionFee.value / 100);
+        } else {
+            totalFees += platformFees.commissionFee.value;
+        }
+    }
+    
+    // Add other fees if configured
+    ['shippingFee', 'voucherFee', 'affiliateCommission'].forEach(feeType => {
+        if (platformFees[feeType]) {
+            if (platformFees[feeType].type === 'percent') {
+                totalFees += totalRevenue * (platformFees[feeType].value / 100);
+            } else {
+                totalFees += platformFees[feeType].value;
+            }
+        }
+    });
+    
+    return baseProfit - totalFees;
+}
+
+// Get platform fees from localStorage
+function getPlatformFeesFromStorage(platform) {
+    try {
+        const currentStore = getCurrentStore();
+        const savedFees = localStorage.getItem(`platformFees_${currentStore}_${platform}`);
+        return savedFees ? JSON.parse(savedFees) : {};
+    } catch (error) {
+        console.error('Error loading platform fees:', error);
+        return {};
+    }
+}
+
+// Get current store helper function
+function getCurrentStore() {
+    return localStorage.getItem('selectedStoreId') || 'default';
+}
+
+// Recalculate all profits when platform changes
+function recalculateAllProfits() {
+    // Find all profit input fields and recalculate
+    const profitInputs = document.querySelectorAll('input[id^="retailProfit_"]');
+    profitInputs.forEach(input => {
+        const index = input.id.split('_')[1];
+        updateRetailOrderPrice(index);
+    });
+}
+
 // Show loading function - fallback if not defined elsewhere
 function showLoading(show = true) {
     const loadingOverlay = document.getElementById('loadingOverlay');
@@ -221,11 +338,13 @@ async function loadRetailOrders() {
         let allRetailOrdersData = {};
         
         if (typeof getStoreDataPath === 'function') {
-            const retailOrdersPath = getStoreDataPath('retailOrders');
+            const retailOrdersPath = getStoreDataPath('retailSalesOrders');
+            console.log('Loading from store path:', retailOrdersPath);
+            
             const snapshot = await database.ref(retailOrdersPath).once('value');
             allRetailOrdersData = snapshot.val() || {};
         } else {
-            const snapshot = await database.ref('retailOrders').once('value');
+            const snapshot = await database.ref('retailSalesOrders').once('value');
             allRetailOrdersData = snapshot.val() || {};
         }
         
@@ -544,9 +663,15 @@ function updateRetailOrderPrice(orderIndex, productId = null) {
     if (quantity > 0) {
         const sellingPrice = sellingProduct.sellingPrice || 0;
         const importPrice = sellingProduct.importPrice || 0;
-        const profitPerUnit = sellingPrice - importPrice;
-        const totalProfit = profitPerUnit * quantity;
         const totalAmount = sellingPrice * quantity;
+        
+        // Calculate profit with platform fees
+        const orderData = {
+            sellingPrice: sellingPrice,
+            importPrice: importPrice,
+            quantity: quantity
+        };
+        const totalProfit = calculateOrderProfitWithPlatformFees(orderData);
         
         profitInput.value = formatCurrency(totalProfit);
         totalInput.value = formatCurrency(totalAmount);
@@ -602,6 +727,15 @@ async function createRetailOrders(event) {
     
     if (!customerName || !customerName.trim()) {
         showNotification('Vui lòng nhập tên khách hàng!', 'error');
+        return;
+    }
+    
+    // Validate platform selection for TMDT orders
+    const salesChannel = document.getElementById('salesChannel').value;
+    const platform = document.getElementById('platform').value;
+    
+    if (salesChannel === 'tmdt' && !platform) {
+        showNotification('Vui lòng chọn sàn TMĐT khi tạo đơn hàng online!', 'error');
         return;
     }
     
@@ -687,6 +821,7 @@ async function createRetailOrders(event) {
             productId: productId,
             productName: sellingProduct.productName,
             sku: sellingProduct.sku,
+            unit: sellingProduct.unit || 'cái',
             quantity: quantity,
             sellingPrice: sellingPrice,
             importPrice: importPrice,
@@ -710,6 +845,8 @@ async function createRetailOrders(event) {
     const orderSubtotal = orderItems.reduce((sum, item) => sum + item.totalAmount, 0);
     const totalProfit = orderItems.reduce((sum, item) => sum + item.totalProfit, 0);
     
+    // Use previously declared salesChannel and platform variables
+    
     // Get discount and shipping values
     const discountInput = document.getElementById('retailDiscount');
     const shippingInput = document.getElementById('retailShipping');
@@ -718,6 +855,25 @@ async function createRetailOrders(event) {
     const shipping = shippingInput ? parseInt(shippingInput.value.replace(/[^\d]/g, '') || 0) : 0;
     
     const finalAmount = orderSubtotal - discount + shipping;
+    
+    // Recalculate total profit with platform fees if TMDT
+    let adjustedTotalProfit = totalProfit;
+    if (salesChannel === 'tmdt' && platform) {
+        adjustedTotalProfit = 0;
+        orderItems.forEach(item => {
+            const orderData = {
+                sellingPrice: item.sellingPrice,
+                importPrice: item.importPrice,
+                quantity: item.quantity,
+                platform: platform
+            };
+            const profitWithFees = calculateOrderProfitWithPlatformFees(orderData);
+            adjustedTotalProfit += profitWithFees;
+            // Update item profit to reflect fees
+            item.totalProfit = profitWithFees;
+            item.profitPerUnit = profitWithFees / item.quantity;
+        });
+    }
     
     // Create single order with multiple items
     const orderId = `RETAIL-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -733,10 +889,12 @@ async function createRetailOrders(event) {
         discount: discount,
         shipping: shipping,
         totalAmount: finalAmount,
-        totalProfit: totalProfit,
+        totalProfit: adjustedTotalProfit,
         itemCount: orderItems.length,
         source: 'retail_sales',
-        orderType: 'retail',
+        orderType: salesChannel === 'tmdt' ? 'tmdt' : 'retail',
+        salesChannel: salesChannel,
+        platform: platform || null,
         createdAt: new Date().toISOString(),
         storeId: selectedStoreId,
         storeName: storeInfo.name,
@@ -752,15 +910,15 @@ async function createRetailOrders(event) {
         console.log('Retail order:', retailOrder);
         
         if (typeof getStoreDataPath === 'function') {
-            const retailOrdersPath = getStoreDataPath('retailOrders');
+            const retailOrdersPath = getStoreDataPath('retailSalesOrders');
             console.log('Saving to store path:', retailOrdersPath);
             
             const orderRef = database.ref(retailOrdersPath).push();
             await orderRef.set(retailOrder);
             console.log('Retail order saved with ID:', orderRef.key, 'Order ID:', retailOrder.orderId);
         } else {
-            // Save to global retailOrders collection
-            const orderRef = database.ref('retailOrders').push();
+            // Save to global retailSalesOrders collection
+            const orderRef = database.ref('retailSalesOrders').push();
             await orderRef.set(retailOrder);
         }
         
@@ -1456,10 +1614,10 @@ async function deleteRetailOrder(orderKey) {
         const selectedStoreId = localStorage.getItem('selectedStoreId');
         
         if (typeof getStoreDataPath === 'function' && selectedStoreId) {
-            const retailOrdersPath = getStoreDataPath('retailOrders');
+            const retailOrdersPath = getStoreDataPath('retailSalesOrders');
             await database.ref(`${retailOrdersPath}/${orderKey}`).remove();
         } else {
-            await database.ref(`retailOrders/${orderKey}`).remove();
+            await database.ref(`retailSalesOrders/${orderKey}`).remove();
         }
         
         showNotification('Đã xóa đơn hàng bán lẻ!', 'success');

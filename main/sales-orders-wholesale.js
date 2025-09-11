@@ -97,7 +97,7 @@ window.addEventListener('DOMContentLoaded', function() {
 // Initialize wholesale orders page with store context
 function initializeWholesaleOrdersPage() {
     if (typeof isStoreSelected === 'function' && isStoreSelected()) {
-        loadProducts();
+        loadSellingProducts();
         loadWholesaleOrders();
         showStoreInfo();
     } else {
@@ -109,7 +109,7 @@ function initializeWholesaleOrdersPage() {
 document.addEventListener('storeContextChanged', function(event) {
     const storeContext = event.detail;
     if (storeContext.isStoreSelected) {
-        loadProducts();
+        loadSellingProducts();
         loadWholesaleOrders();
         showStoreInfo();
         hideStoreSelectionMessage();
@@ -631,17 +631,51 @@ function loadWholesaleOrders() {
                 console.log(`🔍 Checking order ${key}:`, {
                     orderType: order.orderType,
                     source: order.source,
-                    customerName: order.customerName
+                    customerName: order.customerName,
+                    orderId: order.orderId,
+                    fullOrder: order
                 });
                 
-                if (order.orderType === 'wholesale' || order.source === 'wholesale_sales') {
+                // Check multiple conditions for wholesale orders
+                const isWholesale = order.orderType === 'wholesale' || 
+                                  order.source === 'wholesale_sales' ||
+                                  (order.orderId && order.orderId.includes('WHOLESALE')) ||
+                                  order.type === 'wholesale';
+                
+                // TEMPORARY: Show all orders for debugging if no wholesale orders found
+                const showAllForDebug = false; // Set to true to see all orders
+                
+                if (isWholesale || showAllForDebug) {
                     wholesaleOrdersData[key] = order;
-                    console.log('✅ Added wholesale order:', key);
+                    console.log('✅ Added wholesale order:', key, 'isWholesale:', isWholesale);
+                } else {
+                    console.log('❌ Skipped non-wholesale order:', key, {
+                        orderType: order.orderType,
+                        source: order.source,
+                        orderId: order.orderId,
+                        type: order.type,
+                        customerName: order.customerName
+                    });
                 }
             });
             
             console.log('✅ Wholesale orders loaded:', Object.keys(wholesaleOrdersData).length, 'orders');
             console.log('📋 Wholesale orders data:', wholesaleOrdersData);
+            
+            // If no wholesale orders found, show debug info
+            if (Object.keys(wholesaleOrdersData).length === 0) {
+                console.log('🔍 No wholesale orders found. All orders in Firebase:');
+                Object.keys(allOrders).forEach(key => {
+                    const order = allOrders[key];
+                    console.log(`Order ${key}:`, {
+                        orderType: order.orderType,
+                        source: order.source,
+                        customerName: order.customerName,
+                        orderId: order.orderId
+                    });
+                });
+            }
+            
             displayWholesaleOrders();
         }, (error) => {
             console.error('❌ Error loading wholesale orders:', error);
@@ -783,8 +817,68 @@ function initializeWholesaleOrdersSystem() {
 // Initialize wholesale orders page
 function initializeWholesaleOrdersPage() {
     console.log('🚀 Initializing wholesale orders page...');
-    loadSellingProducts(); // Load products from sellingProducts table
+    
+    // Wait for Firebase to be ready
+    if (typeof database === 'undefined') {
+        console.log('⏳ Waiting for Firebase...');
+        setTimeout(initializeWholesaleOrdersPage, 1000);
+        return;
+    }
+    
+    console.log('✅ Firebase ready, loading wholesale orders...');
     loadWholesaleOrders();
+}
+
+// Create sample wholesale order for testing
+async function createSampleWholesaleOrder() {
+    const selectedStoreId = localStorage.getItem('selectedStoreId');
+    if (!selectedStoreId) {
+        console.error('❌ No store selected');
+        return;
+    }
+
+    const sampleOrder = {
+        orderId: 'WS' + Date.now(),
+        customerName: 'Công ty ABC',
+        customerPhone: '0123456789',
+        customerAddress: '123 Đường Test, Quận 1, TP.HCM',
+        orderDate: new Date().toISOString().split('T')[0],
+        deliveryDate: '',
+        items: [
+            {
+                productId: 'sample1',
+                productName: 'Sản phẩm sỉ 1',
+                sku: 'SP001',
+                unit: 'thùng',
+                quantity: 10,
+                wholesalePrice: 50000,
+                totalAmount: 500000
+            }
+        ],
+        subtotal: 500000,
+        discount: 0,
+        shipping: 0,
+        deposit: 200000,
+        total: 500000,
+        remaining: 300000,
+        paymentStatus: 'partial',
+        orderType: 'wholesale',
+        source: 'wholesale_sales',
+        storeId: selectedStoreId,
+        storeName: 'Cửa hàng test',
+        createdAt: firebase.database.ServerValue.TIMESTAMP,
+        createdBy: 'admin'
+    };
+
+    try {
+        await database.ref('orders').push(sampleOrder);
+        console.log('✅ Sample wholesale order created');
+        showNotification('Đã tạo đơn hàng sỉ mẫu thành công!', 'success');
+        loadWholesaleOrders(); // Reload to show the new order
+    } catch (error) {
+        console.error('❌ Error creating sample order:', error);
+        showNotification('Lỗi tạo đơn hàng mẫu: ' + error.message, 'error');
+    }
 }
 
 // Toggle all order selection
@@ -1279,19 +1373,29 @@ function printWholesaleInvoice(orderId) {
 }
 
 // Expose functions to global scope
+window.initializeWholesaleOrdersPage = initializeWholesaleOrdersPage;
+window.loadWholesaleOrders = loadWholesaleOrders;
+window.displayWholesaleOrders = displayWholesaleOrders;
+window.viewWholesaleOrderDetail = viewWholesaleOrderDetail;
+window.closeOrderDetailModal = closeOrderDetailModal;
+window.updatePaymentStatus = updatePaymentStatus;
+window.getPaymentStatusText = getPaymentStatusText;
+window.formatDate = formatDate;
+window.formatCurrency = formatCurrency;
+window.showNotification = showNotification;
+window.showLoading = showLoading;
 window.addWholesaleItem = addWholesaleItem;
 window.removeWholesaleItem = removeWholesaleItem;
-window.updateWholesaleItemPrice = updateWholesaleItemPrice;
 window.updateWholesaleItemTotal = updateWholesaleItemTotal;
 window.updateWholesaleSummary = updateWholesaleSummary;
 window.clearWholesaleForm = clearWholesaleForm;
 window.createWholesaleOrder = createWholesaleOrder;
+window.createSampleWholesaleOrder = createSampleWholesaleOrder;
 window.initializeWholesaleOrdersSystem = initializeWholesaleOrdersSystem;
 // Expose functions to global scope
 window.toggleAllOrderSelection = toggleAllOrderSelection;
 window.updateBulkDeleteButton = updateBulkDeleteButton;
 window.deleteWholesaleOrder = deleteWholesaleOrder;
-window.bulkDeleteOrders = bulkDeleteOrders;
 window.deleteAllOrders = deleteAllOrders;
 window.viewWholesaleOrderDetail = viewWholesaleOrderDetail;
 window.closeOrderDetailModal = closeOrderDetailModal;

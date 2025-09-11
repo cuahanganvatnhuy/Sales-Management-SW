@@ -3,6 +3,76 @@
 let salesOrdersData = {};
 let sellingProductsData = {};
 
+// Calculate order profit with platform fees integration
+function calculateOrderProfitWithPlatformFees(order) {
+    const sellingPrice = parseFloat(order.sellingPrice || 0);
+    const importPrice = parseFloat(order.importPrice || 0);
+    const quantity = parseInt(order.quantity || 1);
+    
+    // Base profit before fees
+    const baseProfit = (sellingPrice - importPrice) * quantity;
+    
+    // Get platform fees from settings
+    const platformFees = getPlatformFeesFromStorage(order.platform);
+    
+    if (!platformFees || Object.keys(platformFees).length === 0) {
+        // No fees configured, return base profit
+        return baseProfit;
+    }
+    
+    // Calculate total fees
+    let totalFees = 0;
+    const totalRevenue = sellingPrice * quantity;
+    
+    // Transaction fee
+    if (platformFees.transactionFee) {
+        if (platformFees.transactionFee.type === 'percent') {
+            totalFees += totalRevenue * (platformFees.transactionFee.value / 100);
+        } else {
+            totalFees += platformFees.transactionFee.value;
+        }
+    }
+    
+    // Commission fee
+    if (platformFees.commissionFee) {
+        if (platformFees.commissionFee.type === 'percent') {
+            totalFees += totalRevenue * (platformFees.commissionFee.value / 100);
+        } else {
+            totalFees += platformFees.commissionFee.value;
+        }
+    }
+    
+    // Add other fees if configured
+    ['shippingFee', 'voucherFee', 'affiliateCommission'].forEach(feeType => {
+        if (platformFees[feeType]) {
+            if (platformFees[feeType].type === 'percent') {
+                totalFees += totalRevenue * (platformFees[feeType].value / 100);
+            } else {
+                totalFees += platformFees[feeType].value;
+            }
+        }
+    });
+    
+    return baseProfit - totalFees;
+}
+
+// Get platform fees from localStorage/Firebase
+function getPlatformFeesFromStorage(platform) {
+    try {
+        const currentStore = getCurrentStore();
+        const savedFees = localStorage.getItem(`platformFees_${currentStore}_${platform}`);
+        return savedFees ? JSON.parse(savedFees) : {};
+    } catch (error) {
+        console.error('Error loading platform fees:', error);
+        return {};
+    }
+}
+
+// Get current store helper function
+function getCurrentStore() {
+    return localStorage.getItem('selectedStoreId') || 'default';
+}
+
 // Show loading function - fallback if not defined elsewhere
 function showLoading(show = true) {
     const loadingOverlay = document.getElementById('loadingOverlay');
@@ -515,11 +585,18 @@ function updateSalesOrderPrice(orderIndex, productId = null) {
     if (quantity > 0) {
         const sellingPrice = sellingProduct.sellingPrice || 0;
         const importPrice = sellingProduct.importPrice || 0;
-        const profitPerUnit = sellingPrice - importPrice;
-        const totalProfit = profitPerUnit * quantity;
         const totalAmount = sellingPrice * quantity;
         
-        profitInput.value = formatCurrency(totalProfit);
+        // Calculate profit with platform fees
+        const platform = document.getElementById('platform')?.value || 'other';
+        const profitWithFees = calculateOrderProfitWithPlatformFees({
+            sellingPrice: sellingPrice,
+            importPrice: importPrice,
+            quantity: quantity,
+            platform: platform
+        });
+        
+        profitInput.value = formatCurrency(profitWithFees);
         totalInput.value = formatCurrency(totalAmount);
     } else {
         profitInput.value = '';
@@ -612,9 +689,17 @@ async function createSalesOrders(event) {
         }
         
         const importPrice = sellingProduct.importPrice || 0;
-        const profitPerUnit = sellingPrice - importPrice;
-        const totalProfit = profitPerUnit * quantity;
         const totalAmount = sellingPrice * quantity;
+        
+        // Calculate profit with platform fees
+        const totalProfitWithFees = calculateOrderProfitWithPlatformFees({
+            sellingPrice: sellingPrice,
+            importPrice: importPrice,
+            quantity: quantity,
+            platform: platformInfo.platform
+        });
+        
+        const profitPerUnit = totalProfitWithFees / quantity;
         
         const productName = sellingProduct.productName;
         const productSKU = sellingProduct.sku || 'N/A';
@@ -633,7 +718,7 @@ async function createSalesOrders(event) {
             sellingPrice: sellingPrice,
             importPrice: importPrice,
             profitPerUnit: profitPerUnit,
-            totalProfit: totalProfit,
+            totalProfit: totalProfitWithFees,
             totalAmount: totalAmount,
             orderDate: orderDate,
             platform: platform,

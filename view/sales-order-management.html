@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Đơn Hàng Bán - PMQLDH</title>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../style/man.css">
+    <link rel="stylesheet" href="../css/sales-order-management.css">
+    
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Loading Overlay -->
+        <div id="loadingOverlay" class="loading-overlay hidden">
+            <div class="loading-spinner">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Đang xử lý...</p>
+            </div>
+        </div>
+
+        <!-- Notification -->
+        <div id="notification" class="notification hidden">
+            <div class="notification-content">
+                <i class="notification-icon"></i>
+                <span class="notification-message"></span>
+            </div>
+        </div>
+
+        <!-- Sidebar Container -->
+        <div id="navbar-container">
+            <!-- Navbar will be loaded here -->
+        </div>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header Component -->
+            <div id="header-container">
+                <!-- Header will be loaded here -->
+            </div>
+
+            <!-- Content -->
+            <div class="content">
+                <!-- Order Type Navigation -->
+                <div class="order-type-navigation">
+                    <div class="nav-buttons">
+                        <button type="button" class="nav-btn active" id="tmdt-btn" onclick="switchSalesOrderView('tmdt')" title="Quản lý đơn hàng TMĐT đã bán">
+                            <i class="fas fa-shopping-cart"></i>
+                            <span>Đơn Hàng TMĐT</span>
+                        </button>
+                        <button type="button" class="nav-btn" id="retail-btn" onclick="switchSalesOrderView('retail')" title="Quản lý đơn hàng bán lẻ đã bán">
+                            <i class="fas fa-store"></i>
+                            <span>Đơn Hàng Lẻ</span>
+                        </button>
+                        <button type="button" class="nav-btn" id="wholesale-btn" onclick="switchSalesOrderView('wholesale')" title="Quản lý đơn hàng bán sỉ đã bán">
+                            <i class="fas fa-warehouse"></i>
+                            <span>Đơn Hàng Sỉ</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- TMĐT Orders Section -->
+                <div id="tmdt-orders-section" class="order-section active">
+                    <!-- Statistics Cards -->
+                    <div class="statistics-cards">
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-shopping-cart"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="tmdt-total-orders">0</h3>
+                                <p>Tổng Đơn TMĐT</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-money-bill-wave"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="tmdt-total-revenue">0 ₫</h3>
+                                <p>Tổng Doanh Thu</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="tmdt-total-profit">0 ₫</h3>
+                                <p>Tổng Lợi Nhuận</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Date Filters -->
+                    <div class="date-filter-section">
+                        <div class="date-inputs">
+                            <div class="date-group">
+                                <label>Từ ngày:</label>
+                                <input type="date" id="tmdt-from-date" class="date-input">
+                            </div>
+                            <div class="date-group">
+                                <label>Đến ngày:</label>
+                                <input type="date" id="tmdt-to-date" class="date-input">
+                            </div>
+                        </div>
+                        <div class="filter-buttons">
+                            <button type="button" class="btn btn-primary" onclick="applyTmdtDateFilter()">
+                                <i class="fas fa-search"></i> Lọc
+                            </button>
+                            <button type="button" class="btn btn-warning" onclick="clearTmdtFilters()">
+                                <i class="fas fa-times"></i> Xóa Tất Cả
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Quick Filter Buttons -->
+                    <div class="quick-filters">
+                        <h4>Lọc nhanh:</h4>
+                        <div class="quick-filter-buttons">
+                            <button type="button" class="quick-btn" onclick="filterTmdtByPeriod('today')">
+                                <i class="fas fa-calendar-day"></i> Hôm Nay
+                            </button>
+                            <button type="button" class="quick-btn" onclick="filterTmdtByPeriod('week')">
+                                <i class="fas fa-calendar-week"></i> Tuần Này
+                            </button>
+                            <button type="button" class="quick-btn" onclick="filterTmdtByPeriod('month')">
+                                <i class="fas fa-calendar-alt"></i> Tháng Này
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Search and Filter Section -->
+                    <div class="search-filter-card">
+                        <div class="card-body">
+                            <div class="search-filters-grid">
+                                <!-- Search Input -->
+                                <div class="search-group">
+                                    <input type="text" id="tmdt-search-input" placeholder="Nhập mã đơn hàng, SKU, tên sản phẩm..." 
+                                           oninput="handleTmdtSearch()" class="search-input">
+                                </div>
+                                
+                                <!-- Platform Filter -->
+                                <div class="filter-group">
+                                    <select id="tmdt-platform-filter" class="form-control" title="Chọn sàn TMĐT" onchange="handleTmdtSearch()">
+                                        <option value="">Tất cả sàn</option>
+                                        <option value="shopee">Shopee</option>
+                                        <option value="lazada">Lazada</option>
+                                        <option value="tiktok">TikTok Shop</option>
+                                        <option value="sendo">Sendo</option>
+                                        <option value="tiki">Tiki</option>
+                                        <option value="facebook">Facebook Shop</option>
+                                        <option value="zalo">Zalo Shop</option>
+                                        <option value="other">Khác</option>
+                                    </select>
+                                </div>
+                                
+                                <!-- Store Filter -->
+                                <div class="filter-group">
+                                    <select id="tmdt-store-filter" class="form-control" title="Chọn cửa hàng" onchange="handleTmdtSearch()">
+                                        <option value="">Tất cả cửa hàng</option>
+                                    </select>
+                                </div>
+                                
+                                <!-- Price Range Filter -->
+                                <div class="filter-group">
+                                    <select id="tmdt-price-filter" class="form-control" title="Chọn khoảng giá" onchange="handleTmdtSearch()">
+                                        <option value="">Tất cả</option>
+                                        <option value="0-100000">Dưới 100k</option>
+                                        <option value="100000-500000">100k - 500k</option>
+                                        <option value="500000-1000000">500k - 1tr</option>
+                                        <option value="1000000-5000000">1tr - 5tr</option>
+                                        <option value="5000000-999999999">Trên 5tr</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="filter-actions">
+                                    <button type="button" class="btn btn-secondary btn-small" onclick="clearTmdtSearchFilters()">
+                                        <i class="fas fa-times"></i> Xóa Bộ Lọc
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Orders List -->
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="fas fa-list"></i> Danh Sách Đơn Hàng TMĐT Đã Bán
+                            </h5>
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-danger" id="delete-selected-tmdt" onclick="deleteSelectedOrders('tmdt')" disabled>
+                                    <i class="fas fa-trash"></i> Xóa Đã Chọn
+                                </button>
+                                <button type="button" class="btn btn-outline-danger" onclick="deleteAllOrders('tmdt')">
+                                    <i class="fas fa-trash-alt"></i> Xóa Tất Cả
+                                </button>
+                                <button type="button" class="btn btn-success" onclick="exportTmdtOrders()">
+                                    <i class="fas fa-download"></i> Xuất Excel
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <!-- Orders Table -->
+                            <div class="table-container">
+                                <table class="orders-table">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">
+                                                <input type="checkbox" id="select-all-tmdt" title="Chọn tất cả đơn hàng" onchange="toggleSelectAll('tmdt')">
+                                            </th>
+                                            <th scope="col">STT</th>
+                                            <th scope="col">MÃ ĐH</th>
+                                            <th scope="col">SẢN PHẨM</th>
+                                            <th scope="col">SKU</th>
+                                            <th scope="col">SỐ LƯỢNG</th>
+                                            <th scope="col">GIÁ BÁN</th>
+                                            <th scope="col">GIÁ NHẬP</th>
+                                            <th scope="col">LỢI NHUẬN</th>
+                                            <th scope="col">TỔNG TIỀN</th>
+                                            <th scope="col">SÀN TMĐT</th>
+                                            <th scope="col">CỬA HÀNG</th>
+                                            <th scope="col">NGÀY TẠO</th>
+                                            <th scope="col">THAO TÁC</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tmdt-orders-table-body">
+                                        <tr>
+                                            <td colspan="14" class="text-center">
+                                                <div class="empty-state">
+                                                    <i class="fas fa-shopping-cart"></i>
+                                                    <p>Chưa có đơn hàng TMĐT nào</p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Pagination -->
+                            <div class="pagination-container">
+                                <div class="pagination-info">
+                                    Hiển thị <span id="tmdt-showing-from">0</span> - <span id="tmdt-showing-to">0</span> 
+                                    trong tổng số <span id="tmdt-total-items">0</span> đơn hàng
+                                </div>
+                                <div class="pagination-buttons" id="tmdt-pagination-buttons">
+                                    <!-- Pagination buttons will be generated here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Retail Orders Section -->
+                <div id="retail-orders-section" class="order-section hidden">
+                    <!-- Statistics Cards -->
+                    <div class="statistics-cards">
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-store"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="retail-total-orders">0</h3>
+                                <p>Tổng Đơn Lẻ</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-money-bill-wave"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="retail-total-revenue">0 ₫</h3>
+                                <p>Tổng Doanh Thu</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="retail-total-profit">0 ₫</h3>
+                                <p>Tổng Lợi Nhuận</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Date Filter Section -->
+                    <div class="date-filter-section">
+                        <div class="date-inputs">
+                            <div class="date-group">
+                                <label>Từ ngày:</label>
+                                <input type="date" id="retail-from-date" class="date-input">
+                            </div>
+                            <div class="date-group">
+                                <label>Đến ngày:</label>
+                                <input type="date" id="retail-to-date" class="date-input">
+                            </div>
+                        </div>
+                        <div class="filter-buttons">
+                            <button type="button" class="btn btn-primary" onclick="applyRetailDateFilter()">
+                                <i class="fas fa-search"></i> Lọc
+                            </button>
+                            <button type="button" class="btn btn-warning" onclick="clearRetailFilters()">
+                                <i class="fas fa-times"></i> Xóa Tất Cả
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Filter Buttons -->
+                    <div class="quick-filters">
+                        <h4>Lọc nhanh:</h4>
+                        <div class="quick-filter-buttons">
+                            <button type="button" class="quick-btn" onclick="filterRetailByPeriod('today')">
+                                <i class="fas fa-calendar-day"></i> Hôm Nay
+                            </button>
+                            <button type="button" class="quick-btn" onclick="filterRetailByPeriod('week')">
+                                <i class="fas fa-calendar-week"></i> Tuần Này
+                            </button>
+                            <button type="button" class="quick-btn" onclick="filterRetailByPeriod('month')">
+                                <i class="fas fa-calendar-alt"></i> Tháng Này
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Search and Filter Section -->
+                    <div class="search-filter-card">
+                        <div class="card-body">
+                            <div class="search-filters-grid">
+                                <!-- Search Input -->
+                                <div class="search-group">
+                                    <input type="text" id="retail-search-input" placeholder="Nhập mã đơn hàng, tên khách hàng, sản phẩm..." 
+                                           oninput="handleRetailSearch()" class="search-input">
+                                </div>
+                                
+                                <!-- Customer Filter -->
+                                <div class="filter-group">
+                                    <select id="retail-customer-filter" onchange="handleRetailSearch()" class="filter-select">
+                                        <option value="">Tất cả khách hàng</option>
+                                    </select>
+                                </div>
+                                
+                                <!-- Store Filter -->
+                                <div class="filter-group">
+                                    <select id="retail-store-filter" class="form-control" title="Chọn cửa hàng" onchange="handleRetailSearch()">
+                                        <option value="">Tất cả cửa hàng</option>
+                                    </select>
+                                </div>
+                                
+                                <!-- Price Range Filter -->
+                                <div class="filter-group">
+                                    <select id="retail-price-filter" onchange="handleRetailSearch()" class="filter-select">
+                                        <option value="">Tất cả</option>
+                                        <option value="0-100000">Dưới 100k</option>
+                                        <option value="100000-500000">100k - 500k</option>
+                                        <option value="500000-1000000">500k - 1tr</option>
+                                        <option value="1000000-5000000">1tr - 5tr</option>
+                                        <option value="5000000-999999999">Trên 5tr</option>
+                                    </select>
+                                </div>
+                                
+                                <!-- Clear Filters Button -->
+                                <div class="filter-actions">
+                                    <button type="button" class="btn btn-secondary btn-small" onclick="clearRetailSearchFilters()">
+                                        <i class="fas fa-times"></i> Xóa Bộ Lọc
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="fas fa-store"></i> Danh Sách Đơn Hàng Lẻ Đã Bán
+                            </h5>
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-danger" id="delete-selected-retail" onclick="deleteSelectedOrders('retail')" disabled>
+                                    <i class="fas fa-trash"></i> Xóa Đã Chọn
+                                </button>
+                                <button type="button" class="btn btn-outline-danger" onclick="deleteAllOrders('retail')">
+                                    <i class="fas fa-trash-alt"></i> Xóa Tất Cả
+                                </button>
+                                <button type="button" class="btn btn-success" onclick="exportRetailOrders()">
+                                    <i class="fas fa-download"></i> Xuất Excel
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container">
+                                <table class="orders-table">
+                                    <thead>
+                                        <tr>
+                                            <th>
+                                                <input type="checkbox" id="select-all-retail" onchange="toggleSelectAllOrders('retail')" title="Chọn tất cả đơn hàng">
+                                            </th>
+                                            <th scope="col">STT</th>
+                                            <th scope="col">Mã Đơn Hàng</th>
+                                            <th scope="col">Khách Hàng</th>
+                                            <th scope="col">Tên Sản Phẩm</th>
+                                            <th scope="col">Mã SKU</th>
+                                            <th scope="col">Đơn Vị</th>
+                                            <th scope="col">Số Lượng</th>
+                                            <th scope="col">Giá Bán</th>
+                                            <th scope="col">Giá Nhập</th>
+                                            <th scope="col">Lợi Nhuận</th>
+                                            <th scope="col">Cửa Hàng</th>
+                                            <th scope="col">Tổng Tiền</th>
+                                            <th scope="col">Ngày Tạo</th>
+                                            <th scope="col">Thao Tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="retail-orders-table-body">
+                                        <tr>
+                                            <td colspan="14" class="text-center">
+                                                <div class="empty-state">
+                                                    <i class="fas fa-store"></i>
+                                                    <p>Chưa có đơn hàng lẻ nào</p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Wholesale Orders Section -->
+                <div id="wholesale-orders-section" class="order-section hidden">
+                    <!-- Statistics Cards -->
+                    <div class="statistics-cards">
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-warehouse"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="wholesale-total-orders">0</h3>
+                                <p>Tổng Đơn Sỉ</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-money-bill-wave"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="wholesale-total-revenue">0 ₫</h3>
+                                <p>Tổng Doanh Thu</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="wholesale-total-profit">0 ₫</h3>
+                                <p>Tổng Lợi Nhuận</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Date Filter Section -->
+                    <div class="date-filter-section">
+                        <div class="date-inputs">
+                            <div class="date-group">
+                                <label>Từ ngày:</label>
+                                <input type="date" id="wholesale-from-date" class="date-input">
+                            </div>
+                            <div class="date-group">
+                                <label>Đến ngày:</label>
+                                <input type="date" id="wholesale-to-date" class="date-input">
+                            </div>
+                        </div>
+                        <div class="filter-buttons">
+                            <button type="button" class="btn btn-primary" onclick="applyWholesaleDateFilter()">
+                                <i class="fas fa-search"></i> Lọc
+                            </button>
+                            <button type="button" class="btn btn-warning" onclick="clearWholesaleFilters()">
+                                <i class="fas fa-times"></i> Xóa Tất Cả
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Filter Buttons -->
+                    <div class="quick-filters">
+                        <h4>Lọc nhanh:</h4>
+                        <div class="quick-filter-buttons">
+                            <button type="button" class="quick-btn" onclick="filterWholesaleByPeriod('today')">
+                                <i class="fas fa-calendar-day"></i> Hôm Nay
+                            </button>
+                            <button type="button" class="quick-btn" onclick="filterWholesaleByPeriod('week')">
+                                <i class="fas fa-calendar-week"></i> Tuần Này
+                            </button>
+                            <button type="button" class="quick-btn" onclick="filterWholesaleByPeriod('month')">
+                                <i class="fas fa-calendar-alt"></i> Tháng Này
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Search and Filter Section -->
+                    <div class="search-filter-card">
+                        <div class="card-body">
+                            <div class="search-filters-grid">
+                                <!-- Search Input -->
+                                <div class="search-group">
+                                    <input type="text" id="wholesale-search-input" placeholder="Nhập mã đơn hàng, tên khách hàng, sản phẩm..." 
+                                           oninput="handleWholesaleSearch()" class="search-input">
+                                </div>
+                                
+                                <!-- Customer Filter -->
+                                <div class="filter-group">
+                                    <select id="wholesale-customer-filter" onchange="handleWholesaleSearch()" class="filter-select">
+                                        <option value="">Tất cả khách hàng</option>
+                                    </select>
+                                </div>
+                                
+                                <!-- Store Filter -->
+                                <div class="filter-group">
+                                    <select id="wholesale-store-filter" onchange="handleWholesaleSearch()" class="filter-select">
+                                        <option value="">Tất cả cửa hàng</option>
+                                    </select>
+                                </div>
+                                
+                                <!-- Price Range Filter -->
+                                <div class="filter-group">
+                                    <select id="wholesale-price-filter" onchange="handleWholesaleSearch()" class="filter-select">
+                                        <option value="">Tất cả</option>
+                                        <option value="0-100000">Dưới 100k</option>
+                                        <option value="100000-500000">100k - 500k</option>
+                                        <option value="500000-1000000">500k - 1tr</option>
+                                        <option value="1000000-5000000">1tr - 5tr</option>
+                                        <option value="5000000-999999999">Trên 5tr</option>
+                                    </select>
+                                </div>
+                                
+                                <!-- Clear Filters Button -->
+                                <div class="filter-actions">
+                                    <button type="button" class="btn btn-secondary btn-small" onclick="clearWholesaleSearchFilters()">
+                                        <i class="fas fa-times"></i> Xóa Bộ Lọc
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="fas fa-warehouse"></i> Danh Sách Đơn Hàng Sỉ Đã Bán
+                            </h5>
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-danger" id="delete-selected-wholesale" onclick="deleteSelectedOrders('wholesale')" disabled>
+                                    <i class="fas fa-trash"></i> Xóa Đã Chọn
+                                </button>
+                                <button type="button" class="btn btn-outline-danger" onclick="deleteAllOrders('wholesale')">
+                                    <i class="fas fa-trash-alt"></i> Xóa Tất Cả
+                                </button>
+                                <button type="button" class="btn btn-success" onclick="exportWholesaleOrders()">
+                                    <i class="fas fa-download"></i> Xuất Excel
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container">
+                                <table class="orders-table">
+                                    <thead>
+                                        <tr>
+                                            <th>
+                                                <input type="checkbox" id="select-all-wholesale" onchange="toggleSelectAllOrders('wholesale')" title="Chọn tất cả đơn hàng">
+                                            </th>
+                                            <th>STT</th>
+                                            <th>Mã Đơn Hàng</th>
+                                            <th>Khách Hàng</th>
+                                            <th>Số Điện Thoại</th>
+                                            <th>Sản Phẩm</th>
+                                            <th>Số Lượng</th>
+                                            <th>Giá Bán</th>
+                                            <th>Giá Nhập</th>
+                                            <th>Đơn Vị</th>
+                                            <th>Tổng Tiền</th>
+                                            <th>Tiền Cọc</th>
+                                            <th>Ngày Tạo</th>
+                                            <th>Thao Tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="wholesale-orders-table-body">
+                                        <tr>
+                                            <td colspan="13" class="text-center">
+                                                <div class="empty-state">
+                                                    <i class="fas fa-warehouse"></i>
+                                                    <p>Chưa có đơn hàng sỉ nào</p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Order Detail Modal -->
+    <div id="order-detail-modal" class="modal hidden">
+        <div class="modal-content" style="max-width: 80%;">
+            <div class="modal-header">
+                <h3><i class="fas fa-eye"></i> Chi Tiết Đơn Hàng</h3>
+                <button  type="button" class="modal-close" onclick="closeSalesOrderDetail() ">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="order-detail-content" style="max-height: 30%;">
+                <!-- Order details will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    
+    <!-- XLSX Library for Excel Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <script src="../main/firebase.js"></script>
+    <script src="../main/submenu.js"></script>
+    <script src="../main/store-context.js"></script>
+    <script src="../main/navbar.js"></script>
+    <script src="../main/header.js"></script>
+    <script src="../main/sales-order-management.js"></script>
+</body>
+</html>

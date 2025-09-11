@@ -785,15 +785,17 @@ function displaySellingProducts() {
         const inventory = originalProduct ? (originalProduct.inventory || originalProduct.stock || originalProduct.quantity || 0) : 0;
         const unit = originalProduct ? (originalProduct.unit || originalProduct.unitName || 'cái') : 'cái';
         
-        // Update selling product inventory to match original product (only once)
-        if (originalProduct && product.inventory !== inventory) {
+        // Update selling product inventory and unit to match original product
+        if (originalProduct && (product.inventory !== inventory || !product.unit || product.unit !== unit)) {
             product.inventory = inventory;
+            product.unit = unit;
             // Update in Firebase silently without triggering reload
             database.ref(`sellingProducts/${product.id}`).update({
                 inventory: inventory,
-                currentStock: inventory
+                currentStock: inventory,
+                unit: unit
             }).catch(error => {
-                console.error('Error updating inventory:', error);
+                console.error('Error updating inventory and unit:', error);
             });
         }
         
@@ -801,12 +803,16 @@ function displaySellingProducts() {
         console.log(`Displaying ${product.productName}:`, {
             sellingProduct: {
                 importPrice: product.importPrice,
-                sellingPrice: product.sellingPrice
+                sellingPrice: product.sellingPrice,
+                unit: product.unit
             },
             originalProduct: originalProduct ? {
                 price: originalProduct.price,
-                sellingPrice: originalProduct.sellingPrice
-            } : null
+                sellingPrice: originalProduct.sellingPrice,
+                unit: originalProduct.unit,
+                unitName: originalProduct.unitName
+            } : null,
+            finalUnit: product.unit || unit
         });
         
         row.innerHTML = `
