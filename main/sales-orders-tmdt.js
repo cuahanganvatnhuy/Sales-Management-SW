@@ -53,7 +53,22 @@ function calculateOrderProfitWithPlatformFees(order) {
         }
     });
     
-    return baseProfit - totalFees;
+    // Calculate packaging costs based on product type and weight
+    let packagingCosts = 0;
+    if (order.productType && order.weight && typeof calculatePackagingCost === 'function') {
+        console.log('=== CALCULATING PACKAGING COST IN TMDT ===');
+        console.log('Product Type:', order.productType);
+        console.log('Weight:', order.weight);
+        
+        const cost = calculatePackagingCost(order.productType, order.weight);
+        packagingCosts = cost || 0;
+        console.log('Packaging cost calculated:', packagingCosts);
+    }
+    
+    const finalProfit = baseProfit - totalFees - packagingCosts;
+    console.log(`TMDT Profit calculation: Base: ${baseProfit}, Fees: ${totalFees}, Packaging: ${packagingCosts}, Final: ${finalProfit}`);
+    
+    return finalProfit;
 }
 
 // Get platform fees from localStorage/Firebase
@@ -692,14 +707,35 @@ async function createSalesOrders(event) {
         const totalAmount = sellingPrice * quantity;
         
         // Calculate profit with platform fees
-        const totalProfitWithFees = calculateOrderProfitWithPlatformFees({
-            sellingPrice: sellingPrice,
-            importPrice: importPrice,
-            quantity: quantity,
-            platform: platformInfo.platform
-        });
+        console.log('=== PACKAGING COST DEBUG ===');
+        console.log('Product Type:', sellingProduct.productType);
+        console.log('Product Weight:', sellingProduct.weight);
+        console.log('Total Weight:', parseFloat(sellingProduct.weight || 0) * quantity);
+        console.log('calculatePackagingCost function exists:', typeof calculatePackagingCost === 'function');
+        console.log('calculateOrderProfitWithPlatformFees function exists:', typeof calculateOrderProfitWithPlatformFees === 'function');
         
-        const profitPerUnit = totalProfitWithFees / quantity;
+        console.log('=== CALLING calculateOrderProfitWithPlatformFees ===');
+        let profitWithFees;
+        try {
+            profitWithFees = await calculateOrderProfitWithPlatformFees({
+                sellingPrice: sellingPrice,
+                importPrice: importPrice,
+                quantity: quantity,
+                platform: platformInfo.platform,
+                productType: sellingProduct.productType || 'dry',
+                weight: parseFloat(sellingProduct.weight || 0) * quantity
+            });
+            
+            console.log('✅ calculateOrderProfitWithPlatformFees completed successfully');
+            console.log('Final profit after all calculations:', profitWithFees);
+        } catch (error) {
+            console.error('❌ Error in calculateOrderProfitWithPlatformFees:', error);
+            profitWithFees = (sellingPrice - importPrice) * quantity; // Fallback to basic calculation
+            console.log('Using fallback profit calculation:', profitWithFees);
+        }
+        
+        const totalProfitWithFees = profitWithFees;
+        const profitPerUnit = profitWithFees / quantity;
         
         const productName = sellingProduct.productName;
         const productSKU = sellingProduct.sku || 'N/A';
@@ -727,6 +763,9 @@ async function createSalesOrders(event) {
             orderType: 'tmdt',
             createdAt: new Date().toISOString(),
             storeId: selectedStoreId,
+            // Add product type and weight for packaging cost calculation
+            productType: sellingProduct.productType || 'dry',
+            weight: parseFloat(sellingProduct.weight || 0) * quantity,
             storeName: storeInfo.name,
             status: 'pending'
         };
@@ -956,7 +995,54 @@ function displaySalesOrders() {
     
     for (const [orderId, order] of sortedOrders) {
         const platformDisplay = order.platformName || order.platform || 'N/A';
-        const storeDisplay = order.storeName || 'N/A';
+        let storeDisplay = order.storeName || 'N/A';
+        
+        // Always try to resolve store name if we have storeId
+        if (order.storeId) {
+            // If we already have storeName, use it
+            if (order.storeName && order.storeName !== order.storeId) {
+                storeDisplay = order.storeName;
+            } else {
+                // Simple hardcoded mapping for known stores
+                const storeNameMap = {
+                    '-OZmkMFuAV9q3zuSICEQ': 'cường dung',
+                    '-OZmkOYjLV5QP-_a5_LM': 'Tạp Hóa Bánh Beo'
+                };
+                
+                // Try to resolve from various sources
+                let resolvedName = storeNameMap[order.storeId];
+                
+                if (!resolvedName && typeof getStoreName === 'function') {
+                    resolvedName = getStoreName(order.storeId);
+                }
+                
+                if (!resolvedName && window.storesData && window.storesData[order.storeId]) {
+                    resolvedName = window.storesData[order.storeId].name;
+                }
+                
+                if (!resolvedName) {
+                    try {
+                        const currentStore = JSON.parse(localStorage.getItem('currentStore') || '{}');
+                        if (currentStore.id === order.storeId && currentStore.name) {
+                            resolvedName = currentStore.name;
+                        }
+                    } catch (e) {
+                        // Ignore localStorage errors
+                    }
+                }
+                
+                // Use resolved name or fallback to ID
+                storeDisplay = resolvedName || order.storeId;
+                
+                console.log('🏪 DEBUG: Store name resolution:', {
+                    orderId: order.orderId,
+                    storeId: order.storeId,
+                    originalStoreName: order.storeName,
+                    resolvedName: resolvedName,
+                    finalDisplay: storeDisplay
+                });
+            }
+        }
         
         ordersHTML += `
             <tr>
@@ -978,7 +1064,7 @@ function displaySalesOrders() {
                     ${order.platform ? `<span class="platform-badge platform-${order.platform}">${platformDisplay}</span>` : 'N/A'}
                 </td>
                 <td class="text-center">
-                    <span class="store-name">${storeDisplay}</span>
+                    <span class="store-name" title="Store ID: ${order.storeId}, Store Name: ${order.storeName}">${storeDisplay}</span>
                 </td>
                 <td class="text-center date-cell">${formatDate(order.orderDate)}</td>
                 <td class="text-center">

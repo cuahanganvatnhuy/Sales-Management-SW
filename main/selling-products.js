@@ -452,27 +452,30 @@ function createSelectedProducts() {
     const batch = {};
     const selectedProductsArray = Array.from(selectedProducts);
     
-    selectedProductsArray.forEach(productId => {
+    selectedProductsArray.forEach((productId, index) => {
         const product = allProducts.find(p => p.id === productId);
         if (product) {
             const key = database.ref('sellingProducts').push().key;
             
             // Get the correct product name field
             const productName = product.productName || product.name || product.title || 'Không có tên';
-            
-            // Debug: Log all price fields for this product
-            console.log(`Creating selling product for ${productName}:`, {
-                id: product.id,
-                price: product.price,
-                sellingPrice: product.sellingPrice,
-                costPrice: product.costPrice,
-                importPrice: product.importPrice,
-                allFields: Object.keys(product)
-            });
-            
             // Try multiple price fields
             const importPrice = product.price || product.sellingPrice || product.costPrice || product.importPrice || 0;
-            console.log(`Final import price for ${productName}: ${importPrice}`);
+            const productType = product.productType || 'dry';
+            const weight = parseFloat(product.weight || 0);
+            
+            console.log(`[${index + 1}/${selectedProductsArray.length}] Adding selected product:`, {
+                productId: productId,
+                productName: productName,
+                sku: product.sku,
+                importPrice: importPrice,
+                inventory: product.inventory || product.stock || product.quantity || 0,
+                unit: product.unit || product.unitName,
+                productType: productType,
+                weight: weight,
+                originalProductType: product.productType,
+                originalWeight: product.weight
+            });
             
             batch[`sellingProducts/${key}`] = {
                 productId: productId,
@@ -484,6 +487,9 @@ function createSelectedProducts() {
                 unit: product.unit || product.unitName || 'lỗi ',
                 purchaseCount: 0, // Số lượt mua
                 status: 'inactive', // Default to inactive
+                // Add productType and weight for packaging cost calculation
+                productType: productType,
+                weight: weight,
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             };
@@ -699,14 +705,29 @@ function syncAllProducts() {
     }
     
     console.log('Starting sync for all products');
+    console.log(`Total available products to sync: ${availableProducts.length}`);
     
     const batch = {};
-    availableProducts.forEach(product => {
+    availableProducts.forEach((product, index) => {
         const key = database.ref('sellingProducts').push().key;
-        console.log(`Creating selling product with key: ${key} for product: ${product.productName}`);
         
         // Try multiple price fields
         const importPrice = product.price || product.sellingPrice || product.costPrice || product.importPrice || 0;
+        const productType = product.productType || 'dry';
+        const weight = parseFloat(product.weight || 0);
+        
+        console.log(`[${index + 1}/${availableProducts.length}] Syncing product:`, {
+            productId: product.id,
+            productName: product.productName || product.name || product.title,
+            sku: product.sku || product.skuCode,
+            importPrice: importPrice,
+            inventory: product.inventory || product.stock || product.quantity || 0,
+            unit: product.unit || product.unitName,
+            productType: productType,
+            weight: weight,
+            originalProductType: product.productType,
+            originalWeight: product.weight
+        });
         
         batch[`sellingProducts/${key}`] = {
             id: key,
@@ -719,6 +740,9 @@ function syncAllProducts() {
             unit: product.unit || product.unitName || 'cái',
             purchaseCount: 0, // Số lượt mua
             status: 'inactive',
+            // Add productType and weight for packaging cost calculation
+            productType: productType,
+            weight: weight,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };
@@ -800,19 +824,26 @@ function displaySellingProducts() {
         }
         
         // Debug: Log selling product vs original product
-        console.log(`Displaying ${product.productName}:`, {
+        const productName = product.productName || product.name || product.title;
+        const finalUnit = product.unit || unit;
+        console.log(`Displaying ${productName}:`, {
             sellingProduct: {
                 importPrice: product.importPrice,
                 sellingPrice: product.sellingPrice,
-                unit: product.unit
+                unit: product.unit,
+                productType: product.productType,
+                weight: product.weight
             },
-            originalProduct: originalProduct ? {
-                price: originalProduct.price,
-                sellingPrice: originalProduct.sellingPrice,
-                unit: originalProduct.unit,
-                unitName: originalProduct.unitName
-            } : null,
-            finalUnit: product.unit || unit
+            originalProduct: {
+                price: originalProduct?.price,
+                sellingPrice: originalProduct?.sellingPrice,
+                unit: originalProduct?.unit,
+                unitName: originalProduct?.unitName,
+                productType: originalProduct?.productType,
+                weight: originalProduct?.weight
+            },
+            finalUnit: finalUnit,
+            hasPackagingData: !!(product.productType && product.weight)
         });
         
         row.innerHTML = `

@@ -94,15 +94,24 @@ function switchProfitView(viewType) {
     switch(viewType) {
         case 'overview':
             loadOverviewData();
+            showOverviewContent();
             break;
         case 'tmdt':
             loadTmdtProfitData();
+            showOverviewContent();
             break;
         case 'wholesale':
             loadWholesaleProfitData();
+            showOverviewContent();
             break;
         case 'retail':
             loadRetailProfitData();
+            showOverviewContent();
+            break;
+        case 'packaging':
+            loadPackagingConfigData();
+            // Hide overview content when in packaging view
+            hideOverviewContent();
             break;
     }
 }
@@ -254,11 +263,28 @@ async function updateTmdtStatistics(platform = 'all') {
         let orderCount = filteredOrders.length;
         
         for (const order of filteredOrders) {
+            console.log('🔥 Processing order for profit calculation:', order.orderId || 'unknown');
+            console.log('🔥 Order data:', {
+                productName: order.productName,
+                productType: order.productType,
+                weight: order.weight,
+                sellingPrice: order.sellingPrice,
+                importPrice: order.importPrice,
+                quantity: order.quantity
+            });
+            
             const orderProfit = await calculateOrderProfitWithPlatformFees(order);
             const orderRevenue = (order.sellingPrice || 0) * (order.quantity || 1);
             const orderCost = (order.importPrice || 0) * (order.quantity || 1);
             const baseProfitOrder = orderRevenue - orderCost;
             const orderFees = baseProfitOrder - orderProfit;
+            
+            console.log('🔥 Order profit calculation result:', {
+                orderId: order.orderId,
+                baseProfit: baseProfitOrder,
+                finalProfit: orderProfit,
+                difference: baseProfitOrder - orderProfit
+            });
             
             // Gross profit is revenue - cost (before fees)
             totalGrossProfit += baseProfitOrder;
@@ -340,6 +366,71 @@ async function updateTmdtStatistics(platform = 'all') {
     } catch (error) {
         console.error('Error calculating TMĐT statistics:', error);
         showErrorState();
+    }
+}
+
+// Enrich orders with missing productType and weight from sellingProducts
+async function enrichOrdersWithProductData(orders) {
+    try {
+        console.log('🔥 Enriching orders with product data...');
+        
+        // Load selling products data
+        const storeId = getCurrentStore();
+        if (!storeId || !window.database) {
+            console.log('🔥 Cannot enrich orders - missing store or database');
+            return;
+        }
+        
+        const sellingProductsSnapshot = await window.database.ref(`stores/${storeId}/sellingProducts`).once('value');
+        const sellingProducts = sellingProductsSnapshot.val() || {};
+        
+        console.log('🔥 Loaded selling products for enrichment:', Object.keys(sellingProducts).length);
+        
+        // Enrich each order
+        for (const [orderId, order] of Object.entries(orders)) {
+            if (!order.productType || !order.weight) {
+                console.log('🔥 Enriching order missing product data:', orderId);
+                
+                // Find product by productId or productName
+                let matchingProduct = null;
+                if (order.productId && sellingProducts[order.productId]) {
+                    matchingProduct = sellingProducts[order.productId];
+                } else if (order.productName) {
+                    // Find by product name
+                    matchingProduct = Object.values(sellingProducts).find(p => 
+                        p.productName === order.productName || p.name === order.productName
+                    );
+                }
+                
+                if (matchingProduct) {
+                    console.log('🔥 Found matching product for enrichment:', {
+                        orderId,
+                        productName: matchingProduct.productName || matchingProduct.name,
+                        productType: matchingProduct.productType,
+                        weight: matchingProduct.weight
+                    });
+                    
+                    // Add missing fields
+                    if (!order.productType) {
+                        order.productType = matchingProduct.productType || 'dry';
+                    }
+                    if (!order.weight) {
+                        const unitWeight = parseFloat(matchingProduct.weight || 0);
+                        const quantity = parseInt(order.quantity || 1);
+                        order.weight = unitWeight * quantity;
+                    }
+                } else {
+                    console.log('🔥 No matching product found, using defaults:', orderId);
+                    // Use defaults
+                    if (!order.productType) order.productType = 'dry';
+                    if (!order.weight) order.weight = 0;
+                }
+            }
+        }
+        
+        console.log('🔥 Order enrichment completed');
+    } catch (error) {
+        console.error('🔥 Error enriching orders with product data:', error);
     }
 }
 
@@ -435,6 +526,13 @@ async function loadTmdtSalesOrders(targetStoreId = null) {
         // Add TMDT orders from store-specific path
         Object.entries(tmdtOrders).forEach(([orderId, order]) => {
             if (shouldIncludeOrder(order)) {
+                console.log('🔥 Loading TMDT order from store path:', {
+                    orderId,
+                    productType: order.productType,
+                    weight: order.weight,
+                    hasProductType: !!order.productType,
+                    hasWeight: !!order.weight
+                });
                 allTmdtOrders[orderId] = {
                     ...order,
                     source: 'tmdt_sales',
@@ -446,6 +544,13 @@ async function loadTmdtSalesOrders(targetStoreId = null) {
         // Add TMDT orders from regular orders with platform info
         Object.entries(regularOrders).forEach(([orderId, order]) => {
             if (shouldIncludeOrder(order)) {
+                console.log('🔥 Loading TMDT order from regular orders:', {
+                    orderId,
+                    productType: order.productType,
+                    weight: order.weight,
+                    hasProductType: !!order.productType,
+                    hasWeight: !!order.weight
+                });
                 allTmdtOrders[orderId] = {
                     ...order,
                     source: 'tmdt_sales',
@@ -508,6 +613,9 @@ async function loadTmdtSalesOrders(targetStoreId = null) {
                 };
             }
         });
+        
+        // Enrich orders with missing productType and weight from sellingProducts
+        await enrichOrdersWithProductData(allTmdtOrders);
         
         console.log('🔥 Final TMĐT orders:', allTmdtOrders);
         console.log('🔥 TMĐT orders count:', Object.keys(allTmdtOrders).length);
@@ -1109,7 +1217,10 @@ async function updateTmdtOrdersDetailTable(platform = 'all') {
                 importPrice: importPrice,
                 quantity: quantity,
                 platform: order.platform,
-                storeId: order.storeId
+                storeId: order.storeId,
+                productType: order.productType,
+                weight: order.weight,
+                orderId: order.orderId
             });
             
             const profitClass = orderProfit > 0 ? 'profit-positive' : 'profit-negative';
@@ -1144,7 +1255,7 @@ async function updateTmdtOrdersDetailTable(platform = 'all') {
                     <td class="${profitClass}">${formatCurrency(orderProfit)}₫</td>
                     <td>${formatCurrency(totalAmount)}₫</td>
                     <td>${platformDisplay}</td>
-                    <td>${order.storeName || 'N/A'}</td>
+                    <td>${resolveStoreName(order)}</td>
                     <td>${order.createdAt ? new Date(order.createdAt).toLocaleDateString('vi-VN') : 'N/A'}</td>
                     <td>
                         <button type="button" class="btn-action btn-view-detail" onclick="viewOrderDetail('${orderId}')">
@@ -1195,7 +1306,14 @@ async function calculateTmdtProfitFromOrders(orders, selectedPlatform) {
         const orderRevenue = parseFloat(order.sellingPrice || order.totalAmount || 0);
         const orderCost = parseFloat(order.importPrice || order.cost || 0);
         
-        // Calculate profit with platform fees using the new async function
+        // Calculate profit with platform fees using the new function
+        console.log('🔥 Order before profit calculation:', {
+            orderId: order.orderId,
+            productType: order.productType,
+            weight: order.weight,
+            sellingPrice: order.sellingPrice,
+            importPrice: order.importPrice
+        });
         const orderProfit = await calculateOrderProfitWithPlatformFees(order);
         
         // Add to total TMĐT statistics
@@ -3057,9 +3175,31 @@ async function showOrderDetailModal(orderId, order) {
         platformFees = readFeesFromUI();
     }
     
-    if (totalAllCosts > 0) {
+    // Calculate packaging cost separately for display
+    let packagingCostAmount = 0;
+    if (order.productType && order.weight && typeof calculatePackagingCost === 'function') {
+        packagingCostAmount = calculatePackagingCost(order.productType, order.weight) || 0;
+    }
+    
+    if (totalAllCosts > 0 || packagingCostAmount > 0) {
         let platformFeeDetails = '';
         let externalCostDetails = '';
+        let packagingCostDetails = '';
+        
+        // Add packaging cost section
+        if (packagingCostAmount > 0) {
+            packagingCostDetails = `
+                <div class="info-group fees-section">
+                    <label>Chi Phí Đóng Gói</label>
+                    <div class="fees-breakdown">
+                        <div class="fee-item">
+                            <span class="fee-name">Chi Phí Thùng ${order.productType === 'cold' ? 'Lạnh' : order.productType === 'dry' ? 'Khô' : order.productType === 'liquid' ? 'Lỏng' : order.productType || 'Không xác định'} (${order.weight || 0}kg)</span>
+                            <span class="fee-amount">-${formatCurrency(packagingCostAmount)}₫</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
         
         // Process platform fees
         if (platformFees && Object.keys(platformFees).length > 0) {
@@ -3255,7 +3395,7 @@ async function showOrderDetailModal(orderId, order) {
             `;
         }
         
-        costsHtml = platformFeesSection + externalCostsSection;
+        costsHtml = packagingCostDetails + platformFeesSection + externalCostsSection;
     }
     
     // Use the final profit from calculateOrderProfitWithPlatformFees (already includes all costs)
@@ -3297,7 +3437,7 @@ async function showOrderDetailModal(orderId, order) {
         </div>
         <div class="info-group">
             <label>Cửa Hàng</label>
-            <div class="value">${order.storeName || 'N/A'}</div>
+            <div class="value">${resolveStoreName(order)}</div>
         </div>
         <div class="info-group">
             <label>Ngày Tạo</label>
@@ -3422,12 +3562,12 @@ function setupFeeConfigListeners() {
     console.log('✅ Fee configuration listeners setup complete');
 }
 
-// Initialize the profit management system
-function initializeProfitManagement() {
+// Initialize profit management system
+async function initializeProfitManagement() {
     console.log('🚀 Initializing Profit Management System...');
     
     // Setup fee configuration listeners for real-time updates
-    setupFeeConfigListeners();
+    await setupFeeConfigListeners();
     
     // Load stores for filter dropdown
     loadStoresForFilter();
@@ -3438,6 +3578,10 @@ function initializeProfitManagement() {
     // Load data with current store as default filter
     const currentStore = getCurrentStore();
     updateTmdtOrdersDetailTableWithFilters('all', currentStore);
+    
+    // Ensure packaging config is loaded before calculating profits
+    await loadPackagingConfig();
+    console.log('✅ Packaging config loaded for profit calculations');
     
     console.log('✅ Profit Management System initialized');
 }
@@ -3578,7 +3722,10 @@ async function updateTmdtOrdersDetailTableWithFilters(platform = 'all', storeFil
                 importPrice: importPrice,
                 quantity: quantity,
                 platform: order.platform,
-                storeId: order.storeId
+                storeId: order.storeId,
+                productType: order.productType,
+                weight: order.weight,
+                orderId: order.orderId
             });
             
             const profitClass = orderProfit > 0 ? 'profit-positive' : 'profit-negative';
@@ -3612,7 +3759,7 @@ async function updateTmdtOrdersDetailTableWithFilters(platform = 'all', storeFil
                     <td class="${profitClass}">${formatCurrency(orderProfit)}₫</td>
                     <td>${formatCurrency(totalAmount)}₫</td>
                     <td>${platformDisplay}</td>
-                    <td>${order.storeName || 'N/A'}</td>
+                    <td>${resolveStoreName(order)}</td>
                     <td>${order.createdAt ? new Date(order.createdAt).toLocaleDateString('vi-VN') : 'N/A'}</td>
                     <td>
                         <button type="button" class="btn-action btn-view-detail" onclick="viewOrderDetail('${orderId}')">
@@ -4018,7 +4165,44 @@ function getFeeDisplayName(feeType, customFeeConfig = null) {
     return feeNames[feeType] || feeType;
 }
 
-// Calculate order profit with platform fees integration (updated for async Firebase calls)
+// Calculate packaging cost for multi-item orders with different product types
+function calculateMultiItemPackagingCost(order) {
+    if (!order.items || !Array.isArray(order.items)) {
+        // Single item order - use existing logic
+        if (order.productType && order.weight && typeof calculatePackagingCost === 'function') {
+            return calculatePackagingCost(order.productType, order.weight) || 0;
+        }
+        return 0;
+    }
+    
+    // Multi-item order - group by productType and calculate separately
+    const productTypeGroups = {};
+    
+    order.items.forEach(item => {
+        const productType = item.productType || 'dry'; // default to dry if not specified
+        const weight = parseFloat(item.weight || 0) * parseInt(item.quantity || 1);
+        
+        if (!productTypeGroups[productType]) {
+            productTypeGroups[productType] = 0;
+        }
+        productTypeGroups[productType] += weight;
+    });
+    
+    let totalPackagingCost = 0;
+    
+    Object.entries(productTypeGroups).forEach(([productType, totalWeight]) => {
+        if (totalWeight > 0 && typeof calculatePackagingCost === 'function') {
+            const cost = calculatePackagingCost(productType, totalWeight) || 0;
+            totalPackagingCost += cost;
+            console.log(`Packaging cost for ${productType} (${totalWeight}kg): ${cost}₫`);
+        }
+    });
+    
+    console.log(`Total packaging cost for multi-item order: ${totalPackagingCost}₫`);
+    return totalPackagingCost;
+}
+
+// Calculate order profit with platform fees integration (using same logic as sales-orders-tmdt.js)
 async function calculateOrderProfitWithPlatformFees(order) {
     const sellingPrice = parseFloat(order.sellingPrice || 0);
     const importPrice = parseFloat(order.importPrice || 0);
@@ -4027,117 +4211,96 @@ async function calculateOrderProfitWithPlatformFees(order) {
     // Base profit before fees
     const baseProfit = (sellingPrice - importPrice) * quantity;
     
-    // Get platform fees from Firebase
-    const platformFees = await getPlatformFeesFromStorage(order.platform);
+    // Get platform fees from settings (using localStorage like sales-orders-tmdt.js)
+    const platformFees = getPlatformFeesFromStorageSync(order.platform);
     
     if (!platformFees || Object.keys(platformFees).length === 0) {
-        console.log(`No platform fees found for ${order.platform}, using base profit: ${baseProfit}`);
-        return baseProfit;
+        // Calculate packaging costs even if no platform fees
+        let packagingCosts = 0;
+        if (order.productType && order.weight && typeof calculatePackagingCost === 'function') {
+            console.log('=== CALCULATING PACKAGING COST IN PROFIT MANAGEMENT ===');
+            console.log('Product Type:', order.productType);
+            console.log('Weight:', order.weight);
+            
+            const cost = calculatePackagingCost(order.productType, order.weight);
+            packagingCosts = cost || 0;
+            console.log('Packaging cost calculated:', packagingCosts);
+        }
+        
+        const finalProfit = baseProfit - packagingCosts;
+        console.log(`PROFIT MANAGEMENT Profit calculation: Base: ${baseProfit}, Fees: 0, Packaging: ${packagingCosts}, Final: ${finalProfit}`);
+        return finalProfit;
     }
     
+    // Calculate total fees (simplified like sales-orders-tmdt.js)
     let totalFees = 0;
-    const orderTotal = sellingPrice * quantity;
+    const totalRevenue = sellingPrice * quantity;
     
-    // Calculate fees for each configured fee type
-    Object.keys(platformFees).forEach(feeType => {
-        // Skip custom fees list and custom fee keys (they will be processed separately)
-        if (feeType === 'customFeesList' || feeType.startsWith('custom_')) return;
-        
-        const feeConfig = platformFees[feeType];
-        if (feeConfig && feeConfig.value && feeConfig.value > 0) {
-            let feeAmount = 0;
-            
-            if (feeConfig.type === 'percent') {
-                feeAmount = orderTotal * (feeConfig.value / 100);
+    // Transaction fee
+    if (platformFees.transactionFee) {
+        if (platformFees.transactionFee.type === 'percent') {
+            totalFees += totalRevenue * (platformFees.transactionFee.value / 100);
+        } else {
+            totalFees += platformFees.transactionFee.value;
+        }
+    }
+    
+    // Commission fee
+    if (platformFees.commissionFee) {
+        if (platformFees.commissionFee.type === 'percent') {
+            totalFees += totalRevenue * (platformFees.commissionFee.value / 100);
+        } else {
+            totalFees += platformFees.commissionFee.value;
+        }
+    }
+    
+    // Add other fees if configured
+    ['shippingFee', 'voucherFee', 'affiliateCommission'].forEach(feeType => {
+        if (platformFees[feeType]) {
+            if (platformFees[feeType].type === 'percent') {
+                totalFees += totalRevenue * (platformFees[feeType].value / 100);
             } else {
-                feeAmount = feeConfig.value;
+                totalFees += platformFees[feeType].value;
             }
-            
-            // Handle discount/subsidy fees (they reduce total fees, increasing profit)
-            const discountFees = ['shippingDiscount', 'sellerShippingDiscount', 'platformShippingDiscount', 'shippingSubsidy'];
-            if (discountFees.includes(feeType)) {
-                totalFees -= feeAmount; // Subtract from total fees (increases profit)
-            } else {
-                totalFees += feeAmount; // Add to total fees (decreases profit)
-            }
-            
-            const displayName = getFeeDisplayName(feeType);
-            console.log(`${displayName}: ${feeAmount} (${feeConfig.type})`);
         }
     });
     
-    // Calculate custom fees
-    if (platformFees.customFeesList && Array.isArray(platformFees.customFeesList)) {
-        platformFees.customFeesList.forEach(customFee => {
-            const customFeeKey = `custom_${customFee.id}`;
-            const customFeeConfig = platformFees[customFeeKey];
-            
-            if (customFeeConfig && customFeeConfig.value && customFeeConfig.value > 0) {
-                let feeAmount = 0;
-                
-                if (customFeeConfig.type === 'percent') {
-                    feeAmount = orderTotal * (customFeeConfig.value / 100);
-                } else {
-                    feeAmount = customFeeConfig.value;
-                }
-                
-                totalFees += feeAmount; // Custom fees are always added (decrease profit)
-                const displayName = getFeeDisplayName(customFeeKey, customFeeConfig);
-                console.log(`${displayName}: ${feeAmount} (${customFeeConfig.type})`);
-            }
-        });
+    // Calculate packaging costs using new multi-item logic
+    let packagingCosts = 0;
+    console.log('=== CALCULATING PACKAGING COST IN PROFIT MANAGEMENT ===');
+    console.log('Order structure:', {
+        hasItems: !!(order.items && Array.isArray(order.items)),
+        itemsCount: order.items ? order.items.length : 0,
+        singleProductType: order.productType,
+        singleWeight: order.weight
+    });
+    
+    // Force reload packaging config if empty
+    if (!packagingConfig || !packagingConfig.cold || packagingConfig.cold.length === 0) {
+        console.log('🔧 Packaging config empty, force reloading...');
+        await loadPackagingConfig();
+        console.log('🔧 After reload, packagingConfig:', packagingConfig);
     }
     
-    // Calculate external costs
-    const externalCosts = await getExternalCostsFromStorage(order.storeId);
-    let totalExternalCosts = 0;
+    packagingCosts = calculateMultiItemPackagingCost(order);
+    console.log('Final packaging cost calculated:', packagingCosts);
     
-    if (externalCosts && Object.keys(externalCosts).length > 0) {
-        // Standard external costs
-        const standardCosts = ['shipping-cost', 'packaging-cost', 'storage-cost', 'marketing-cost', 'staff-cost', 'rent-cost', 'utility-cost', 'insurance-cost', 'equipment-cost', 'admin-cost'];
-        
-        standardCosts.forEach(costType => {
-            const cost = externalCosts[costType];
-            if (cost && cost.value && cost.value > 0) {
-                let costAmount = 0;
-                
-                if (cost.type === 'percent') {
-                    costAmount = orderTotal * (cost.value / 100);
-                } else {
-                    costAmount = cost.value;
-                }
-                
-                totalExternalCosts += costAmount;
-                console.log(`External cost ${costType}: ${costAmount} (${cost.type})`);
-            }
-        });
-        
-        // Custom external costs
-        if (externalCosts.customCostsList && Array.isArray(externalCosts.customCostsList)) {
-            externalCosts.customCostsList.forEach(customCost => {
-                const costKey = `custom_${customCost.id}`;
-                const costConfig = externalCosts[costKey];
-                
-                if (costConfig && costConfig.value && costConfig.value > 0) {
-                    let costAmount = 0;
-                    
-                    if (costConfig.type === 'percent') {
-                        costAmount = orderTotal * (costConfig.value / 100);
-                    } else {
-                        costAmount = costConfig.value;
-                    }
-                    
-                    totalExternalCosts += costAmount;
-                    console.log(`External cost ${costConfig.name}: ${costAmount} (${costConfig.type})`);
-                }
-            });
-        }
+    const finalProfit = baseProfit - totalFees - packagingCosts;
+    console.log(`PROFIT MANAGEMENT Profit calculation: Base: ${baseProfit}, Fees: ${totalFees}, Packaging: ${packagingCosts}, Final: ${finalProfit}`);
+    
+    return finalProfit;
+}
+
+// Get platform fees from localStorage (same as sales-orders-tmdt.js)
+function getPlatformFeesFromStorageSync(platform) {
+    try {
+        const currentStore = getCurrentStore();
+        const savedFees = localStorage.getItem(`platformFees_${currentStore}_${platform}`);
+        return savedFees ? JSON.parse(savedFees) : {};
+    } catch (error) {
+        console.error('Error loading platform fees:', error);
+        return {};
     }
-    
-    const totalAllCosts = totalFees + totalExternalCosts;
-    console.log(`Order ${order.orderId || 'unknown'}: Base profit: ${baseProfit}, Platform fees: ${totalFees}, External costs: ${totalExternalCosts}, Final profit: ${baseProfit - totalAllCosts}`);
-    
-    return baseProfit - totalAllCosts;
 }
 
 // External Costs Management Functions
@@ -4591,6 +4754,59 @@ function debugPlatformFees() {
 // Expose to global scope for console testing
 window.debugPlatformFees = debugPlatformFees;
 
+// Hide overview content when in packaging view
+function hideOverviewContent() {
+    const overviewView = document.getElementById('overview-view');
+    const analysisSections = document.querySelectorAll('.analysis-section');
+    const chartsSection = document.querySelector('.charts-section');
+    
+    if (overviewView) {
+        overviewView.style.display = 'none';
+    }
+    analysisSections.forEach(section => {
+        if (section) {
+            section.style.display = 'none';
+        }
+    });
+    if (chartsSection) {
+        chartsSection.style.display = 'none';
+    }
+}
+
+// Show overview content when switching back from packaging view
+function showOverviewContent() {
+    const overviewView = document.getElementById('overview-view');
+    const analysisSections = document.querySelectorAll('.analysis-section');
+    const chartsSection = document.querySelector('.charts-section');
+    
+    if (overviewView) {
+        overviewView.style.display = 'block';
+    }
+    analysisSections.forEach(section => {
+        if (section) {
+            section.style.display = 'block';
+        }
+    });
+    if (chartsSection) {
+        chartsSection.style.display = 'block';
+    }
+}
+
+// Load packaging configuration data
+function loadPackagingConfigData() {
+    console.log('Loading packaging configuration data...');
+    // Initialize packaging config when switching to packaging view
+    if (typeof initializePackagingConfig === 'function') {
+        try {
+            initializePackagingConfig();
+        } catch (error) {
+            console.error('Error initializing packaging config:', error);
+        }
+    } else {
+        console.error('initializePackagingConfig function not found');
+    }
+}
+
 window.toggleFeeInput = toggleFeeInput;
 window.changeFeeType = changeFeeType;
 window.changeCustomFeeType = changeCustomFeeType;
@@ -4599,6 +4815,7 @@ window.loadSavedFeesForPlatform = loadSavedFeesForPlatformWithCustom;
 window.resetAllFees = resetAllFees;
 window.savePlatformFees = savePlatformFees;
 window.showAddFeeForm = showAddFeeForm;
+window.switchProfitView = switchProfitView;
 window.hideAddFeeForm = hideAddFeeForm;
 window.addCustomFee = addCustomFee;
 window.removeCustomFee = removeCustomFee;

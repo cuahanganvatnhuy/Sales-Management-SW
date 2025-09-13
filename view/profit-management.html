@@ -7,7 +7,9 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="../style/navbar-submenu.css" rel="stylesheet">
     <link href="../style/man.css" rel="stylesheet">
-    <link href="../css/profit-management.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/profit-management.css">
+    <link rel="stylesheet" href="../css/packaging-config.css">
+    <link rel="stylesheet" href="../style/navbar-submenu.css">
 </head>
 <body>
     <!-- Header -->
@@ -37,6 +39,10 @@
                     <button class="view-nav-btn" id="retailBtn" onclick="switchProfitView('retail')">
                         <i class="fas fa-store"></i>
                         <span>Lợi Nhuận Đơn Lẻ</span>
+                    </button>
+                    <button type="button" class="view-nav-btn" id="packagingBtn" onclick="switchProfitView('packaging')">
+                        <i class="fas fa-box"></i>
+                        Cấu hình Chi phí Thùng
                     </button>
                 </div>
             </div>
@@ -1124,7 +1130,9 @@
     <script src="../main/navbar.js"></script>
     <script src="../main/header.js"></script>
     <script src="../main/profit-management.js"></script>
-    
+    <script src="../main/packaging-config.js"></script>
+
+    <!-- Scripts -->
     <script>
         // Load components using XMLHttpRequest (same as TMĐT page)
         function loadComponent(url, elementId, callback) {
@@ -1148,28 +1156,59 @@
             xhr.send();
         }
         
-        // Load components when DOM is loaded
+        // Initialize the page
         document.addEventListener('DOMContentLoaded', function() {
+            loadComponents();
+            loadOverviewData();
             initializeProfitManagement();
-            
-            // Load header
-            loadComponent('../components/header.html', 'header-container', function() {
-                console.log('Header loaded');
-                // Initialize header functionality after loading
-                if (typeof initializeHeader === 'function') {
-                    initializeHeader();
-                }
-                
-                // Initialize profit management after header is loaded
-                setTimeout(() => {
-                    if (typeof initializeProfitManagement === 'function') {
-                        initializeProfitManagement();
-                    } else {
-                        console.error('initializeProfitManagement function not found');
-                    }
-                }, 500);
-            });
+            // Load packaging config for profit calculations
+            if (typeof loadPackagingConfig === 'function') {
+                loadPackagingConfig();
+                console.log('✅ Packaging config loaded for profit calculations');
+            } else {
+                console.warn('⚠️ loadPackagingConfig function not found');
+            }
         });
+
+        // Load header and navbar components
+        function loadComponents() {
+            loadHeader();
+            loadNavbar();
+        }
+
+        // Initialize profit management
+        function initializeProfitManagement() {
+            console.log('Initializing profit management...');
+            // Load initial data
+            updateTmdtStatistics();
+        }
+
+        // Expose functions to global scope for HTML accessibility
+        window.switchProfitView = switchProfitView;
+        window.updatePlatformStats = updatePlatformStats;
+        window.updateStoreFilter = updateStoreFilter;
+        window.toggleFeeDisplay = toggleFeeDisplay;
+        window.selectAllFees = selectAllFees;
+        window.deselectAllFees = deselectAllFees;
+        window.openPlatformFeesModal = openPlatformFeesModal;
+        window.openExternalCostsModal = openExternalCostsModal;
+        window.exportProfitReport = exportProfitReport;
+        window.openOrderDetailModal = openOrderDetailModal;
+        window.updateTmdtOrdersDetailTable = updateTmdtOrdersDetailTable;
+        window.openTmdtOrderDetailModal = openTmdtOrderDetailModal;
+        window.closeTmdtOrderDetailModal = closeTmdtOrderDetailModal;
+        window.printTmdtOrderInvoice = printTmdtOrderInvoice;
+        window.updateTmdtOrderPaymentStatus = updateTmdtOrderPaymentStatus;
+        
+        // Packaging config functions
+        window.openWeightRangeModal = openWeightRangeModal;
+        window.closeWeightRangeModal = closeWeightRangeModal;
+        window.saveWeightRange = saveWeightRange;
+        window.deleteWeightRange = deleteWeightRange;
+        window.openPreviewModal = openPreviewModal;
+        window.closePreviewModal = closePreviewModal;
+        window.updatePreview = updatePreview;
+        window.loadPackagingConfigData = loadPackagingConfigData;
     </script>
 
     <!-- External Costs Modal -->
@@ -1392,5 +1431,163 @@
             </div>
         </div>
     </div>
+
+    <!-- Packaging Cost Configuration View -->
+    <div id="packaging-view" class="profit-view">
+        <div class="packaging-config-container">
+            <div class="packaging-header">
+                <h2><i class="fas fa-box"></i> Cấu hình Chi phí Thùng Đóng Gói</h2>
+                <p>Thiết lập chi phí thùng theo loại sản phẩm và khoảng khối lượng</p>
+            </div>
+
+            <!-- Product Type Tabs -->
+            <div class="product-type-tabs">
+                <button class="product-type-tab active" data-type="cold" onclick="switchProductType('cold')">
+                    <i class="fas fa-snowflake"></i>
+                    Hàng Lạnh
+                </button>
+                <button class="product-type-tab" data-type="dry" onclick="switchProductType('dry')">
+                    <i class="fas fa-box"></i>
+                    Hàng Khô
+                </button>
+                <button class="product-type-tab" data-type="liquid" onclick="switchProductType('liquid')">
+                    <i class="fas fa-tint"></i>
+                    Hàng Nước
+                </button>
+            </div>
+
+            <!-- Cold Products Configuration -->
+            <div id="cold-config" class="packaging-config-section active">
+                <div class="config-header">
+                    <h3>Cấu hình Chi phí Thùng - Hàng Lạnh</h3>
+                    <button class="btn-add-range" onclick="addWeightRange('cold')">
+                        <i class="fas fa-plus"></i> Thêm Khoảng Khối Lượng
+                    </button>
+                </div>
+                
+                <div class="weight-ranges-container" id="cold-ranges">
+                    <!-- Weight ranges will be populated here -->
+                </div>
+            </div>
+
+            <!-- Dry Products Configuration -->
+            <div id="dry-config" class="packaging-config-section">
+                <div class="config-header">
+                    <h3>Cấu hình Chi phí Thùng - Hàng Khô</h3>
+                    <button class="btn-add-range" onclick="addWeightRange('dry')">
+                        <i class="fas fa-plus"></i> Thêm Khoảng Khối Lượng
+                    </button>
+                </div>
+                
+                <div class="weight-ranges-container" id="dry-ranges">
+                    <!-- Weight ranges will be populated here -->
+                </div>
+            </div>
+
+            <!-- Liquid Products Configuration -->
+            <div id="liquid-config" class="packaging-config-section">
+                <div class="config-header">
+                    <h3>Cấu hình Chi phí Thùng - Hàng Nước</h3>
+                    <button class="btn-add-range" onclick="addWeightRange('liquid')">
+                        <i class="fas fa-plus"></i> Thêm Khoảng Khối Lượng
+                    </button>
+                </div>
+                
+                <div class="weight-ranges-container" id="liquid-ranges">
+                    <!-- Weight ranges will be populated here -->
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="packaging-actions">
+                <button class="btn-save" onclick="savePackagingConfig()">
+                    <i class="fas fa-save"></i> Lưu Cấu Hình
+                </button>
+                <button class="btn-reset" onclick="resetPackagingConfig()">
+                    <i class="fas fa-undo"></i> Khôi Phục Mặc Định
+                </button>
+                <button class="btn-preview" onclick="previewPackagingCost()">
+                    <i class="fas fa-eye"></i> Xem Trước Chi Phí
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Weight Range Modal -->
+    <div id="weightRangeModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Thêm Khoảng Khối Lượng</h3>
+                <span class="close" onclick="closeWeightRangeModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="weightRangeForm">
+                    <div class="form-group">
+                        <label for="minWeight">Khối lượng tối thiểu (kg):</label>
+                        <input type="number" id="minWeight" min="0" step="0.1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="maxWeight">Khối lượng tối đa (kg):</label>
+                        <input type="number" id="maxWeight" min="0" step="0.1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="packagingCost">Chi phí thùng (VNĐ):</label>
+                        <input type="number" id="packagingCost" min="0" step="1000" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="packagingType">Loại thùng:</label>
+                        <select id="packagingType" required>
+                            <option value="">-- Chọn loại thùng --</option>
+                            <option value="foam">Thùng xốp</option>
+                            <option value="cardboard">Thùng carton</option>
+                            <option value="plastic">Thùng nhựa</option>
+                            <option value="insulated">Thùng cách nhiệt</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="description">Mô tả:</label>
+                        <textarea id="description" rows="3" placeholder="Mô tả chi tiết về loại thùng và ứng dụng"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" onclick="saveWeightRange()">Lưu</button>
+                <button type="button" onclick="closeWeightRangeModal()">Hủy</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preview Modal -->
+    <div id="previewModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Xem Trước Chi Phí Thùng</h3>
+                <span class="close" onclick="closePreviewModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="preview-form">
+                    <div class="form-group">
+                        <label for="previewProductType">Loại sản phẩm:</label>
+                        <select id="previewProductType" onchange="updatePreview()">
+                            <option value="cold">Hàng Lạnh</option>
+                            <option value="dry">Hàng Khô</option>
+                            <option value="liquid">Hàng Nước</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="previewWeight">Khối lượng (kg):</label>
+                        <input type="number" id="previewWeight" min="0" step="0.1" onchange="updatePreview()">
+                    </div>
+                </div>
+                <div id="previewResult" class="preview-result">
+                    <!-- Preview result will be shown here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" onclick="closePreviewModal()">Đóng</button>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>

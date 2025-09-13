@@ -161,6 +161,17 @@ async function processTmdtExcelData(jsonData, platform) {
                 orderData.productId = matchedProduct.id || '';
                 orderData.productName = matchedProduct.name || orderData.productName || orderData.sku || 'Unknown Product';
                 
+                // Add productType and weight for packaging cost calculation
+                orderData.productType = matchedProduct.productType || 'dry';
+                orderData.weight = parseFloat(matchedProduct.weight || 0);
+                
+                console.log('📦 Added packaging data to TMDT Excel order:', {
+                    orderId: orderData.orderId,
+                    sku: orderData.sku,
+                    productType: orderData.productType,
+                    weight: orderData.weight
+                });
+                
                 // Price logic: Use Excel price if available, otherwise use system price
                 let finalSellingPrice = 0;
                 if (orderData.skuSubtotalAfterDiscount > 0) {
@@ -179,6 +190,43 @@ async function processTmdtExcelData(jsonData, platform) {
                 orderData.totalProfit = orderData.profitPerUnit * orderData.quantity;
                 orderData.totalAmount = (finalSellingPrice || 0) * orderData.quantity;
                 orderData.status = 'valid';
+                
+                // Add store information
+                const currentStoreId = getCurrentStore();
+                if (currentStoreId) {
+                    orderData.storeId = currentStoreId;
+                    
+                    // Try to get store name from various sources
+                    let storeName = currentStoreId; // fallback to ID
+                    
+                    // Try getStoreName function if available
+                    if (typeof getStoreName === 'function') {
+                        storeName = getStoreName(currentStoreId) || currentStoreId;
+                    }
+                    // Try from global storesData if available
+                    else if (window.storesData && window.storesData[currentStoreId]) {
+                        storeName = window.storesData[currentStoreId].name || currentStoreId;
+                    }
+                    // Try from localStorage current store
+                    else {
+                        try {
+                            const currentStore = JSON.parse(localStorage.getItem('currentStore') || '{}');
+                            if (currentStore.id === currentStoreId && currentStore.name) {
+                                storeName = currentStore.name;
+                            }
+                        } catch (e) {
+                            console.warn('Could not parse currentStore from localStorage');
+                        }
+                    }
+                    
+                    orderData.storeName = storeName;
+                }
+                
+                console.log('🏪 Added store info to Excel order:', {
+                    orderId: orderData.orderId,
+                    storeId: orderData.storeId,
+                    storeName: orderData.storeName
+                });
                 
                 // Ensure all required fields are present
                 orderData.sku = orderData.sku || matchedProduct.sku || '';
@@ -461,7 +509,34 @@ async function getTmdtSellingProductsFromDatabase() {
             return;
         }
         
-        database.ref('sellingProducts').once('value')
+        // Get current store ID
+        const storeId = getCurrentStore();
+        if (!storeId) {
+            console.warn('No store ID found, using global sellingProducts');
+            database.ref('sellingProducts').once('value')
+                .then(snapshot => {
+                    const products = [];
+                    if (snapshot.exists()) {
+                        snapshot.forEach(childSnapshot => {
+                            const product = childSnapshot.val();
+                            if (product.status === 'active') {
+                                product.id = childSnapshot.key;
+                                products.push(product);
+                            }
+                        });
+                    }
+                    console.log('📦 Loaded global selling products:', products.length);
+                    resolve(products);
+                })
+                .catch(error => {
+                    console.error('Error fetching global selling products:', error);
+                    resolve([]);
+                });
+            return;
+        }
+        
+        // Get store-specific selling products
+        database.ref(`stores/${storeId}/sellingProducts`).once('value')
             .then(snapshot => {
                 const products = [];
                 if (snapshot.exists()) {
@@ -473,11 +548,62 @@ async function getTmdtSellingProductsFromDatabase() {
                         }
                     });
                 }
+                console.log('📦 Loaded store selling products:', products.length, 'for store:', storeId);
+                
+                // If no products in store, try global sellingProducts as fallback
+                if (products.length === 0) {
+                    console.log('📦 No products in store, trying global sellingProducts...');
+                    return database.ref('sellingProducts').once('value')
+                        .then(globalSnapshot => {
+                            const globalProducts = [];
+                            if (globalSnapshot.exists()) {
+                                globalSnapshot.forEach(childSnapshot => {
+                                    const product = childSnapshot.val();
+                                    if (product.status === 'active') {
+                                        product.id = childSnapshot.key;
+                                        globalProducts.push(product);
+                                    }
+                                });
+                            }
+                            console.log('📦 Loaded global selling products as fallback:', globalProducts.length);
+                            console.log('📦 Sample product with packaging data:', globalProducts[0] ? {
+                                name: globalProducts[0].name || globalProducts[0].productName,
+                                sku: globalProducts[0].sku,
+                                productType: globalProducts[0].productType,
+                                weight: globalProducts[0].weight
+                            } : 'No products found');
+                            resolve(globalProducts);
+                        });
+                }
+                
+                console.log('📦 Sample product with packaging data:', products[0] ? {
+                    name: products[0].name || products[0].productName,
+                    sku: products[0].sku,
+                    productType: products[0].productType,
+                    weight: products[0].weight
+                } : 'No products found');
                 resolve(products);
             })
             .catch(error => {
-                console.error('Error fetching selling products:', error);
-                resolve([]);
+                console.error('Error fetching store selling products:', error);
+                // Try global as fallback on error
+                console.log('📦 Error loading store products, trying global...');
+                database.ref('sellingProducts').once('value')
+                    .then(globalSnapshot => {
+                        const globalProducts = [];
+                        if (globalSnapshot.exists()) {
+                            globalSnapshot.forEach(childSnapshot => {
+                                const product = childSnapshot.val();
+                                if (product.status === 'active') {
+                                    product.id = childSnapshot.key;
+                                    globalProducts.push(product);
+                                }
+                            });
+                        }
+                        console.log('📦 Loaded global selling products on error fallback:', globalProducts.length);
+                        resolve(globalProducts);
+                    })
+                    .catch(() => resolve([]));
             });
     });
 };

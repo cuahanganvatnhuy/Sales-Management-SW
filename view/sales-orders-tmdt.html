@@ -419,6 +419,7 @@
     <script src="../main/navbar.js"></script>
     <script src="../main/header.js"></script>
     <script src="../main/searchable-select.js"></script>
+    <script src="../main/packaging-config.js"></script>
     <script src="../main/sales-orders-tmdt-excel.js"></script>
     <script src="../main/sales-orders-tmdt.js"></script>
     <script>
@@ -460,6 +461,17 @@
                 // Initialize header functionality after loading
                 if (typeof initializeHeader === 'function') {
                     initializeHeader();
+                }
+                
+                // Load packaging configuration after components are loaded
+                if (typeof loadPackagingConfig === 'function') {
+                    console.log('Loading packaging config...');
+                    loadPackagingConfig().then(() => {
+                        console.log('✅ Packaging config loaded successfully');
+                        console.log('Current packagingConfig:', packagingConfig);
+                    }).catch(error => {
+                        console.error('❌ Failed to load packaging config:', error);
+                    });
                 }
             });
         });
