@@ -1256,7 +1256,7 @@ async function updateTmdtOrdersDetailTable(platform = 'all') {
                     <td>${formatCurrency(totalAmount)}₫</td>
                     <td>${platformDisplay}</td>
                     <td>${resolveStoreName(order)}</td>
-                    <td>${order.createdAt ? new Date(order.createdAt).toLocaleDateString('vi-VN') : 'N/A'}</td>
+                    <td>${getOrderDate(order)}</td>
                     <td>
                         <button type="button" class="btn-action btn-view-detail" onclick="viewOrderDetail('${orderId}')">
                             <i class="fas fa-eye"></i> Xem
@@ -2951,6 +2951,75 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+// Get order date function
+function getOrderDate(order) {
+    // Try different possible date fields
+    const dateFields = ['createdAt', 'orderDate', 'date', 'timestamp', 'created'];
+    
+    for (const field of dateFields) {
+        if (order[field]) {
+            try {
+                const date = new Date(order[field]);
+                if (!isNaN(date.getTime())) {
+                    return date.toLocaleDateString('vi-VN');
+                }
+            } catch (e) {
+                // Continue to next field
+            }
+        }
+    }
+    
+    // If no valid date found, return N/A
+    return 'N/A';
+}
+
+// Store name resolution function
+function resolveStoreName(order) {
+    let storeDisplay = order.storeName || 'N/A';
+    
+    // Always try to resolve store name if we have storeId
+    if (order.storeId) {
+        // If we already have storeName, use it
+        if (order.storeName && order.storeName !== order.storeId) {
+            storeDisplay = order.storeName;
+        } else {
+            // Simple hardcoded mapping for known stores
+            const storeNameMap = {
+                'QZmkMFuAV9q3zuSiCEQ': 'Cửa Hàng Chính',
+                '-OZmkMFuAV9q3zuSICEQ': 'cường dung',
+                '-OZmkOYjLV5QP-_a5_LM': 'Tạp Hóa Bánh Beo'
+            };
+            
+            // Try to resolve from various sources
+            let resolvedName = storeNameMap[order.storeId];
+            
+            if (!resolvedName && typeof getStoreName === 'function') {
+                resolvedName = getStoreName(order.storeId);
+            }
+            
+            if (!resolvedName && window.storesData && window.storesData[order.storeId]) {
+                resolvedName = window.storesData[order.storeId].name;
+            }
+            
+            if (!resolvedName) {
+                try {
+                    const currentStore = JSON.parse(localStorage.getItem('currentStore') || '{}');
+                    if (currentStore.id === order.storeId && currentStore.name) {
+                        resolvedName = currentStore.name;
+                    }
+                } catch (e) {
+                    // Ignore localStorage errors
+                }
+            }
+            
+            // Use resolved name or fallback to ID
+            storeDisplay = resolvedName || order.storeId;
+        }
+    }
+    
+    return storeDisplay;
+}
+
 // Get current store function
 function getCurrentStore() {
     // Try multiple methods to get store ID
@@ -3102,25 +3171,26 @@ function updateSelectedCount() {
 }
 
 // Order detail modal functions
-function viewOrderDetail(orderId) {
+async function viewOrderDetail(orderId) {
     // Use the global tmdtOrdersData that's already loaded
     if (window.tmdtOrdersData && window.tmdtOrdersData[orderId]) {
         const order = window.tmdtOrdersData[orderId];
-        showOrderDetailModal(orderId, order);
+        await showOrderDetailModal(orderId, order);
     } else {
         // Fallback: reload data if not available
-        loadTmdtSalesOrders().then(orders => {
+        try {
+            const orders = await loadTmdtSalesOrders();
             const order = orders[orderId];
             if (!order) {
                 alert('Không tìm thấy thông tin đơn hàng!');
                 return;
             }
             
-            showOrderDetailModal(orderId, order);
-        }).catch(error => {
+            await showOrderDetailModal(orderId, order);
+        } catch (error) {
             console.error('Error loading order detail:', error);
             alert('Lỗi khi tải thông tin đơn hàng!');
-        });
+        }
     }
 }
 
@@ -3179,6 +3249,7 @@ async function showOrderDetailModal(orderId, order) {
     let packagingCostAmount = 0;
     if (order.productType && order.weight && typeof calculatePackagingCost === 'function') {
         packagingCostAmount = calculatePackagingCost(order.productType, order.weight) || 0;
+        console.log('📦 MODAL: Packaging cost for display:', packagingCostAmount);
     }
     
     if (totalAllCosts > 0 || packagingCostAmount > 0) {
@@ -3402,6 +3473,15 @@ async function showOrderDetailModal(orderId, order) {
     const accurateFinalProfit = finalProfit;
     const accurateProfitClass = accurateFinalProfit > 0 ? 'profit-positive' : 'profit-negative';
     
+    console.log('🔍 MODAL DEBUG - Final profit calculation:', {
+        orderId: orderId,
+        baseProfit: baseProfit,
+        finalProfit: finalProfit,
+        accurateFinalProfit: accurateFinalProfit,
+        totalAllCosts: totalAllCosts,
+        packagingCostAmount: packagingCostAmount
+    });
+    
     infoContainer.innerHTML = `
         <div class="info-group">
             <label>Mã Đơn Hàng</label>
@@ -3441,7 +3521,7 @@ async function showOrderDetailModal(orderId, order) {
         </div>
         <div class="info-group">
             <label>Ngày Tạo</label>
-            <div class="value">${order.createdAt ? new Date(order.createdAt).toLocaleDateString('vi-VN') : 'N/A'}</div>
+            <div class="value">${getOrderDate(order)}</div>
         </div>
         <div class="info-group">
             <label>Lợi Nhuận Gộp (Trước Phí)</label>
@@ -3760,7 +3840,7 @@ async function updateTmdtOrdersDetailTableWithFilters(platform = 'all', storeFil
                     <td>${formatCurrency(totalAmount)}₫</td>
                     <td>${platformDisplay}</td>
                     <td>${resolveStoreName(order)}</td>
-                    <td>${order.createdAt ? new Date(order.createdAt).toLocaleDateString('vi-VN') : 'N/A'}</td>
+                    <td>${getOrderDate(order)}</td>
                     <td>
                         <button type="button" class="btn-action btn-view-detail" onclick="viewOrderDetail('${orderId}')">
                             <i class="fas fa-eye"></i> Xem
@@ -4283,10 +4363,46 @@ async function calculateOrderProfitWithPlatformFees(order) {
     }
     
     packagingCosts = calculateMultiItemPackagingCost(order);
-    console.log('Final packaging cost calculated:', packagingCosts);
+    console.log('📦 CALCULATION: Final packaging cost calculated:', packagingCosts);
+    console.log('📦 CALCULATION: Order data for packaging:', {
+        productType: order.productType,
+        weight: order.weight,
+        hasItems: !!(order.items && Array.isArray(order.items))
+    });
     
-    const finalProfit = baseProfit - totalFees - packagingCosts;
-    console.log(`PROFIT MANAGEMENT Profit calculation: Base: ${baseProfit}, Fees: ${totalFees}, Packaging: ${packagingCosts}, Final: ${finalProfit}`);
+    // Get external costs from Firebase (for all orders including Excel imports)
+    let externalCosts = 0;
+    try {
+        // Use order's storeId if available, otherwise current store
+        const storeId = order.storeId || getCurrentStore();
+        console.log('💰 CALCULATION: Loading external costs for store:', storeId);
+        
+        const externalCostsData = await getExternalCostsFromStorage(storeId);
+        if (externalCostsData && typeof externalCostsData === 'object') {
+            Object.values(externalCostsData).forEach(cost => {
+                if (cost && cost.value) {
+                    const costValue = parseFloat(cost.value) || 0;
+                    externalCosts += costValue;
+                    console.log('💰 CALCULATION: Adding external cost:', cost.name || 'Unknown', costValue);
+                }
+            });
+        }
+        console.log('💰 CALCULATION: Total external costs loaded:', externalCosts);
+    } catch (error) {
+        console.error('Error loading external costs for calculation:', error);
+    }
+    
+    const finalProfit = baseProfit - totalFees - packagingCosts - externalCosts;
+    console.log(`🔥 PROFIT MANAGEMENT Profit calculation: Base: ${baseProfit}, Fees: ${totalFees}, Packaging: ${packagingCosts}, External: ${externalCosts}, Final: ${finalProfit}`);
+    console.log(`🔥 Order details:`, {
+        orderId: order.orderId || 'N/A',
+        sellingPrice: sellingPrice,
+        importPrice: importPrice,
+        quantity: quantity,
+        platform: order.platform,
+        productType: order.productType,
+        weight: order.weight
+    });
     
     return finalProfit;
 }
