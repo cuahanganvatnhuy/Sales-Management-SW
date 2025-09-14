@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Sản Phẩm Bán - Sales Management System</title>
+    <link rel="stylesheet" href="../style/man.css">
+    <link rel="stylesheet" href="../css/selling-products.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+    <!-- Include Header -->
+    <div id="header-placeholder"></div>
+    
+    <!-- Include Navbar -->
+    <div id="navbar-placeholder"></div>
+
+    <div class="main-content">
+        <div class="container content">
+            <!-- Page Header -->
+           
+                <h1>
+                    <i class="fas fa-money-bill-wave"></i>
+                    Quản Lý Sản Phẩm Bán
+                </h1>
+            <!-- Action Buttons -->
+            <div class="order-type-navigation">
+                <div class="nav-buttons">
+                    <button type="button" class="nav-btn active" id="selectBtn" onclick="switchActiveButton('selectBtn'); openProductSelectionModal()" title="Chọn sản phẩm từ danh sách">
+                        <i class="fas fa-search"></i>
+                        <span>Chọn Sản Phẩm Lẻ</span>
+                    </button>
+                    <button type="button" class="nav-btn" id="syncBtn" onclick="switchActiveButton('syncBtn'); showSyncConfirmModal()" title="Đồng bộ tất cả sản phẩm vào danh sách bán">
+                        <i class="fas fa-sync-alt"></i>
+                        <span>Đồng Bộ Toàn Bộ Sản Phẩm</span>
+                    </button>
+                    <button type="button" class="nav-btn" id="exportBtn" onclick="switchActiveButton('exportBtn'); exportToExcel()" title="Xuất danh sách ra file Excel">
+                        <i class="fas fa-file-excel"></i>
+                        <span>Xuất Excel</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-box"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="totalProducts">0</h3>
+                        <p>Tổng Sản Phẩm</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="activeProducts">0</h3>
+                        <p>Đang Bán</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-pause-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="inactiveProducts">0</h3>
+                        <p>Tạm Dừng</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-tags"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="averagePrice">0 VND</h3>
+                        <p>Giá Bán Trung Bình</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Selling Products Table -->
+            <div class="table-section">
+                <div class="table-header">
+                    <h3>
+                        <i class="fas fa-list"></i>
+                        Danh Sách Sản Phẩm Bán
+                    </h3>
+                    <div class="table-controls">
+                        <input type="text" id="searchInput" placeholder="Tìm kiếm sản phẩm..." onkeyup="filterProducts()">
+                        <select id="statusFilter" class="form-control" title="Lọc theo trạng thái sản phẩm" onchange="filterProducts()">
+                            <option value="all">Tất cả trạng thái</option>
+                            <option value="active">Đang hoạt động</option>
+                            <option value="inactive">Tạm dừng</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Bulk Actions -->
+                <div class="bulk-actions hidden" id="bulkActions">
+                    <div class="bulk-info">
+                        <span id="selectedSellingCount">Đã chọn: 0 sản phẩm</span>
+                    </div>
+                    <div class="bulk-buttons">
+                        <button type="button" class="btn btn-danger" onclick="deleteSelectedProducts()" title="Xóa các sản phẩm đã chọn">
+                            <i class="fas fa-trash"></i>
+                            Xóa đã chọn
+                        </button>
+                        <button type="button" class="btn btn-danger btn-outline" onclick="deleteAllProducts()" title="Xóa tất cả sản phẩm">
+                            <i class="fas fa-trash-alt"></i>
+                            Xóa tất cả
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table id="sellingProductsTable">
+                        <thead>
+                            <tr>
+                                <th class="text-center">
+                                    <input type="checkbox" id="selectAllSellingProducts" onchange="toggleSelectAllSellingProducts()" title="Chọn/bỏ chọn tất cả">
+                                </th>
+                                <th>STT</th>
+                                <th>Tên Sản Phẩm</th>
+                                <th>SKU</th>
+                                <th>Giá Nhập</th>
+                                <th class="sortable" onclick="sortTable('sellingPrice')" style="text-align: center;">
+                                    Giá Bán <i class="fas fa-sort" id="sort-sellingPrice"></i>
+                                </th>
+                                <th class="sortable" onclick="sortTable('inventory')">
+                                    Tồn Kho <i class="fas fa-sort" id="sort-inventory"></i>
+                                </th>
+                                <th class="sortable" onclick="sortTable('unit')">
+                                    Đơn Vị <i class="fas fa-sort" id="sort-unit"></i>
+                                </th>
+                                <th class="sortable" onclick="sortTable('purchaseCount')">
+                                    Lượt Mua <i class="fas fa-sort" id="sort-purchaseCount"></i>
+                                </th>
+                                <th>Trạng Thái</th>
+                                <th>Thao Tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sellingProductsTableBody">
+                            <!-- Data will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="pagination-container">
+                    <div class="pagination-info">
+                        <span id="paginationInfo">Trang 1 / 1</span>
+                    </div>
+                    <div class="pagination-controls">
+                        <button class="btn btn-sm" id="prevPageBtn" onclick="changePage(-1)" disabled title="Trang trước">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <div id="pageNumbers" class="page-numbers">
+                            <!-- Page numbers will be generated by JavaScript -->
+                        </div>
+                        <button class="btn btn-sm" id="nextPageBtn" onclick="changePage(1)" disabled title="Trang sau">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Product Selection Modal -->
+            <div id="productSelectionModal" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>
+                            <i class="fas fa-search"></i>
+                            Chọn Sản Phẩm Để Thiết Lập Giá Bán
+                        </h3>
+                        <button class="close" onclick="closeProductSelectionModal()" title="Đóng modal">&times;</button>
+                    </div>
+
+                    <div class="modal-body">
+                        <div class="search-section">
+                            <input type="text" id="modalSearchInput" placeholder="Tìm kiếm sản phẩm..." onkeyup="searchOriginalProducts()">
+                            <div class="selection-info">
+                                <span id="selectedCount">Đã chọn: 0 sản phẩm</span>
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAllProducts()">
+                                    <i class="fas fa-check-square"></i> Chọn tất cả
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearAllSelections()">
+                                    <i class="fas fa-square"></i> Bỏ chọn tất cả
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="products-table">
+                                <colgroup>
+                                    <col class="checkbox-col">
+                                    <col class="stt-col">
+                                    <col class="name-col">
+                                    <col class="sku-col">
+                                    <col class="unit-col">
+                                    <col class="inventory-col">
+                                    <col class="price-col">
+                                    <col class="price-col">
+                                    <col class="status-col">
+                                </colgroup>
+                                <thead>
+                                    <tr>
+                                        <th class="text-center checkbox-col">
+                                            <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll()" title="Chọn/bỏ chọn tất cả sản phẩm">
+                                        </th>
+                                        <th class="text-center stt-col">STT</th>
+                                        <th class="text-left name-col">Tên Sản Phẩm</th>
+                                        <th class="text-left sku-col">SKU</th>
+                                        <th class="text-center unit-col">Đơn vị</th>
+                                        <th class="text-center inventory-col">Tồn kho</th>
+                                        <th class="text-right price-col">Giá Nhập</th>
+                                        <th class="text-right price-col">Giá Bán</th>
+                                        <th class="text-center status-col">Trạng Thái</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="productList">
+                                    <!-- Original products will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" onclick="closeProductSelectionModal()" title="Hủy và đóng modal">Hủy</button>
+                        <button type="button" class="btn btn-success" onclick="createSelectedProducts()" id="saveSelectedBtn" disabled>
+                            <i class="fas fa-save"></i> Lưu Sản Phẩm Đã Chọn
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Selling Price Modal -->
+            <div id="sellingPriceModal" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>
+                            <i class="fas fa-money-bill-wave"></i>
+                            <span id="priceModalTitle">Thiết Lập Giá Bán</span>
+                        </h3>
+                        <button class="close" onclick="closeSellingPriceModal()" title="Đóng modal">&times;</button>
+                    </div>
+
+                    <div class="modal-body">
+                        <form id="sellingPriceForm">
+                            <div class="product-info">
+                                <div class="info-row">
+                                    <label>Tên sản phẩm:</label>
+                                    <span id="productNameDisplay">-</span>
+                                </div>
+                                <div class="info-row">
+                                    <label>SKU:</label>
+                                    <span id="productSkuDisplay">-</span>
+                                </div>
+                                <div class="info-row">
+                                    <label>Giá nhập:</label>
+                                    <span id="importPriceDisplay" class="price-display">0 VNĐ</span>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="sellingPrice">
+                                    <i class="fas fa-money-bill-wave"></i>
+                                    Giá Bán (VNĐ)
+                                </label>
+                                <input type="text" id="sellingPrice" required placeholder="Nhập giá bán" oninput="calculateProfit()">
+                            </div>
+
+                            <div class="profit-display">
+                                <div class="profit-row">
+                                    <label>Lợi nhuận:</label>
+                                    <span id="profitAmount" class="profit-amount">0 VNĐ</span>
+                                </div>
+                                <div class="profit-row">
+                                    <label>% Lợi nhuận:</label>
+                                    <span id="profitPercentage" class="profit-percentage">0%</span>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="productStatus">
+                                    <i class="fas fa-toggle-on"></i>
+                                    Trạng Thái
+                                </label>
+                                <select id="productStatus">
+                                    <option value="active">Đang hoạt động</option>
+                                    <option value="inactive">Tạm dừng</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="notes">
+                                    <i class="fas fa-sticky-note"></i>
+                                    Ghi Chú
+                                </label>
+                                <textarea id="notes" rows="3" placeholder="Ghi chú về sản phẩm..."></textarea>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" onclick="closeSellingPriceModal()" title="Hủy và đóng modal">Hủy</button>
+                        <button type="button" class="btn btn-primary" onclick="saveSellingProduct()">
+                            <i class="fas fa-save"></i>
+                            Lưu
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../main/firebase.js"></script>
+    <script src="../main/selling-products.js"></script>
+    
+    <script>
+        // Load header and navbar
+        document.addEventListener('DOMContentLoaded', function() {
+            fetch('../components/header.html')
+                .then(response => response.text())
+                .then(data => {
+                    document.getElementById('header-placeholder').innerHTML = data;
+                });
+
+            fetch('../components/navbar.html')
+                .then(response => response.text())
+                .then(data => {
+                    document.getElementById('navbar-placeholder').innerHTML = data;
+                    
+                    // Initialize navbar functionality after loading
+                    setTimeout(() => {
+                        initializeNavbarFunctionality();
+                    }, 100);
+                });
+        });
+
+        // Initialize navbar submenu functionality
+        function initializeNavbarFunctionality() {
+            // Ensure submenu toggle functions are available
+            if (typeof window.toggleProductSubmenu === 'undefined') {
+                window.toggleProductSubmenu = function(event) {
+                    event.preventDefault();
+                    const submenu = document.getElementById('productSubmenu');
+                    if (submenu) {
+                        submenu.classList.toggle('show');
+                        console.log('Product submenu toggled');
+                    }
+                };
+            }
+
+            if (typeof window.toggleOrderSubmenu === 'undefined') {
+                window.toggleOrderSubmenu = function(event) {
+                    event.preventDefault();
+                    const submenu = document.getElementById('orderSubmenu');
+                    if (submenu) {
+                        submenu.classList.toggle('show');
+                        console.log('Order submenu toggled');
+                    }
+                };
+            }
+
+            if (typeof window.toggleSubmenu === 'undefined') {
+                window.toggleSubmenu = function(event) {
+                    event.preventDefault();
+                    const submenu = document.getElementById('invoiceSubmenu');
+                    if (submenu) {
+                        submenu.classList.toggle('show');
+                        console.log('Invoice submenu toggled');
+                    }
+                };
+            }
+
+            if (typeof window.navigateToInvoice === 'undefined') {
+                window.navigateToInvoice = function(type) {
+                    const currentPath = window.location.pathname;
+                    const isInRoot = currentPath === '/' || currentPath.endsWith('/index.html') || currentPath.includes('/index.html');
+                    
+                    let targetUrl;
+                    if (type === 'global') {
+                        targetUrl = isInRoot ? 'view/global-invoice.html' : 'global-invoice.html';
+                    } else {
+                        targetUrl = isInRoot ? 'view/store-invoice.html' : 'store-invoice.html';
+                    }
+                    
+                    window.location.href = targetUrl;
+                };
+            }
+
+            if (typeof window.toggleSalesOrderSubmenu === 'undefined') {
+                window.toggleSalesOrderSubmenu = function(event) {
+                    event.preventDefault();
+                    const submenu = document.getElementById('salesOrderSubmenu');
+                    if (submenu) {
+                        submenu.classList.toggle('show');
+                    } else {
+                        console.log('Sales order submenu not found!');
+                    }
+                };
+            }
+
+            // Close submenu when clicking outside
+            document.addEventListener('click', function(e) {
+                const invoiceSubmenu = document.getElementById('invoiceSubmenu');
+                const orderSubmenu = document.getElementById('orderSubmenu');
+                const productSubmenu = document.getElementById('productSubmenu');
+                const salesOrderSubmenu = document.getElementById('salesOrderSubmenu');
+                const hasSubmenu = e.target.closest('.has-submenu');
+                
+                if (invoiceSubmenu && !hasSubmenu) {
+                    invoiceSubmenu.classList.remove('show');
+                }
+                
+                if (orderSubmenu && !hasSubmenu) {
+                    orderSubmenu.classList.remove('show');
+                }
+                
+                if (productSubmenu && !hasSubmenu) {
+                    productSubmenu.classList.remove('show');
+                }
+                
+                if (salesOrderSubmenu && !hasSubmenu) {
+                    salesOrderSubmenu.classList.remove('show');
+                }
+            });
+
+            console.log('Navbar functionality initialized');
+        }
+    </script>
+</body>
+</html>

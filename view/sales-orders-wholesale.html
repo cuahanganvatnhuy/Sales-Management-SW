@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đơn Hàng Bán Sỉ - PMQLDH</title>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="../style/man.css">
+    <link rel="stylesheet" href="../style/sales-orders-wholesale.css">
+    <link rel="stylesheet" href="../style/wholesale-orders.css">
+
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-compat.js"></script>
+    <style>
+        /* Notification Styles */
+        .notification {
+            position: fixed;
+            top: 12%;
+            right: 20px;
+            z-index: 9999;
+            min-width: 300px;
+            max-width: 500px;
+            padding: 16px 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            transform: translateX(100%);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+        }
+        
+        .notification:not(.hidden) {
+            transform: translateX(0);
+        }
+        
+        .notification.hidden {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        
+        .notification.success {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            border-left: 4px solid #065f46;
+        }
+        
+        .notification.error {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            border-left: 4px solid #991b1b;
+        }
+        
+        .notification.warning {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            border-left: 4px solid #92400e;
+        }
+        
+        .notification.info {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            border-left: 4px solid #1d4ed8;
+        }
+        
+        .notification-icon {
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        
+        .notification-message {
+            flex: 1;
+            line-height: 1.4;
+        }
+        
+        /* Responsive */
+        @media (max-width: 640px) {
+            .notification {
+                top: 10px;
+                right: 10px;
+                left: 10px;
+                min-width: auto;
+                max-width: none;
+            }
+        }
+        .order-search-container .search-input-wrapper {
+            position: relative;
+            /* max-width: 400px; */
+            flex: 1 !important;
+        }
+        .products-table th {
+    padding: 10px 9px;
+    font-weight: 700;
+    text-align: center;
+    border: none;
+    font-size: 11px;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+}
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Đang xử lý...</p>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div id="notification" class="notification hidden">
+        <div class="notification-content">
+            <i class="notification-icon"></i>
+            <span class="notification-message"></span>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Navbar Component -->
+        <div id="navbar-container">
+            <!-- Navbar will be loaded here -->
+        </div>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header Component -->
+            <div id="header-container">
+                <!-- Header will be loaded here -->
+            </div>
+
+            <!-- Content -->
+            <div class="content">
+                <!-- Add Order Form -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-plus"></i> Thêm Đơn Hàng Mới</h2>
+                    </div>
+                    <!-- Order Type Selection -->
+                    <div class="order-type-selection" style="margin-bottom: 20px;margin-left: 20px;">
+                        <div class="order-type-buttons" style="display: flex; !important">
+                            <a href="./orders.html" style="text-decoration: none; margin-right:10px;">
+                                <button type="button" class="btn btn-order-type active" id="ecommerceTypeBtn" onclick="selectOrderType('ecommerce')">
+                                    <i class="fas fa-shopping-cart"></i> Đơn TMĐT
+                                </button>
+                            </a>
+                            <a href="./retail-orders.html"  style="text-decoration: none; margin-right:10px;">
+                            <button type="button" class="btn btn-order-type" id="retailTypeBtn" onclick="selectOrderType('retail')">
+                                <i class="fas fa-store"></i> Đơn Bán Lẻ
+
+                            </button>
+                            </a>
+                            <a href="./wholesale-orders.html" style="text-decoration: none; margin-right:10px;">
+                            <button type="button" class="btn btn-order-type" id="wholesaleTypeBtn" onclick="selectOrderType('wholesale')">
+                                <i class="fas fa-warehouse"></i> Đơn Bán Sỉ
+                            </button>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <!-- Add Wholesale Order Form -->
+                        <form id="wholesaleOrderForm" class="wholesale-form">
+                            <!-- Customer Information -->
+                            <div class="form-section">
+                                <h3><i class="fas fa-building"></i> Thông Tin Khách Hàng</h3>
+                                
+                                <!-- Customer Selection -->
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="selectedCustomerDisplay">Khách Hàng Đã Chọn</label>
+                                        <div class="customer-selection-wrapper">
+                                            <input type="text" id="selectedCustomerDisplay" name="selectedCustomerDisplay" 
+                                                   placeholder="Chưa chọn khách hàng" readonly>
+                                            <button type="button" class="btn-select-customer" onclick="openCustomerModal()" title="Chọn khách hàng">
+                                                <i class="fas fa-users"></i> Chọn
+                                            </button>
+                                        </div>
+                                        <input type="hidden" id="selectedCustomerId" name="selectedCustomerId">
+                                    </div>
+                                    <div class="">
+                                        <div class="form-group">
+                                        <label for="wholesaleCustomerAddress">Địa Chỉ *</label>
+                                        <input type="text" id="wholesaleCustomerAddress" name="customerAddress"
+                                               placeholder="Nhập địa chỉ khách hàng" required>
+                                    </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Customer Details -->
+                                <div id="customerDetailsSection">
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="wholesaleCustomerName">Tên Khách Hàng *</label>
+                                            <input type="text" id="wholesaleCustomerName" name="customerName"
+                                                   placeholder="Nhập tên khách hàng" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="wholesaleCustomerPhone">Số Điện Thoại</label>
+                                            <input type="tel" id="wholesaleCustomerPhone" name="customerPhone"
+                                                   placeholder="Nhập số điện thoại">
+                                        </div>
+                                    </div>
+                                   
+                                    
+                                    <!-- Save Customer Option -->
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label class="checkbox-label">
+                                                <input type="checkbox" id="saveCustomer" name="saveCustomer" checked>
+                                                <span class="checkmark"></span>
+                                                Lưu thông tin khách hàng vào danh bạ
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Order Information -->
+                            <div class="form-section">
+                                <h3><i class="fas fa-calendar"></i> Thông Tin Đơn Hàng</h3>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="wholesaleOrderDate">Ngày Đặt Hàng *</label>
+                                        <input type="date" id="wholesaleOrderDate" name="orderDate" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="wholesaleDeliveryDate">Ngày Giao Hàng</label>
+                                        <input type="date" id="wholesaleDeliveryDate" name="deliveryDate">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Products -->
+                            <div class="form-section">
+                                <h3><i class="fas fa-box"></i> Sản Phẩm</h3>
+                                <div class="wholesale-items-container" id="wholesaleItemsContainer">
+                                    <!-- Items will be added here -->
+                                </div>
+                                <button type="button" class="btn btn-success"
+                                        onclick="addWholesaleItem()">
+                                    <i class="fas fa-plus"></i>
+                                    Thêm Sản Phẩm
+                                </button>
+                            </div>
+
+                            <!-- Summary -->
+                            <div class="wholesale-form-section">
+                                <h3 class="wholesale-section-title">
+                                    <i class="fas fa-calculator"></i>
+                                    Tổng Kết Đơn Hàng
+                                </h3>
+                                <div class="wholesale-summary">
+                                    <div class="wholesale-summary-row">
+                                        <span class="wholesale-summary-label">Tạm Tính:</span>
+                                        <span class="wholesale-summary-value" id="wholesaleSubtotal">0 VNĐ</span>
+                                    </div>
+                                    
+                                    <!-- Input fields in one row -->
+                                    <div class="wholesale-summary-inputs-row">
+                                        <div class="wholesale-input-group">
+                                            <label class="wholesale-input-label">Giảm Giá:</label>
+                                            <input type="text" id="wholesaleDiscount" 
+                                                   onchange="updateWholesaleSummary()" oninput="formatNumberInput(this)" 
+                                                   class="wholesale-input-large" placeholder="nhập giám giảm">
+                                    </div>
+                                        <div class="wholesale-input-group">
+                                            <label class="wholesale-input-label">Phí Vận Chuyển:</label>
+                                            <input type="text" id="wholesaleShipping" 
+                                                   onchange="updateWholesaleSummary()" oninput="formatNumberInput(this)"
+                                                   class="wholesale-input-large" placeholder="nhập phí vận chuyển">
+                                    </div>
+                                        <div class="wholesale-input-group wholesale-deposit-group">
+                                            <label class="wholesale-input-label">Tiền Cọc:</label>
+                                            <input type="text" id="wholesaleDeposit" 
+                                                   onchange="updateWholesaleSummary()" oninput="formatNumberInput(this)"
+                                                   class="wholesale-input-large" placeholder="Nhập số tiền cọc">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="wholesale-summary-row">
+                                        <span class="wholesale-summary-label">Tổng Cộng:</span>
+                                        <span class="wholesale-summary-value" id="wholesaleTotal">0 VNĐ</span>
+                                    </div>
+                                    <div class="wholesale-remaining-row wholesale-summary-row">
+                                        <span class="wholesale-summary-label">Còn Phải Trả:</span>
+                                        <span class="wholesale-summary-value" id="wholesaleRemaining">0 VNĐ</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Form Actions -->
+                            <div class="form-actions">
+                                <button type="button" class="btn btn-secondary" onclick="clearWholesaleForm()">
+                                    <i class="fas fa-undo"></i>
+                                    Làm Mới
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i>
+                                    Tạo Đơn Hàng Sỉ
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Orders List -->
+                    <div class="retail-orders-card">
+                        <div class="card-header">
+                            <h2><i class="fas fa-list"></i> Danh Sách Đơn Hàng Sỉ Hiện Tại</h2>
+                        </div>
+                        <div class="card-body">
+                            <!-- Search and Filter Options -->
+                            <div class="order-search-container">
+                               
+                                
+                                <!-- Date Filters -->
+                                <div class="date-filters">
+                                    <div class="search-input-wrapper">
+                                        <i class="fas fa-search search-icon"></i>
+                                        <input type="text" id="orderSearch" placeholder="Tìm kiếm đơn hàng theo tên khách hàng..." 
+                                               oninput="searchWholesaleOrders()">
+                                        <button type="button" class="clear-search" onclick="clearOrderSearch()" title="Xóa tìm kiếm" id="clearOrderSearchBtn" aria-label="Xóa tìm kiếm">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                    <button type="button" class="btn btn-filter" onclick="filterOrdersByDate('today')">
+                                        <i class="fas fa-calendar-day"></i> Hôm nay
+                                    </button>
+                                    <button type="button" class="btn btn-filter" onclick="filterOrdersByDate('thisWeek')">
+                                        <i class="fas fa-calendar-week"></i> Tuần này
+                                    </button>
+                                    <button type="button" class="btn btn-filter" onclick="filterOrdersByDate('thisMonth')">
+                                        <i class="fas fa-calendar-alt"></i> Tháng này
+                                    </button>
+                                    <button type="button" class="btn btn-filter btn-clear-filter" onclick="clearOrderFilters()">
+                                        <i class="fas fa-times"></i> Xóa bộ lọc
+                                    </button>
+                                </div>
+                                
+                                <!-- Bulk Delete Actions -->
+                                <div class="bulk-actions">
+                                    <button type="button" id="bulkDeleteBtn" class="btn btn-danger disabled" onclick="bulkDeleteOrders()" disabled>
+                                        <i class="fas fa-trash-alt"></i>
+                                        Xóa Đã Chọn <span id="selectedCount"></span>
+                                    </button>
+                                    <button type="button" class="btn btn-warning" onclick="deleteAllOrders()">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        Xóa Tất Cả
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="table-container">
+                                <table class="products-table" id="wholesaleOrdersTable">
+                                <thead>
+                                    <tr>
+                                        <th><input type="checkbox" id="selectAllOrders" onchange="toggleAllOrderSelection()" title="Chọn tất cả đơn hàng"></th>
+                                        <th>STT</th>
+                                        <th>Khách Hàng</th>
+                                        <th>SĐT</th>
+                                        <th>Ngày Đặt</th>
+                                        <th>Sản Phẩm</th>
+                                        <th>Tổng Tiền</th>
+                                        <th>Đã Cọc</th>
+                                        <th>Còn Lại</th>
+                                        <th>Trạng Thái</th>
+                                        <th>Thao Tác</th>
+                                        <th>Xóa</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="wholesaleOrdersBody">
+                                    <!-- Orders will be loaded here -->
+                                </tbody>
+                            </table>
+
+                            <!-- Empty State -->
+                            <div id="wholesaleEmptyState" class="wholesale-empty-state">
+                                <div class="wholesale-empty-icon">
+                                    <i class="fas fa-warehouse"></i>
+                                </div>
+                                <h3>Chưa có đơn hàng bán sĩ nào</h3>
+                                <p>Hãy tạo đơn hàng bán sĩ đầu tiên của bạn!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Customer Selection Modal -->
+    <div id="customerModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-users"></i> Chọn Khách Hàng</h3>
+                <button type="button" class="close-btn" onclick="closeCustomerModal()" title="Đóng">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Search Bar -->
+                <div class="search-container">
+                    <div class="search-input-wrapper">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" id="customerSearch" placeholder="Tìm kiếm khách hàng theo tên, số điện thoại..." 
+                               oninput="searchCustomers()">
+                        <button type="button" class="clear-search" onclick="clearCustomerSearch()" title="Xóa tìm kiếm" id="clearSearchBtn">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Customer List -->
+                <div class="customer-list-container">
+                    <div id="customerList" class="customer-list">
+                        <!-- Customers will be loaded here -->
+                    </div>
+                    <div id="noCustomersFound" class="no-results hidden">
+                        <i class="fas fa-user-slash"></i>
+                        <p>Không tìm thấy khách hàng nào</p>
+                    </div>
+                </div>
+                
+                <!-- Loading State -->
+                <div id="customerModalLoading" class="modal-loading hidden">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Đang tải danh sách khách hàng...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeCustomerModal()">
+                    <i class="fas fa-times"></i> Hủy
+                </button>
+                <button type="button" class="btn btn-primary" onclick="createNewCustomer()">
+                    <i class="fas fa-plus"></i> Tạo Khách Hàng Mới
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../main/firebase.js"></script>
+    <script src="../main/submenu.js"></script>
+    <script src="../main/store-context.js"></script>
+    <script src="../main/navbar.js"></script>
+    <script src="../main/header.js"></script>
+    <script src="../main/customer-modal.js"></script>
+    <script src="../main/sales-orders-wholesale.js"></script>
+
+    <script>
+        // Helper function to format number input in real-time
+        function formatNumberInput(input) {
+            let value = input.value;
+            
+            // Remove all non-digit characters except for the first character if it's a minus sign
+            let isNegative = value.startsWith('-');
+            value = value.replace(/[^\d]/g, '');
+            
+            // Add back negative sign if it was there
+            if (isNegative && value) {
+                value = '-' + value;
+            }
+            
+            // Format with thousands separators if value is not empty and not just a minus sign
+            if (value && value !== '-') {
+                let numValue = parseFloat(value);
+                if (!isNaN(numValue)) {
+                    // Format number with dots as thousands separators
+                    let formatted = Math.abs(numValue).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                    input.value = isNegative ? '-' + formatted : formatted;
+                }
+            }
+        }
+        
+        // Load components when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load navbar
+            const xhr1 = new XMLHttpRequest();
+            xhr1.open('GET', '../components/navbar.html', true);
+            xhr1.onreadystatechange = function() {
+                if (xhr1.readyState === 4 && xhr1.status === 200) {
+                    document.getElementById('navbar-container').innerHTML = xhr1.responseText;
+                }
+            };
+            xhr1.send();
+
+            // Load header
+            const xhr2 = new XMLHttpRequest();
+            xhr2.open('GET', '../components/header.html', true);
+            xhr2.onreadystatechange = function() {
+                if (xhr2.readyState === 4 && xhr2.status === 200) {
+                    let content = xhr2.responseText;
+                    content = content.replace('{{PAGE_TITLE}}', 'Đơn Hàng Bán Sỉ');
+                    document.getElementById('header-container').innerHTML = content;
+                }
+            };
+            xhr2.send();
+
+            // Initialize wholesale orders
+            setTimeout(() => {
+                console.log('=== Attempting to initialize wholesale orders ===');
+                console.log('initializeWholesaleOrdersPage function exists:', typeof initializeWholesaleOrdersPage === 'function');
+                
+                // Add debug button to create sample data
+                const debugButton = document.createElement('button');
+                debugButton.textContent = 'Tạo đơn hàng sỉ mẫu (Debug)';
+                debugButton.style.cssText = 'position: fixed; top: 10px; right: 10px; z-index: 9999; background: #007bff; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer;';
+                debugButton.onclick = () => {
+                    if (typeof createSampleWholesaleOrder === 'function') {
+                        createSampleWholesaleOrder();
+                    } else {
+                        console.error('createSampleWholesaleOrder not found');
+                    }
+                };
+                document.body.appendChild(debugButton);
+                
+                if (typeof initializeWholesaleOrdersPage === 'function') {
+                    console.log('Calling initializeWholesaleOrdersPage()...');
+                    initializeWholesaleOrdersPage();
+                } else {
+                    console.error('initializeWholesaleOrdersPage function not found! Available functions:', Object.keys(window).filter(key => key.includes('wholesale')));
+                    
+                    // Try to call loadWholesaleOrders directly
+                    if (typeof loadWholesaleOrders === 'function') {
+                        console.log('Calling loadWholesaleOrders() directly...');
+                        loadWholesaleOrders();
+                    } else {
+                        console.error('loadWholesaleOrders function also not found!');
+                    }
+                }
+                
+                // Export payment status functions to global scope
+                if (typeof updatePaymentStatus === 'function') {
+                    window.updatePaymentStatus = updatePaymentStatus;
+                }
+                if (typeof getPaymentStatusText === 'function') {
+                    window.getPaymentStatusText = getPaymentStatusText;
+                }
+                
+                console.log('Payment status functions exported to global scope');
+            }, 500);
+        });
+
+    <!-- Modal Styles -->
+    <style>
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        
+        .order-detail-modal {
+            background: white;
+            border-radius: 8px;
+            max-width: 800px;
+            width: 70%;
+            margin: 0 auto;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #f8f9fa;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .modal-header h3 {
+            margin: 0;
+            color: #2c5aa0;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #666;
+            padding: 5px;
+        }
+        
+        .modal-close:hover {
+            color: #000;
+        }
+        
+        .modal-body {
+            padding: 20px;
+        }
+        
+        .order-info-section {
+            margin-bottom: 30px;
+        }
+        
+        .info-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .info-item {
+            flex: 1;
+        }
+        
+        .info-item.full-width {
+            flex: 100%;
+        }
+        
+        .info-item label {
+            font-weight: bold;
+            color: #555;
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .info-item span {
+            color: #333;
+        }
+        
+        .products-section h4 {
+            color: #2c5aa0;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #2c5aa0;
+            padding-bottom: 5px;
+        }
+        
+        .detail-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        
+        .detail-table th,
+        .detail-table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        
+        .detail-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        
+        .summary-section {
+            border-top: 2px solid #eee;
+            padding-top: 20px;
+        }
+        
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .summary-row.total {
+            font-weight: bold;
+            font-size: 16px;
+            border-top: 2px solid #333;
+            border-bottom: 2px solid #333;
+        }
+        
+        .summary-row.remaining {
+            font-weight: bold;
+            color: #dc3545;
+        }
+        
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .status-badge.paid {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .status-badge.partial {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-badge.pending {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .modal-footer {
+            padding: 20px;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            background-color: #f8f9fa;
+            border-radius: 0 0 8px 8px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #545b62;
+        }
+    </style>
+</body>
+</html>

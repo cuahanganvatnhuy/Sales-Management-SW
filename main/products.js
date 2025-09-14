@@ -145,6 +145,17 @@ async function loadProducts(forceReload = false) {
 // Global variable to store categories data
 let categoriesData = {};
 
+// Helper function to get product type name
+function getProductTypeName(productType) {
+    const productTypes = {
+        'cold': 'Hàng lạnh',
+        'dry': 'Hàng khô', 
+        'liquid': 'Hàng nước'
+    };
+    
+    return productTypes[productType] || 'Chưa phân loại';
+}
+
 // Helper function to get category name from categoryId or direct category name
 function getCategoryName(categoryId) {
     console.log('getCategoryName called with:', categoryId);
@@ -339,6 +350,8 @@ function displayProducts() {
                 <td class="text-center">${product.stock !== undefined ? product.stock : 0}</td>
                 <td class="text-center">${product.unit || 'cái'}</td>
                 <td class="text-center">${product.conversion !== undefined ? product.conversion : 1}</td>
+                <td class="text-center">${getProductTypeName(product.productType)}</td>
+                <td class="text-center">${product.weight ? product.weight + ' kg' : '-'}</td>
                 <td class="text-center">
                     <button class="btn btn-warning btn-small product-edit-btn" 
                             data-product-id="${productId}" data-action="edit">
@@ -459,8 +472,10 @@ async function addNewProduct(event) {
     const stockStr = document.getElementById('productStock').value.trim();
     const unit = document.getElementById('productUnit').value.trim();
     const conversion = document.getElementById('productConversion').value.trim();
+    const productType = document.getElementById('productType').value.trim();
+    const weightStr = document.getElementById('productWeight').value.trim();
     
-    console.log('Adding product:', { name, sku, priceStr, categoryId, description, stockStr, unit, conversion });
+    console.log('Adding product:', { name, sku, priceStr, categoryId, description, stockStr, unit, conversion, productType, weightStr });
     
     if (!name || !priceStr || !categoryId) {
         showNotification('Vui lòng nhập đầy đủ thông tin (tên, giá, danh mục)!', 'error');
@@ -503,6 +518,15 @@ async function addNewProduct(event) {
         }
     }
     
+    // Parse and validate weight
+    let weight = null;
+    if (weightStr) {
+        const parsedWeight = parseFloat(weightStr);
+        if (!isNaN(parsedWeight) && parsedWeight > 0) {
+            weight = parsedWeight;
+        }
+    }
+    
     const productData = {
         name: name,
         sku: sku,
@@ -512,6 +536,8 @@ async function addNewProduct(event) {
         stock: stock,
         unit: unit || 'cái',
         conversion: conversionValue,
+        productType: productType || null,
+        weight: weight,
         createdAt: firebase.database.ServerValue.TIMESTAMP,
         updatedAt: firebase.database.ServerValue.TIMESTAMP
     };
@@ -532,6 +558,8 @@ async function addNewProduct(event) {
         document.getElementById('productStock').value = '0';
         document.getElementById('productUnit').value = '';
         document.getElementById('productConversion').value = '';
+        document.getElementById('productType').value = '';
+        document.getElementById('productWeight').value = '';
         
         // Show success message
         showNotification('Thêm sản phẩm thành công!', 'success');
@@ -540,6 +568,9 @@ async function addNewProduct(event) {
         setTimeout(async () => {
             await loadProducts(true); // Force reload from Firebase
             console.log('Products reloaded from Firebase after add');
+            
+            // Sync new product data to sellingProducts
+            await syncProductToSellingProducts(result.productId, productData);
         }, 300);
         
     } catch (error) {
@@ -893,4 +924,96 @@ function showNotification(message, type = 'info') {
             notification.parentNode.removeChild(notification);
         }
     }, 3000);
+}
+
+// Sync product data to sellingProducts table
+async function syncProductToSellingProducts(productId, productData) {
+    try {
+        console.log('Syncing product to sellingProducts:', productId, productData);
+        
+        if (!database) {
+            console.error('Firebase database not available for sync');
+            return;
+        }
+        
+        // Check if product already exists in sellingProducts
+        const sellingProductRef = database.ref(`sellingProducts/${productId}`);
+        const snapshot = await sellingProductRef.once('value');
+        
+        if (snapshot.exists()) {
+            // Update existing sellingProduct with new fields
+            const existingData = snapshot.val();
+            const updateData = {
+                productType: productData.productType,
+                weight: productData.weight,
+                updatedAt: firebase.database.ServerValue.TIMESTAMP
+            };
+            
+            await sellingProductRef.update(updateData);
+            console.log('Updated existing sellingProduct with new fields:', productId);
+        } else {
+            // Create new sellingProduct entry
+            const sellingProductData = {
+                productId: productId,
+                productName: productData.name,
+                sku: productData.sku,
+                categoryId: productData.categoryId,
+                importPrice: productData.price, // Use product price as import price
+                sellingPrice: productData.price, // Default selling price same as import price
+                productType: productData.productType,
+                weight: productData.weight,
+                unit: productData.unit,
+                conversion: productData.conversion,
+                stock: productData.stock,
+                status: 'active',
+                createdAt: firebase.database.ServerValue.TIMESTAMP,
+                updatedAt: firebase.database.ServerValue.TIMESTAMP
+            };
+            
+            await sellingProductRef.set(sellingProductData);
+            console.log('Created new sellingProduct entry:', productId);
+        }
+        
+    } catch (error) {
+        console.error('Error syncing product to sellingProducts:', error);
+    }
+}
+
+// Sync all existing products to sellingProducts (migration function)
+async function syncAllProductsToSellingProducts() {
+    try {
+        console.log('Starting bulk sync of products to sellingProducts...');
+        
+        if (!database) {
+            console.error('Firebase database not available for bulk sync');
+            return;
+        }
+        
+        // Get all products
+        const productsRef = database.ref('products');
+        const productsSnapshot = await productsRef.once('value');
+        
+        if (!productsSnapshot.exists()) {
+            console.log('No products found to sync');
+            return;
+        }
+        
+        const products = productsSnapshot.val();
+        const productIds = Object.keys(products);
+        
+        console.log(`Found ${productIds.length} products to sync`);
+        
+        // Sync each product
+        for (const productId of productIds) {
+            const productData = products[productId];
+            await syncProductToSellingProducts(productId, productData);
+        }
+        
+        console.log('Bulk sync completed successfully');
+        showNotification('Đồng bộ tất cả sản phẩm thành công!', 'success');
+        
+    } catch (error) {
+        console.error('Error in bulk sync:', error);
+        showNotification('Lỗi đồng bộ sản phẩm: ' + error.message, 'error');
+    }
 }

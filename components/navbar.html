@@ -144,6 +144,12 @@ span.titlle {
                 </li>
             </ul>
         </li>
+        <li id="nav-selling-products">
+            <a href="/view/selling-products.html" data-page="selling-products.html">
+                <i class="fas fa-money-bill-wave"></i>
+                <span>Quản Lý Sản Phẩm Bán</span>
+            </a>
+        </li>
         <li class="has-submenu">
             <a href="#" class="nav-link" onclick="toggleOrderSubmenu(event)">
                 <i class="fas fa-plus-circle"></i>
@@ -171,15 +177,55 @@ span.titlle {
                 </li>
             </ul>
         </li>
+        <li class="has-submenu">
+            <a href="#" class="nav-link" onclick="toggleSalesOrderSubmenu(event)">
+                <i class="fas fa-shopping-bag"></i>
+                <span>Đơn Hàng Bán</span>
+                <i class="fas fa-chevron-down submenu-chevron"></i>
+            </a>
+            <ul id="salesOrderSubmenu" class="order-submenu">
+                <li class="order-submenu-item">
+                    <a href="/view/sales-orders-tmdt.html" data-page="sales-orders-tmdt.html" class="order-submenu-link">
+                        <i class="fas fa-shopping-cart order-submenu-icon"></i>
+                        TMĐT Bán
+                    </a>
+                </li>
+                <li class="order-submenu-item">
+                    <a href="/view/sales-orders-retail.html" data-page="sales-orders-retail.html" class="order-submenu-link">
+                        <i class="fas fa-store order-submenu-icon"></i>
+                        Bán Lẻ
+                    </a>
+                </li>
+                <li class="order-submenu-item">
+                    <a href="/view/sales-orders-wholesale.html" data-page="sales-orders-wholesale.html" class="order-submenu-link">
+                        <i class="fas fa-warehouse order-submenu-icon"></i>
+                        Bán Sỉ
+                    </a>
+                </li>
+            </ul>
+        </li>
         <li id="nav-order-management">
             <a href="/view/order-management.html" data-page="order-management.html">
                 <i class="fas fa-tasks"></i>
                 <span>Quản Lý Đơn Hàng</span>
             </a>
         </li>
+        <li id="nav-sales-order-management">
+            <a href="/view/sales-order-management.html" data-page="sales-order-management.html">
+                <i class="fas fa-chart-line"></i>
+                <span>Quản Lý Đơn Hàng Bán</span>
+            </a>
+        </li>
+        <li id="nav-profit-management">
+            <a href="/view/profit-management.html" data-page="profit-management.html">
+                <i class="fas fa-coins"></i>
+                <span>Quản Lý Lợi Nhuận</span>
+            </a>
+        </li>
         <li id="nav-stores"><a href="/view/stores.html" data-page="stores.html"><i class="fas fa-store"></i> <span>Cửa Hàng</span></a></li>
         <li id="nav-reports"><a href="/view/reports.html" data-page="reports.html"><i class="fas fa-chart-bar"></i> <span>Báo Cáo</span></a></li>
         <li id="nav-warehouse"><a href="/view/warehouse-management.html" data-page="warehouse-management.html"><i class="fas fa-warehouse"></i> <span>Quản Lý Kho</span></a></li>
+        <li id="nav-shipping-cost"><a href="/view/shipping-cost-management.html" data-page="shipping-cost-management.html"><i class="fas fa-shipping-fast"></i> <span>Chi Phí Vận Chuyển</span></a></li>
         <li class="has-submenu">
             <script>
                 // Immediate fallback - ensure function is available right away
@@ -275,6 +321,21 @@ span.titlle {
             };
             console.log('✅ toggleProductSubmenu function defined');
         }
+        
+        // Sales order submenu toggle function - Define immediately
+        if (typeof window.toggleSalesOrderSubmenu === 'undefined') {
+            window.toggleSalesOrderSubmenu = function(event) {
+                event.preventDefault();
+                const submenu = document.getElementById('salesOrderSubmenu');
+                if (submenu) {
+                    submenu.classList.toggle('show');
+                    console.log('Sales order submenu toggled');
+                } else {
+                    console.log('Sales order submenu not found!');
+                }
+            };
+            console.log('✅ toggleSalesOrderSubmenu function defined');
+        }
 
         
         // Dynamic link adjustment based on current path
@@ -303,6 +364,7 @@ span.titlle {
                 const invoiceSubmenu = document.getElementById('invoiceSubmenu');
                 const orderSubmenu = document.getElementById('orderSubmenu');
                 const productSubmenu = document.getElementById('productSubmenu');
+                const salesOrderSubmenu = document.getElementById('salesOrderSubmenu');
                 const hasSubmenu = e.target.closest('.has-submenu');
                 
                 if (invoiceSubmenu && !hasSubmenu) {
@@ -318,6 +380,11 @@ span.titlle {
                 if (productSubmenu && !hasSubmenu) {
                     productSubmenu.classList.remove('show');
                     console.log('Product submenu closed by clicking outside');
+                }
+                
+                if (salesOrderSubmenu && !hasSubmenu) {
+                    salesOrderSubmenu.classList.remove('show');
+                    console.log('Sales order submenu closed by clicking outside');
                 }
             });
         });

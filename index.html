@@ -289,6 +289,18 @@
             }
         };
         
+        // Sales order submenu toggle function
+        window.toggleSalesOrderSubmenu = function(event) {
+            event.preventDefault();
+            const submenu = document.getElementById('salesOrderSubmenu');
+            if (submenu) {
+                submenu.classList.toggle('show');
+                console.log('Sales order submenu toggled');
+            } else {
+                console.log('Sales order submenu not found!');
+            }
+        };
+        
         console.log('✅ Submenu functions defined in index.html');
         
         // Load components when DOM is ready

@@ -181,6 +181,26 @@ async function processExcelData(jsonData) {
                 orderData.price = matchedProduct.price;
                 orderData.unit = matchedProduct.unit || 'cái';
                 
+                // Add productType and weight for packaging cost calculation
+                orderData.productType = matchedProduct.productType || 'dry';
+                orderData.weight = parseFloat(matchedProduct.weight || 0);
+                
+                // If product doesn't have packaging data, try to get from sellingProducts
+                if (!orderData.productType || orderData.weight === 0) {
+                    console.log('⚠️ Product missing packaging data, will enrich later:', {
+                        sku: orderData.sku,
+                        hasProductType: !!orderData.productType,
+                        hasWeight: orderData.weight > 0
+                    });
+                }
+                
+                console.log('📦 Added packaging data to Excel order:', {
+                    orderId: orderData.orderId,
+                    sku: orderData.sku,
+                    productType: orderData.productType,
+                    weight: orderData.weight
+                });
+                
                 processedData.push(orderData);
                 
                 validCount++;

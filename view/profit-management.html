@@ -1,0 +1,1605 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Lợi Nhuận Bán Hàng</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="../style/navbar-submenu.css" rel="stylesheet">
+    <link href="../style/man.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/profit-management.css">
+    <link rel="stylesheet" href="../css/packaging-config.css">
+    <link rel="stylesheet" href="../style/navbar-submenu.css">
+</head>
+<body>
+    <!-- Header -->
+    <div id="header-container"></div>
+    
+    <!-- Navigation -->
+    <div id="navbar-container"></div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="container">
+            <!-- Profit View Navigation -->
+            <div class="profit-view-navigation">
+                <div class="view-nav-buttons">
+                    <button class="view-nav-btn active" id="overviewBtn" onclick="switchProfitView('overview')">
+                        <i class="fas fa-chart-pie"></i>
+                        <span>Tổng Quan</span>
+                    </button>
+                    <button class="view-nav-btn" id="tmdtBtn" onclick="switchProfitView('tmdt')">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span>Lợi Nhuận TMĐT</span>
+                    </button>
+                    <button class="view-nav-btn" id="wholesaleBtn" onclick="switchProfitView('wholesale')">
+                        <i class="fas fa-warehouse"></i>
+                        <span>Lợi Nhuận Đơn Sỉ</span>
+                    </button>
+                    <button class="view-nav-btn" id="retailBtn" onclick="switchProfitView('retail')">
+                        <i class="fas fa-store"></i>
+                        <span>Lợi Nhuận Đơn Lẻ</span>
+                    </button>
+                    <button type="button" class="view-nav-btn" id="packagingBtn" onclick="switchProfitView('packaging')">
+                        <i class="fas fa-box"></i>
+                        Cấu hình Chi phí Thùng
+                    </button>
+                </div>
+            </div>
+
+            <!-- Overview View (Default) -->
+            <div id="overview-view" class="profit-view active">
+                <!-- Statistics Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card total-profit">
+                        <div class="stat-icon">
+                            <i class="fas fa-coins"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Tổng Lợi Nhuận</h3>
+                            <div class="stat-value" id="total-profit">0 ₫</div>
+                            <div class="stat-change positive">+10%</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card tmdt-profit">
+                        <div class="stat-icon">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Lợi Nhuận TMĐT</h3>
+                            <div class="stat-value" id="tmdt-profit">0 ₫</div>
+                            <div class="stat-change neutral">0%</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card wholesale-profit">
+                        <div class="stat-icon">
+                            <i class="fas fa-warehouse"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Lợi Nhuận Bán Sỉ</h3>
+                            <div class="stat-value" id="wholesale-profit">0 ₫</div>
+                            <div class="stat-change neutral">0%</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card retail-profit">
+                        <div class="stat-icon">
+                            <i class="fas fa-store"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Lợi Nhuận Bán Lẻ</h3>
+                            <div class="stat-value" id="retail-profit">0 ₫</div>
+                            <div class="stat-change neutral">0%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TMĐT Profit View -->
+            <div id="tmdt-view" class="profit-view">
+                <!-- Platform Selection -->
+                <div class="platform-selector">
+                    <div class="platform-controls">
+                        <div class="platform-select-group">
+                            <label for="store-select">Chọn Cửa Hàng:</label>
+                            <select id="store-select" onchange="updateStoreFilter()">
+                                <option value="all">Tất Cả Cửa Hàng</option>
+                                <!-- Options will be populated by JavaScript -->
+                            </select>
+                        </div>
+                        <div class="platform-select-group">
+                            <label for="platform-select">Chọn Sàn TMĐT:</label>
+                            <select id="platform-select" onchange="updatePlatformStats()">
+                                <option value="all">Tất Cả Sàn</option>
+                                <option value="shopee">Shopee</option>
+                                <option value="lazada">Lazada</option>
+                                <option value="tiktok">TikTok Shop</option>
+                                <option value="sendo">Sendo</option>
+                                <option value="tiki">Tiki</option>
+                                <option value="facebook">Facebook Shop</option>
+                                <option value="zalo">Zalo Shop</option>
+                                <option value="other">Khác</option>
+                            </select>
+                        </div>
+                        <div class="platform-select-group">
+                            <label for="date-from">Từ Ngày:</label>
+                            <input type="date" id="date-from" onchange="filterOrdersByDate()" class="date-input">
+                        </div>
+                        <div class="platform-select-group">
+                            <label for="date-to">Đến Ngày:</label>
+                            <input type="date" id="date-to" onchange="filterOrdersByDate()" class="date-input">
+                        </div>
+                    </div>
+                    <div class="platform-actions">
+                        <button type="button" class="btn btn-secondary" onclick="clearDateFilter()">
+                            <i class="fas fa-times"></i> Xóa Lọc Ngày
+                        </button>
+                        <button type="button" class="btn-platform-fees" onclick="openPlatformFeesModal()">
+                            <i class="fas fa-cog"></i>
+                            Cài Đặt Phí Sàn
+                        </button>
+                        <button type="button" class="btn-external-costs" onclick="openExternalCostsModal()">
+                            <i class="fas fa-calculator"></i>
+                            Cài Đặt Chi Phí Bên Ngoài
+                        </button>
+                    </div>
+                </div>
+
+                <!-- TMĐT Statistics -->
+                <div class="stats-grid">
+                    <div class="stat-card tmdt-total-profit">
+                        <div class="stat-icon">
+                            <i class="fas fa-coins"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Tổng Lợi Nhuận TMĐT</h3>
+                            <div class="stat-value" id="tmdt-total-profit">0 ₫</div>
+                            <div class="stat-change positive">+15%</div>
+                        </div>
+                    </div>
+                    <div class="stat-card tmdt-fees">
+                        <div class="stat-icon">
+                            <i class="fas fa-credit-card"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Tổng Phí Sàn TMĐT</h3>
+                            <div class="stat-value" id="tmdt-total-fees">0 ₫</div>
+                            <div class="stat-change negative">-</div>
+                        </div>
+                    </div>
+                    
+                    
+                    <div class="stat-card tmdt-cost">
+                        <div class="stat-icon">
+                            <i class="fas fa-shopping-basket"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Tổng Giá Nhập TMĐT</h3>
+                            <div class="stat-value" id="tmdt-total-cost">0 ₫</div>
+                            <div class="stat-change neutral">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card tmdt-revenue">
+                        <div class="stat-icon">
+                            <i class="fas fa-chart-bar"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Tổng Doanh Thu TMĐT - (giá bán trên sàn)</h3>
+                            <div class="stat-value" id="tmdt-total-revenue">0 ₫</div>
+                            <div class="stat-change positive">+18%</div>
+                        </div>
+                    </div>
+                    <div class="stat-card tmdt-gross-profit">
+                        <div class="stat-icon">
+                            <i class="fas fa-calculator"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Lợi Nhuận Gộp (Chưa tính Phí)</h3>
+                            <div class="stat-value" id="tmdt-gross-profit">0 ₫</div>
+                            <div class="stat-change positive">+</div>
+                        </div>
+                    </div>
+                    <div class="stat-card platform-profit">
+                        <div class="stat-icon">
+                            <i class="fas fa-chart-line" id="platform-icon"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="platform-title">Lợi Nhuận Tất Cả Sàn</h3>
+                            <div class="stat-value" id="platform-profit-value">0 ₫</div>
+                            <div class="stat-change positive" id="platform-change">+12%</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bộ lọc hiển thị phí -->
+                <div class="fee-filter-section">
+                    <div class="section-header">
+                        <h3><i class="fas fa-filter"></i> Chọn Phí Hiển Thị</h3>
+                        <div class="filter-actions">
+                            <button class="btn-filter" onclick="selectAllFees()">Chọn Tất Cả</button>
+                            <button class="btn-filter" onclick="deselectAllFees()">Bỏ Chọn Tất Cả</button>
+                        </div>
+                    </div>
+                    <div class="fee-filter-grid">
+                        <label class="fee-filter-item">
+                            <input type="checkbox" id="show-transaction-fee" onchange="toggleFeeDisplay('transaction')">
+                            <span class="checkmark"></span>
+                            <span class="fee-name">Phí Giao Dịch</span>
+                        </label>
+                        <label class="fee-filter-item">
+                            <input type="checkbox" id="show-commission-fee" onchange="toggleFeeDisplay('commission')">
+                            <span class="checkmark"></span>
+                            <span class="fee-name">Phí Hoa Hồng</span>
+                        </label>
+                        <label class="fee-filter-item">
+                            <input type="checkbox" id="show-shipping-fee" onchange="toggleFeeDisplay('shipping')">
+                            <span class="checkmark"></span>
+                            <span class="fee-name">Phí Vận Chuyển Thực Tế</span>
+                        </label>
+
+                        <label class="fee-filter-item">
+                            <input type="checkbox" id="show-seller-discount-fee" onchange="toggleFeeDisplay('seller-discount')">
+                            <span class="checkmark"></span>
+                            <span class="fee-name">Giảm Phí VC Người Bán</span>
+                        </label>
+                        <label class="fee-filter-item">
+                            <input type="checkbox" id="show-tiktok-discount-fee" onchange="toggleFeeDisplay('tiktok-discount')">
+                            <span class="checkmark"></span>
+                            <span class="fee-name">Giảm Phí VC TikTok Shop</span>
+                        </label>
+                        <label class="fee-filter-item">
+                            <input type="checkbox" id="show-return-fee" onchange="toggleFeeDisplay('return')">
+                            <span class="checkmark"></span>
+                            <span class="fee-name">Phí VC Trả Hàng</span>
+                        </label>
+                        <label class="fee-filter-item">
+                            <input type="checkbox" id="show-subsidy-fee" onchange="toggleFeeDisplay('subsidy')">
+                            <span class="checkmark"></span>
+                            <span class="fee-name">Trợ Giá Vận Chuyển</span>
+                        </label>
+                        <label class="fee-filter-item">
+                            <input type="checkbox" id="show-affiliate-fee" onchange="toggleFeeDisplay('affiliate')">
+                            <span class="checkmark"></span>
+                            <span class="fee-name">Hoa Hồng Liên Kết</span>
+                        </label>
+                        <label class="fee-filter-item">
+                            <input type="checkbox" id="show-voucher-fee" onchange="toggleFeeDisplay('voucher')">
+                            <span class="checkmark"></span>
+                            <span class="fee-name">Phí Voucher Xtra</span>
+                        </label>
+                        <label class="fee-filter-item">
+                            <input type="checkbox" id="show-vat-fee" onchange="toggleFeeDisplay('vat')">
+                            <span class="checkmark"></span>
+                            <span class="fee-name">Thuế GTGT</span>
+                        </label>
+                        <label class="fee-filter-item">
+                            <input type="checkbox" id="show-income-tax-fee" onchange="toggleFeeDisplay('income-tax')">
+                            <span class="checkmark"></span>
+                            <span class="fee-name">Thuế TNCN</span>
+                        </label>
+                        <label class="fee-filter-item">
+                            <input type="checkbox" id="show-seller-discount-main-fee" onchange="toggleFeeDisplay('seller-discount-main')">
+                            <span class="checkmark"></span>
+                            <span class="fee-name">Giảm Giá Người Bán</span>
+                        </label>
+                        <label class="fee-filter-item">
+                            <input type="checkbox" id="show-discount-fee" onchange="toggleFeeDisplay('discount')">
+                            <span class="checkmark"></span>
+                            <span class="fee-name">Chiết Khấu Phí Vận Chuyển</span>
+                        </label>
+                        <label class="fee-filter-item">
+                            <input type="checkbox" id="show-other-fee" onchange="toggleFeeDisplay('other')">
+                            <span class="checkmark"></span>
+                            <span class="fee-name">Phí Khác</span>
+                        </label>
+                        
+                        <!-- Chi phí bên ngoài -->
+                        <label class="fee-filter-item external-cost">
+                            <input type="checkbox" id="show-shipping-cost" onchange="toggleFeeDisplay('shipping-cost')">
+                            <span class="checkmark"></span>
+                            <span class="fee-name">Chi Phí Vận Chuyển</span>
+                        </label>
+                        <label class="fee-filter-item external-cost">
+                            <input type="checkbox" id="show-packaging-cost" onchange="toggleFeeDisplay('packaging-cost')">
+                            <span class="checkmark"></span>
+                            <span class="fee-name">Chi Phí Đóng Gói</span>
+                        </label>
+                        <label class="fee-filter-item external-cost">
+                            <input type="checkbox" id="show-storage-cost" onchange="toggleFeeDisplay('storage-cost')">
+                            <span class="checkmark"></span>
+                            <span class="fee-name">Chi Phí Lưu Kho</span>
+                        </label>
+                        <label class="fee-filter-item external-cost">
+                            <input type="checkbox" id="show-marketing-cost" onchange="toggleFeeDisplay('marketing-cost')">
+                            <span class="checkmark"></span>
+                            <span class="fee-name">Chi Phí Marketing</span>
+                        </label>
+                        <label class="fee-filter-item external-cost">
+                            <input type="checkbox" id="show-staff-cost" onchange="toggleFeeDisplay('staff-cost')">
+                            <span class="checkmark"></span>
+                            <span class="fee-name">Chi Phí Nhân Viên</span>
+                        </label>
+                        <label class="fee-filter-item external-cost">
+                            <input type="checkbox" id="show-rent-cost" onchange="toggleFeeDisplay('rent-cost')">
+                            <span class="checkmark"></span>
+                            <span class="fee-name">Chi Phí Thuê Mặt Bằng</span>
+                        </label>
+                        <label class="fee-filter-item external-cost">
+                            <input type="checkbox" id="show-utility-cost" onchange="toggleFeeDisplay('utility-cost')">
+                            <span class="checkmark"></span>
+                            <span class="fee-name">Chi Phí Điện Nước</span>
+                        </label>
+                        <label class="fee-filter-item external-cost">
+                            <input type="checkbox" id="show-insurance-cost" onchange="toggleFeeDisplay('insurance-cost')">
+                            <span class="checkmark"></span>
+                            <span class="fee-name">Chi Phí Bảo Hiểm</span>
+                        </label>
+                        <label class="fee-filter-item external-cost">
+                            <input type="checkbox" id="show-equipment-cost" onchange="toggleFeeDisplay('equipment-cost')">
+                            <span class="checkmark"></span>
+                            <span class="fee-name">Chi Phí Thiết Bị</span>
+                        </label>
+                        <label class="fee-filter-item external-cost">
+                            <input type="checkbox" id="show-admin-cost" onchange="toggleFeeDisplay('admin-cost')">
+                            <span class="checkmark"></span>
+                            <span class="fee-name">Chi Phí Hành Chính</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Chi tiết phí TMĐT -->
+                <div class="stats-grid fee-breakdown-grid">
+                    <div class="stat-card fee-transaction">
+                        <div class="stat-icon">
+                            <i class="fas fa-exchange-alt"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Phí Giao Dịch</h3>
+                            <div class="stat-value" id="tmdt-transaction-fees">0 ₫</div>
+                            <div class="stat-change neutral">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card fee-commission">
+                        <div class="stat-icon">
+                            <i class="fas fa-percent"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Phí Hoa Hồng</h3>
+                            <div class="stat-value" id="tmdt-commission-fees">0 ₫</div>
+                            <div class="stat-change neutral">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card fee-shipping">
+                        <div class="stat-icon">
+                            <i class="fas fa-shipping-fast"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Phí Vận Chuyển Thực Tế</h3>
+                            <div class="stat-value" id="tmdt-actual-shipping-fees">0 ₫</div>
+                            <div class="stat-change neutral">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card fee-discount">
+                        <div class="stat-icon">
+                            <i class="fas fa-percentage"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Chiết Khấu Phí Vận Chuyển</h3>
+                            <div class="stat-value" id="tmdt-shipping-discount">0 ₫</div>
+                            <div class="stat-change positive">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card fee-seller-discount">
+                        <div class="stat-icon">
+                            <i class="fas fa-user-minus"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Giảm Phí VC Người Bán</h3>
+                            <div class="stat-value" id="tmdt-seller-shipping-discount">0 ₫</div>
+                            <div class="stat-change positive">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card fee-tiktok-discount">
+                        <div class="stat-icon">
+                            <i class="fab fa-tiktok"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Giảm Phí VC TikTok Shop</h3>
+                            <div class="stat-value" id="tmdt-tiktok-shipping-discount">0 ₫</div>
+                            <div class="stat-change positive">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card fee-return">
+                        <div class="stat-icon">
+                            <i class="fas fa-undo"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Phí VC Trả Hàng</h3>
+                            <div class="stat-value" id="tmdt-return-shipping-fees">0 ₫</div>
+                            <div class="stat-change negative">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card fee-subsidy">
+                        <div class="stat-icon">
+                            <i class="fas fa-hand-holding-usd"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Trợ Giá Vận Chuyển</h3>
+                            <div class="stat-value" id="tmdt-shipping-subsidy">0 ₫</div>
+                            <div class="stat-change positive">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card fee-affiliate">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Hoa Hồng Liên Kết</h3>
+                            <div class="stat-value" id="tmdt-affiliate-fees">0 ₫</div>
+                            <div class="stat-change neutral">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card fee-voucher">
+                        <div class="stat-icon">
+                            <i class="fas fa-ticket-alt"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Phí Voucher Xtra</h3>
+                            <div class="stat-value" id="tmdt-voucher-xtra-fees">0 ₫</div>
+                            <div class="stat-change neutral">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card fee-vat">
+                        <div class="stat-icon">
+                            <i class="fas fa-file-invoice-dollar"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Thuế GTGT</h3>
+                            <div class="stat-value" id="tmdt-vat-tax">0 ₫</div>
+                            <div class="stat-change neutral">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card fee-income-tax">
+                        <div class="stat-icon">
+                            <i class="fas fa-receipt"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Thuế TNCN</h3>
+                            <div class="stat-value" id="tmdt-personal-income-tax">0 ₫</div>
+                            <div class="stat-change neutral">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card fee-seller-discount-main">
+                        <div class="stat-icon">
+                            <i class="fas fa-tags"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Giảm Giá Người Bán</h3>
+                            <div class="stat-value" id="tmdt-seller-discount">0 ₫</div>
+                            <div class="stat-change positive">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card fee-other">
+                        <div class="stat-icon">
+                            <i class="fas fa-ellipsis-h"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Phí Khác</h3>
+                            <div class="stat-value" id="tmdt-other-fees">0 ₫</div>
+                            <div class="stat-change neutral">-</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Chi phí bên ngoài -->
+                    <div class="stat-card fee-staff-cost">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Chi Phí Nhân Viên</h3>
+                            <div class="stat-value" id="tmdt-staff-fees">0 ₫</div>
+                            <div class="stat-change negative">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card fee-rent-cost">
+                        <div class="stat-icon">
+                            <i class="fas fa-home"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Chi Phí Thuê Mặt Bằng</h3>
+                            <div class="stat-value" id="tmdt-rent-fees">0 ₫</div>
+                            <div class="stat-change negative">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card fee-utility-cost">
+                        <div class="stat-icon">
+                            <i class="fas fa-bolt"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Chi Phí Điện Nước</h3>
+                            <div class="stat-value" id="tmdt-electricity-fees">0 ₫</div>
+                            <div class="stat-change negative">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card fee-insurance-cost">
+                        <div class="stat-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Chi Phí Bảo Hiểm</h3>
+                            <div class="stat-value" id="tmdt-insurance-fees">0 ₫</div>
+                            <div class="stat-change negative">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card fee-equipment-cost">
+                        <div class="stat-icon">
+                            <i class="fas fa-laptop"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Chi Phí Thiết Bị</h3>
+                            <div class="stat-value" id="tmdt-device-fees">0 ₫</div>
+                            <div class="stat-change negative">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card fee-marketing-cost">
+                        <div class="stat-icon">
+                            <i class="fas fa-bullhorn"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Chi Phí Marketing</h3>
+                            <div class="stat-value" id="tmdt-marketing-fees">0 ₫</div>
+                            <div class="stat-change negative">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card fee-shipping-cost">
+                        <div class="stat-icon">
+                            <i class="fas fa-shipping-fast"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Chi Phí Vận Chuyển</h3>
+                            <div class="stat-value" id="tmdt-shipping-cost-fees">0 ₫</div>
+                            <div class="stat-change negative">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card fee-packaging-cost">
+                        <div class="stat-icon">
+                            <i class="fas fa-box"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Chi Phí Đóng Gói</h3>
+                            <div class="stat-value" id="tmdt-packaging-cost-fees">0 ₫</div>
+                            <div class="stat-change negative">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card fee-storage-cost">
+                        <div class="stat-icon">
+                            <i class="fas fa-warehouse"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Chi Phí Lưu Kho</h3>
+                            <div class="stat-value" id="tmdt-storage-cost-fees">0 ₫</div>
+                            <div class="stat-change negative">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card fee-admin-cost">
+                        <div class="stat-icon">
+                            <i class="fas fa-clipboard-list"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Chi Phí Hành Chính</h3>
+                            <div class="stat-value" id="tmdt-admin-cost-fees">0 ₫</div>
+                            <div class="stat-change negative">-</div>
+                        </div>
+                    </div>
+                </div>
+
+
+
+                <!-- TMĐT Top Products -->
+                <div class="analysis-section">
+                    <div class="section-header">
+                        <h3><i class="fas fa-fire"></i> Sản Phẩm Bán Chạy</h3>
+                    </div>
+                    <div class="table-container">
+                        <table class="analysis-table" id="tmdt-top-products">
+                            <thead>
+                                <tr>
+                                    <th>STT</th>
+                                    <th>Sản Phẩm</th>
+                                    <th>Sàn</th>
+                                    <th>Lượt Bán</th>
+                                    <th>Doanh Thu</th>
+                                    <th>Lợi Nhuận</th>
+                                    <th>Tỷ Lệ (%)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>-</td>
+                                    <td>Đang tải dữ liệu...</td>
+                                    <td>-</td>
+                                    <td>-</td>
+                                    <td>-</td>
+                                    <td>-</td>
+                                    <td>-</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        
+                        <!-- Pagination Controls -->
+                        <div class="pagination-container" id="top-products-pagination" style="display: none;">
+                            <div class="pagination-info">
+                                <span id="pagination-info-text">Hiển thị 1-5 của 0 sản phẩm</span>
+                            </div>
+                            <div class="pagination-controls">
+                                <button type="button" class="pagination-btn" id="prev-page-btn" onclick="changeTopProductsPage(-1)" disabled>
+                                    <i class="fas fa-chevron-left"></i> Trước
+                                </button>
+                                <span class="page-numbers" id="page-numbers"></span>
+                                <button type="button" class="pagination-btn" id="next-page-btn" onclick="changeTopProductsPage(1)" disabled>
+                                    Sau <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- Detailed Analysis -->
+            <div class="analysis-section">
+                <div class="analysis-card">
+                    
+                      
+                        <div class="analysis-controls">
+                            <button class="btn btn-outline" onclick="exportProfitReport()">
+                                <i class="fas fa-download"></i> Xuất Báo Cáo Excel
+                            </button>
+                        </div>
+    
+                    
+                    <div class="analysis-content">
+
+
+                        <!-- TMĐT Orders Detail Table -->
+                        <div class="table-section">
+                            <div class="table-header">
+                                <h4>Danh Sách Đơn Hàng TMĐT Chi Tiết</h4>
+                                <div class="table-actions">
+                                    <button type="button" class="btn-action btn-select-all" onclick="selectAllOrders()">
+                                        <i class="fas fa-check-square"></i> Chọn Tất Cả
+                                    </button>
+                                    <button type="button" class="btn-action btn-delete-selected" onclick="deleteSelectedOrders()" disabled>
+                                        <i class="fas fa-trash"></i> Xóa Được Chọn (<span id="selected-count">0</span>)
+                                    </button>
+                                    <button type="button" class="btn-action btn-delete-all" onclick="deleteAllOrders()">
+                                        <i class="fas fa-trash-alt"></i> Xóa Tất Cả
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Search Bar -->
+                            <div class="search-container">
+                                <div class="search-box">
+                                    <i class="fas fa-search search-icon"></i>
+                                    <input type="text" id="order-search-input" placeholder="Tìm kiếm theo tên sản phẩm, SKU, mã đơn hàng..." onkeyup="searchOrders()" autocomplete="off">
+                                    <button type="button" class="clear-search-btn" onclick="clearSearch()" id="clear-search-btn" style="display: none;">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                <div class="search-filters">
+                                    <div class="filter-group">
+                                        <label for="search-date-from">Từ ngày:</label>
+                                        <input type="date" id="search-date-from" onchange="searchOrders()" onclick="this.showPicker()" class="search-date-input">
+                                    </div>
+                                    <div class="filter-group">
+                                        <label for="search-date-to">Đến ngày:</label>
+                                        <input type="date" id="search-date-to" onchange="searchOrders()" onclick="this.showPicker()" class="search-date-input">
+                                    </div>
+                                    <div class="filter-group">
+                                        <button type="button" class="clear-date-filter-btn" onclick="clearDateFilter()">
+                                            <i class="fas fa-calendar-times"></i> Xóa lọc ngày
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="search-results-info" id="search-results-count" style="display: none;">
+                                    <i class="fas fa-info-circle"></i>
+                                    <span id="search-results-text">Tìm thấy 0 kết quả</span>
+                                </div>
+                            </div>
+                            <div class="table-container">
+                                <table class="profit-table">
+                                    <thead>
+                                        <tr>
+                                            <th>
+                                                <input type="checkbox" id="select-all-checkbox" onchange="toggleSelectAll()">
+                                            </th>
+                                            <th>STT</th>
+                                            <th>Mã ĐH</th>
+                                            <th>Sản Phẩm</th>
+                                            <th>SKU</th>
+                                            <th>Số Lượng</th>
+                                            <th>Giá Nhập (VNĐ)</th>
+                                            <th>Giá Bán (VNĐ)</th>
+                                            <th>Lợi Nhuận</th>
+                                            <th>Tổng Tiền</th>
+                                            <th>Sàn TMĐT</th>
+                                            <th>Cửa Hàng</th>
+                                            <th>Ngày Tạo</th>
+                                            <th>Thao Tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tmdt-orders-detail-table">
+                                        <!-- TMĐT orders data will be populated by JavaScript -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <!-- Pagination Controls -->
+                            <div class="pagination-container">
+                                <div class="pagination-info">
+                                    <span id="pagination-info">Hiển thị 1-10 của 0 đơn hàng</span>
+                                </div>
+                                <div class="pagination-controls">
+                                    <button type="button" id="prev-page" class="pagination-btn" onclick="changePage(-1)" disabled>
+                                        <i class="fas fa-chevron-left"></i> Trước
+                                    </button>
+                                    <div class="pagination-numbers" id="pagination-numbers">
+                                        <!-- Page numbers will be populated by JavaScript -->
+                                    </div>
+                                    <button type="button" id="next-page" class="pagination-btn" onclick="changePage(1)" disabled>
+                                        Sau <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                </div>
+                                <div class="pagination-size">
+                                    <label for="page-size">Hiển thị:</label>
+                                    <select id="page-size" onchange="changePageSize()">
+                                        <option value="10">10</option>
+                                        <option value="25">25</option>
+                                        <option value="50">50</option>
+                                        <option value="100">100</option>
+                                    </select>
+                                    <span>đơn hàng/trang</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Monthly Profit Comparison -->
+                        <div class="comparison-section">
+                            <h4>So Sánh Lợi Nhuận Theo Tháng</h4>
+                            <div class="monthly-comparison" id="monthly-comparison">
+                                <!-- Monthly comparison cards will be populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Detail Modal -->
+    <div id="order-detail-modal" class="order-detail-modal">
+        <div class="order-detail-content">
+            <div class="order-detail-header">
+                <h3>Chi Tiết Đơn Hàng</h3>
+                <button type="button" class="close-modal" onclick="closeOrderDetailModal()">×</button>
+            </div>
+            <div class="order-detail-info" id="order-detail-info">
+                <!-- Order details will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Platform Fees Modal -->
+    <div id="platform-fees-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 90% !important; ">
+            <div class="pppp">
+            <div class="modal-header">
+                <h3><i class="fas fa-cog"></i> Cài Đặt Phí Sàn TMĐT</h3>
+                <span class="close" onclick="closePlatformFeesModal()">&times;</span>
+            </div>
+            
+            <div class="modal-body">
+                <!-- Platform Selection Section -->
+                <div class="platform-selection-section">
+                    <h4><i class="fas fa-store"></i> Chọn Sàn TMĐT</h4>
+                    <div class="form-group">
+                        <select id="modal-platform-select" title="Chọn sàn thương mại điện tử" onchange="onPlatformChange()">
+                            <option value="">-- Chọn Sàn --</option>
+                            <option value="tiktok">TikTok Shop</option>
+                            <option value="shopee">Shopee</option>
+                            <option value="lazada">Lazada</option>
+                            <option value="sendo">Sendo</option>
+                            <option value="tiki">Tiki</option>
+                            <option value="facebook">Facebook Shop</option>
+                            <option value="zalo">Zalo Shop</option>
+                            <option value="other">Khác</option>
+                        </select>
+                    </div>
+                </div>
+                <!-- Fees Selection Section -->
+                <div class="fees-selection-section">
+                    <h4><i class="fas fa-list-check"></i> Chọn Các Loại Phí</h4>
+                    <div class="fees-list">
+                        <!-- Phí Giao Dịch -->
+                        <div class="fee-item">
+                            <div class="fee-checkbox-wrapper">
+                                <input type="checkbox" id="fee-transaction" class="fee-checkbox" onchange="toggleFeeInput('transaction')">
+                                <label for="fee-transaction" class="fee-label">Phí Giao Dịch</label>
+                            </div>
+                            <div class="fee-input-wrapper" id="input-transaction">
+                                <div class="fee-type-selector">
+                                    <input type="radio" id="transaction-percent" name="transaction-type" value="percent" checked onchange="changeFeeType('transaction', 'percent')">
+                                    <label for="transaction-percent">Phần trăm (%)</label>
+                                    <input type="radio" id="transaction-fixed" name="transaction-type" value="fixed" onchange="changeFeeType('transaction', 'fixed')">
+                                    <label for="transaction-fixed">Số tiền cố định (VNĐ)</label>
+                                </div>
+                                <input type="number" id="value-transaction" step="0.01" placeholder="5.00" min="0" max="100">
+                                <small id="help-transaction">% tính trên thanh toán của khách hàng (VD: 5.00% = 5.00)</small>
+                            </div>
+                        </div>
+
+                        <!-- Phí Hoa Hồng -->
+                        <div class="fee-item">
+                            <div class="fee-checkbox-wrapper">
+                                <input type="checkbox" id="fee-commission" class="fee-checkbox" onchange="toggleFeeInput('commission')">
+                                <label for="fee-commission" class="fee-label">Phí Hoa Hồng</label>
+                            </div>
+                            <div class="fee-input-wrapper" id="input-commission">
+                                <div class="fee-type-selector">
+                                    <input type="radio" id="commission-percent" name="commission-type" value="percent" checked onchange="changeFeeType('commission', 'percent')">
+                                    <label for="commission-percent">Phần trăm (%)</label>
+                                    <input type="radio" id="commission-fixed" name="commission-type" value="fixed" onchange="changeFeeType('commission', 'fixed')">
+                                    <label for="commission-fixed">Số tiền cố định (VNĐ)</label>
+                                </div>
+                                <input type="number" id="value-commission" step="0.01" placeholder="11.00" min="0" max="100">
+                                <small id="help-commission">% tính trên tổng giá trị đơn hàng (VD: 11.00% = 11.00)</small>
+                            </div>
+                        </div>
+
+                        <!-- Phí Vận Chuyển Thực Tế -->
+                        <div class="fee-item">
+                            <div class="fee-checkbox-wrapper">
+                                <input type="checkbox" id="fee-shipping" class="fee-checkbox" onchange="toggleFeeInput('shipping')">
+                                <label for="fee-shipping" class="fee-label">Phí Vận Chuyển Thực Tế</label>
+                            </div>
+                            <div class="fee-input-wrapper" id="input-shipping">
+                                <div class="fee-type-selector">
+                                    <input type="radio" id="shipping-percent" name="shipping-type" value="percent" onchange="changeFeeType('shipping', 'percent')">
+                                    <label for="shipping-percent">Phần trăm (%)</label>
+                                    <input type="radio" id="shipping-fixed" name="shipping-type" value="fixed" checked onchange="changeFeeType('shipping', 'fixed')">
+                                    <label for="shipping-fixed">Số tiền cố định (VNĐ)</label>
+                                </div>
+                                <input type="number" id="value-shipping" placeholder="30300" min="0" step="1">
+                                <small id="help-shipping">Số tiền cố định tính theo VNĐ (VD: 30300 = 30,300₫)</small>
+                            </div>
+                        </div>
+
+                        <!-- Chiết Khấu Phí Vận Chuyển -->
+                        <div class="fee-item">
+                            <div class="fee-checkbox-wrapper">
+                                <input type="checkbox" id="fee-shipping-discount" class="fee-checkbox" onchange="toggleFeeInput('shipping-discount')">
+                                <label for="fee-shipping-discount" class="fee-label">Chiết Khấu Phí Vận Chuyển</label>
+                            </div>
+                            <div class="fee-input-wrapper" id="input-shipping-discount">
+                                <div class="fee-type-selector">
+                                    <input type="radio" id="shipping-discount-percent" name="shipping-discount-type" value="percent" onchange="changeFeeType('shipping-discount', 'percent')">
+                                    <label for="shipping-discount-percent">Phần trăm (%)</label>
+                                    <input type="radio" id="shipping-discount-fixed" name="shipping-discount-type" value="fixed" checked onchange="changeFeeType('shipping-discount', 'fixed')">
+                                    <label for="shipping-discount-fixed">Số tiền cố định (VNĐ)</label>
+                                </div>
+                                <input type="number" id="value-shipping-discount" placeholder="30000" min="0" step="1">
+                                <small id="help-shipping-discount">Số tiền cố định tính theo VNĐ (VD: 30000 = 30,000₫)</small>
+                            </div>
+                        </div>
+
+                        <!-- Giảm Phí VC Người Bán -->
+                        <div class="fee-item">
+                            <div class="fee-checkbox-wrapper">
+                                <input type="checkbox" id="fee-seller-shipping-discount" class="fee-checkbox" onchange="toggleFeeInput('seller-shipping-discount')">
+                                <label for="fee-seller-shipping-discount" class="fee-label">Giảm Phí VC Người Bán</label>
+                            </div>
+                            <div class="fee-input-wrapper" id="input-seller-shipping-discount">
+                                <div class="fee-type-selector">
+                                    <input type="radio" id="seller-shipping-discount-percent" name="seller-shipping-discount-type" value="percent" onchange="changeFeeType('seller-shipping-discount', 'percent')">
+                                    <label for="seller-shipping-discount-percent">Phần trăm (%)</label>
+                                    <input type="radio" id="seller-shipping-discount-fixed" name="seller-shipping-discount-type" value="fixed" checked onchange="changeFeeType('seller-shipping-discount', 'fixed')">
+                                    <label for="seller-shipping-discount-fixed">Số tiền cố định (VNĐ)</label>
+                                </div>
+                                <input type="number" id="value-seller-shipping-discount" placeholder="0" min="0" step="1">
+                                <small id="help-seller-shipping-discount">Số tiền cố định tính theo VNĐ (VD: 5000 = 5,000₫)</small>
+                            </div>
+                        </div>
+
+                        <!-- Giảm Phí VC TikTok Shop -->
+                        <div class="fee-item">
+                            <div class="fee-checkbox-wrapper">
+                                <input type="checkbox" id="fee-platform-shipping-discount" class="fee-checkbox" onchange="toggleFeeInput('platform-shipping-discount')">
+                                <label for="fee-platform-shipping-discount" class="fee-label">Giảm Phí VC TikTok Shop</label>
+                            </div>
+                            <div class="fee-input-wrapper" id="input-platform-shipping-discount">
+                                <div class="fee-type-selector">
+                                    <input type="radio" id="platform-shipping-discount-percent" name="platform-shipping-discount-type" value="percent" onchange="changeFeeType('platform-shipping-discount', 'percent')">
+                                    <label for="platform-shipping-discount-percent">Phần trăm (%)</label>
+                                    <input type="radio" id="platform-shipping-discount-fixed" name="platform-shipping-discount-type" value="fixed" checked onchange="changeFeeType('platform-shipping-discount', 'fixed')">
+                                    <label for="platform-shipping-discount-fixed">Số tiền cố định (VNĐ)</label>
+                                </div>
+                                <input type="number" id="value-platform-shipping-discount" placeholder="30000" min="0" step="1">
+                                <small id="help-platform-shipping-discount">Số tiền cố định tính theo VNĐ (VD: 30000 = 30,000₫)</small>
+                            </div>
+                        </div>
+
+                        <!-- Phí VC Trả Hàng -->
+                        <div class="fee-item">
+                            <div class="fee-checkbox-wrapper">
+                                <input type="checkbox" id="fee-return-shipping" class="fee-checkbox" onchange="toggleFeeInput('return-shipping')">
+                                <label for="fee-return-shipping" class="fee-label">Phí VC Trả Hàng</label>
+                            </div>
+                            <div class="fee-input-wrapper" id="input-return-shipping">
+                                <div class="fee-type-selector">
+                                    <input type="radio" id="return-shipping-percent" name="return-shipping-type" value="percent" onchange="changeFeeType('return-shipping', 'percent')">
+                                    <label for="return-shipping-percent">Phần trăm (%)</label>
+                                    <input type="radio" id="return-shipping-fixed" name="return-shipping-type" value="fixed" checked onchange="changeFeeType('return-shipping', 'fixed')">
+                                    <label for="return-shipping-fixed">Số tiền cố định (VNĐ)</label>
+                                </div>
+                                <input type="number" id="value-return-shipping" placeholder="0" min="0" step="1">
+                                <small id="help-return-shipping">Số tiền cố định tính theo VNĐ (VD: 5000 = 5,000₫)</small>
+                            </div>
+                        </div>
+
+                        <!-- Trợ Giá Vận Chuyển -->
+                        <div class="fee-item">
+                            <div class="fee-checkbox-wrapper">
+                                <input type="checkbox" id="fee-shipping-subsidy" class="fee-checkbox" onchange="toggleFeeInput('shipping-subsidy')">
+                                <label for="fee-shipping-subsidy" class="fee-label">Trợ Giá Vận Chuyển</label>
+                            </div>
+                            <div class="fee-input-wrapper" id="input-shipping-subsidy">
+                                <div class="fee-type-selector">
+                                    <input type="radio" id="shipping-subsidy-percent" name="shipping-subsidy-type" value="percent" onchange="changeFeeType('shipping-subsidy', 'percent')">
+                                    <label for="shipping-subsidy-percent">Phần trăm (%)</label>
+                                    <input type="radio" id="shipping-subsidy-fixed" name="shipping-subsidy-type" value="fixed" checked onchange="changeFeeType('shipping-subsidy', 'fixed')">
+                                    <label for="shipping-subsidy-fixed">Số tiền cố định (VNĐ)</label>
+                                </div>
+                                <input type="number" id="value-shipping-subsidy" placeholder="0" min="0" step="1">
+                                <small id="help-shipping-subsidy">Số tiền cố định tính theo VNĐ (VD: 10000 = 10,000₫)</small>
+                            </div>
+                        </div>
+
+                        <!-- Hoa Hồng Liên Kết -->
+                        <div class="fee-item">
+                            <div class="fee-checkbox-wrapper">
+                                <input type="checkbox" id="fee-affiliate" class="fee-checkbox" onchange="toggleFeeInput('affiliate')">
+                                <label for="fee-affiliate" class="fee-label">Hoa Hồng Liên Kết</label>
+                            </div>
+                            <div class="fee-input-wrapper" id="input-affiliate">
+                                <div class="fee-type-selector">
+                                    <input type="radio" id="affiliate-percent" name="affiliate-type" value="percent" onchange="changeFeeType('affiliate', 'percent')">
+                                    <label for="affiliate-percent">Phần trăm (%)</label>
+                                    <input type="radio" id="affiliate-fixed" name="affiliate-type" value="fixed" checked onchange="changeFeeType('affiliate', 'fixed')">
+                                    <label for="affiliate-fixed">Số tiền cố định (VNĐ)</label>
+                                </div>
+                                <input type="number" id="value-affiliate" placeholder="500" min="0" step="1">
+                                <small id="help-affiliate">Số tiền cố định tính theo VNĐ (VD: 500 = 500₫)</small>
+                            </div>
+                        </div>
+
+                        <!-- Phí Voucher Xtra -->
+                        <div class="fee-item">
+                            <div class="fee-checkbox-wrapper">
+                                <input type="checkbox" id="fee-voucher" class="fee-checkbox" onchange="toggleFeeInput('voucher')">
+                                <label for="fee-voucher" class="fee-label">Phí Voucher Xtra</label>
+                            </div>
+                            <div class="fee-input-wrapper" id="input-voucher">
+                                <div class="fee-type-selector">
+                                    <input type="radio" id="voucher-percent" name="voucher-type" value="percent" checked onchange="changeFeeType('voucher', 'percent')">
+                                    <label for="voucher-percent">Phần trăm (%)</label>
+                                    <input type="radio" id="voucher-fixed" name="voucher-type" value="fixed" onchange="changeFeeType('voucher', 'fixed')">
+                                    <label for="voucher-fixed">Số tiền cố định (VNĐ)</label>
+                                </div>
+                                <input type="number" id="value-voucher" step="0.01" placeholder="3.00" min="0" max="100">
+                                <small id="help-voucher">% tính trên tổng giá trị đơn hàng (VD: 3.00% = 3.00)</small>
+                            </div>
+                        </div>
+
+                        <!-- Thuế GTGT -->
+                        <div class="fee-item">
+                            <div class="fee-checkbox-wrapper">
+                                <input type="checkbox" id="fee-vat" class="fee-checkbox" onchange="toggleFeeInput('vat')">
+                                <label for="fee-vat" class="fee-label">Thuế GTGT</label>
+                            </div>
+                            <div class="fee-input-wrapper" id="input-vat">
+                                <div class="fee-type-selector">
+                                    <input type="radio" id="vat-percent" name="vat-type" value="percent" checked onchange="changeFeeType('vat', 'percent')">
+                                    <label for="vat-percent">Phần trăm (%)</label>
+                                    <input type="radio" id="vat-fixed" name="vat-type" value="fixed" onchange="changeFeeType('vat', 'fixed')">
+                                    <label for="vat-fixed">Số tiền cố định (VNĐ)</label>
+                                </div>
+                                <input type="number" id="value-vat" step="0.01" placeholder="1.00" min="0" max="100">
+                                <small id="help-vat">% tính trên tổng giá trị đơn hàng (VD: 1.00% = 1.00)</small>
+                            </div>
+                        </div>
+
+                        <!-- Thuế TNCN -->
+                        <div class="fee-item">
+                            <div class="fee-checkbox-wrapper">
+                                <input type="checkbox" id="fee-income-tax" class="fee-checkbox" onchange="toggleFeeInput('income-tax')">
+                                <label for="fee-income-tax" class="fee-label">Thuế TNCN</label>
+                            </div>
+                            <div class="fee-input-wrapper" id="input-income-tax">
+                                <div class="fee-type-selector">
+                                    <input type="radio" id="income-tax-percent" name="income-tax-type" value="percent" checked onchange="changeFeeType('income-tax', 'percent')">
+                                    <label for="income-tax-percent">Phần trăm (%)</label>
+                                    <input type="radio" id="income-tax-fixed" name="income-tax-type" value="fixed" onchange="changeFeeType('income-tax', 'fixed')">
+                                    <label for="income-tax-fixed">Số tiền cố định (VNĐ)</label>
+                                </div>
+                                <input type="number" id="value-income-tax" step="0.01" placeholder="0.50" min="0" max="100">
+                                <small id="help-income-tax">% tính trên tổng giá trị đơn hàng (VD: 0.50% = 0.50)</small>
+                            </div>
+                        </div>
+
+                        <!-- Giảm Giá Người Bán -->
+                        <div class="fee-item">
+                            <div class="fee-checkbox-wrapper">
+                                <input type="checkbox" id="fee-seller-discount" class="fee-checkbox" onchange="toggleFeeInput('seller-discount')">
+                                <label for="fee-seller-discount" class="fee-label">Giảm Giá Người Bán</label>
+                            </div>
+                            <div class="fee-input-wrapper" id="input-seller-discount">
+                                <div class="fee-type-selector">
+                                    <input type="radio" id="seller-discount-percent" name="seller-discount-type" value="percent" onchange="changeFeeType('seller-discount', 'percent')">
+                                    <label for="seller-discount-percent">Phần trăm (%)</label>
+                                    <input type="radio" id="seller-discount-fixed" name="seller-discount-type" value="fixed" checked onchange="changeFeeType('seller-discount', 'fixed')">
+                                    <label for="seller-discount-fixed">Số tiền cố định (VNĐ)</label>
+                                </div>
+                                <input type="number" id="value-seller-discount" placeholder="5000" min="0" step="1">
+                                <small id="help-seller-discount">Số tiền cố định tính theo VNĐ (VD: 5000 = 5,000₫)</small>
+                            </div>
+                        </div>
+
+                        <!-- Add Custom Fee Button -->
+                        <div class="custom-fee-actions">
+                            <button type="button" onclick="showAddFeeForm()" class="btn btn-secondary">
+                                <i class="fas fa-plus"></i> Thêm Phí Tùy Chỉnh
+                            </button>
+                        </div>
+
+                        <!-- Add Custom Fee Form (Hidden by default) -->
+                        <div id="add-fee-form" class="add-fee-form" style="display: none;">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="custom-fee-name">Tên Phí:</label>
+                                    <input type="text" id="custom-fee-name" placeholder="Nhập tên loại phí..." maxlength="50">
+                                </div>
+                                <div class="form-group">
+                                    <label for="custom-fee-value">Giá Trị:</label>
+                                    <div class="fee-type-selector">
+                                        <input type="radio" id="custom-fee-percent" name="custom-fee-type" value="percent" checked onchange="changeCustomFeeType('percent')">
+                                        <label for="custom-fee-percent">Phần trăm (%)</label>
+                                        <input type="radio" id="custom-fee-fixed" name="custom-fee-type" value="fixed" onchange="changeCustomFeeType('fixed')">
+                                        <label for="custom-fee-fixed">Số tiền cố định (VNĐ)</label>
+                                    </div>
+                                    <input type="number" id="custom-fee-value" placeholder="5.00" step="0.01" min="0" max="100">
+                                    <small id="help-custom-fee">% tính trên tổng giá trị đơn hàng (VD: 5.00% = 5.00)</small>
+                                </div>
+                                <div class="form-actions">
+                                    <button type="button" class="btn btn-success btn-sm" onclick="addCustomFee()">
+                                        <i class="fas fa-check"></i> Thêm
+                                    </button>
+                                    <button type="button" class="btn btn-secondary btn-sm" onclick="hideAddFeeForm()">
+                                        <i class="fas fa-times"></i> Hủy
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closePlatformFeesModal()">Hủy</button>
+                <button type="button" class="btn btn-primary" onclick="savePlatformFees()">Lưu Cài Đặt</button>
+            </div>
+        </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Required JavaScript files (same as TMĐT page) -->
+    <script src="../main/firebase.js"></script>
+    <script src="../main/submenu.js"></script>
+    <script src="../main/store-context.js"></script>
+    <script src="../main/navbar.js"></script>
+    <script src="../main/header.js"></script>
+    <script src="../main/profit-management.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="../main/profit-management.js"></script>
+    <script src="../main/packaging-config.js"></script>
+
+    <!-- Scripts -->
+    <script>
+        // Load components using XMLHttpRequest (same as TMĐT page)
+        function loadComponent(url, elementId, callback) {
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', url, true);
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4) {
+                    if (xhr.status === 200) {
+                        let content = xhr.responseText;
+                        // Replace page title placeholder if loading header
+                        if (elementId === 'header-container') {
+                            content = content.replace('{{PAGE_TITLE}}', 'Quản Lý Lợi Nhuận Bán Hàng');
+                        }
+                        document.getElementById(elementId).innerHTML = content;
+                        if (callback) callback();
+                    } else {
+                        console.error('Failed to load component:', url, xhr.status);
+                    }
+                }
+            };
+            xhr.send();
+        }
+        
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function() {
+            loadComponents();
+            loadOverviewData();
+            initializeProfitManagement();
+            // Load packaging config for profit calculations
+            if (typeof loadPackagingConfig === 'function') {
+                loadPackagingConfig();
+                console.log('✅ Packaging config loaded for profit calculations');
+            } else {
+                console.warn('⚠️ loadPackagingConfig function not found');
+            }
+        });
+
+        // Load header and navbar components
+        function loadComponents() {
+            loadHeader();
+            loadNavbar();
+        }
+
+        // Initialize profit management
+        function initializeProfitManagement() {
+            console.log('Initializing profit management...');
+            // Load initial data
+            updateTmdtStatistics();
+        }
+
+        // Expose functions to global scope for HTML accessibility
+        window.switchProfitView = switchProfitView;
+        window.updatePlatformStats = updatePlatformStats;
+        window.updateStoreFilter = updateStoreFilter;
+        window.toggleFeeDisplay = toggleFeeDisplay;
+        window.selectAllFees = selectAllFees;
+        window.deselectAllFees = deselectAllFees;
+        window.openPlatformFeesModal = openPlatformFeesModal;
+        window.openExternalCostsModal = openExternalCostsModal;
+        window.exportProfitReport = exportProfitReport;
+        window.openOrderDetailModal = openOrderDetailModal;
+        window.updateTmdtOrdersDetailTable = updateTmdtOrdersDetailTable;
+        window.openTmdtOrderDetailModal = openTmdtOrderDetailModal;
+        window.closeTmdtOrderDetailModal = closeTmdtOrderDetailModal;
+        window.printTmdtOrderInvoice = printTmdtOrderInvoice;
+        window.updateTmdtOrderPaymentStatus = updateTmdtOrderPaymentStatus;
+        
+        // Packaging config functions
+        window.openWeightRangeModal = openWeightRangeModal;
+        window.closeWeightRangeModal = closeWeightRangeModal;
+        window.saveWeightRange = saveWeightRange;
+        window.deleteWeightRange = deleteWeightRange;
+        window.openPreviewModal = openPreviewModal;
+        window.closePreviewModal = closePreviewModal;
+        window.updatePreview = updatePreview;
+        window.loadPackagingConfigData = loadPackagingConfigData;
+    </script>
+
+    <!-- External Costs Modal -->
+    <div id="external-costs-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Cài Đặt Chi Phí Bên Ngoài</h2>
+                <span class="close" onclick="closeExternalCostsModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="store-selector">
+                    <label for="external-costs-store-select">Chọn Cửa Hàng:</label>
+                    <select id="external-costs-store-select" onchange="loadExternalCostsForStore()">
+                        <option value="">Chọn cửa hàng...</option>
+                    </select>
+                </div>
+
+                <div id="external-costs-form" style="display: none;">
+                    <h3>Chi Phí Cố Định</h3>
+                    
+                    <!-- Shipping Cost -->
+                    <div class="fee-group">
+                        <div class="fee-header">
+                            <input type="checkbox" id="shipping-cost-enabled" onchange="toggleExternalCost('shipping-cost')">
+                            <label for="shipping-cost-enabled">Chi Phí Vận Chuyển</label>
+                        </div>
+                        <div id="shipping-cost-inputs" class="fee-inputs" style="display: none;">
+                            <div class="fee-type-selector">
+                                <input type="radio" id="shipping-cost-percent" name="shipping-cost-type" value="percent" onchange="updateExternalCostType('shipping-cost', 'percent')">
+                                <label for="shipping-cost-percent">Phần trăm (%)</label>
+                                <input type="radio" id="shipping-cost-fixed" name="shipping-cost-type" value="fixed" onchange="updateExternalCostType('shipping-cost', 'fixed')" checked>
+                                <label for="shipping-cost-fixed">Cố định (VND)</label>
+                            </div>
+                            <input type="number" id="shipping-cost-value" placeholder="Nhập giá trị" min="0" step="0.01">
+                        </div>
+                    </div>
+
+                    <!-- Packaging Cost -->
+                    <div class="fee-group">
+                        <div class="fee-header">
+                            <input type="checkbox" id="packaging-cost-enabled" onchange="toggleExternalCost('packaging-cost')">
+                            <label for="packaging-cost-enabled">Chi Phí Đóng Gói</label>
+                        </div>
+                        <div id="packaging-cost-inputs" class="fee-inputs" style="display: none;">
+                            <div class="fee-type-selector">
+                                <input type="radio" id="packaging-cost-percent" name="packaging-cost-type" value="percent" onchange="updateExternalCostType('packaging-cost', 'percent')">
+                                <label for="packaging-cost-percent">Phần trăm (%)</label>
+                                <input type="radio" id="packaging-cost-fixed" name="packaging-cost-type" value="fixed" onchange="updateExternalCostType('packaging-cost', 'fixed')" checked>
+                                <label for="packaging-cost-fixed">Cố định (VND)</label>
+                            </div>
+                            <input type="number" id="packaging-cost-value" placeholder="Nhập giá trị" min="0" step="0.01">
+                        </div>
+                    </div>
+
+                    <!-- Storage Cost -->
+                    <div class="fee-group">
+                        <div class="fee-header">
+                            <input type="checkbox" id="storage-cost-enabled" onchange="toggleExternalCost('storage-cost')">
+                            <label for="storage-cost-enabled">Chi Phí Lưu Kho</label>
+                        </div>
+                        <div id="storage-cost-inputs" class="fee-inputs" style="display: none;">
+                            <div class="fee-type-selector">
+                                <input type="radio" id="storage-cost-percent" name="storage-cost-type" value="percent" onchange="updateExternalCostType('storage-cost', 'percent')">
+                                <label for="storage-cost-percent">Phần trăm (%)</label>
+                                <input type="radio" id="storage-cost-fixed" name="storage-cost-type" value="fixed" onchange="updateExternalCostType('storage-cost', 'fixed')" checked>
+                                <label for="storage-cost-fixed">Cố định (VND)</label>
+                            </div>
+                            <input type="number" id="storage-cost-value" placeholder="Nhập giá trị" min="0" step="0.01">
+                        </div>
+                    </div>
+
+                    <!-- Marketing Cost -->
+                    <div class="fee-group">
+                        <div class="fee-header">
+                            <input type="checkbox" id="marketing-cost-enabled" onchange="toggleExternalCost('marketing-cost')">
+                            <label for="marketing-cost-enabled">Chi Phí Marketing</label>
+                        </div>
+                        <div id="marketing-cost-inputs" class="fee-inputs" style="display: none;">
+                            <div class="fee-type-selector">
+                                <input type="radio" id="marketing-cost-percent" name="marketing-cost-type" value="percent" onchange="updateExternalCostType('marketing-cost', 'percent')">
+                                <label for="marketing-cost-percent">Phần trăm (%)</label>
+                                <input type="radio" id="marketing-cost-fixed" name="marketing-cost-type" value="fixed" onchange="updateExternalCostType('marketing-cost', 'fixed')" checked>
+                                <label for="marketing-cost-fixed">Cố định (VND)</label>
+                            </div>
+                            <input type="number" id="marketing-cost-value" placeholder="Nhập giá trị" min="0" step="0.01">
+                        </div>
+                    </div>
+
+                    <!-- Staff Cost -->
+                    <div class="fee-group">
+                        <div class="fee-header">
+                            <input type="checkbox" id="staff-cost-enabled" onchange="toggleExternalCost('staff-cost')">
+                            <label for="staff-cost-enabled">Chi Phí Nhân Viên</label>
+                        </div>
+                        <div id="staff-cost-inputs" class="fee-inputs" style="display: none;">
+                            <div class="fee-type-selector">
+                                <input type="radio" id="staff-cost-percent" name="staff-cost-type" value="percent" onchange="updateExternalCostType('staff-cost', 'percent')">
+                                <label for="staff-cost-percent">Phần trăm (%)</label>
+                                <input type="radio" id="staff-cost-fixed" name="staff-cost-type" value="fixed" onchange="updateExternalCostType('staff-cost', 'fixed')" checked>
+                                <label for="staff-cost-fixed">Cố định (VND)</label>
+                            </div>
+                            <input type="number" id="staff-cost-value" placeholder="Nhập giá trị" min="0" step="0.01">
+                        </div>
+                    </div>
+
+                    <!-- Rent Cost -->
+                    <div class="fee-group">
+                        <div class="fee-header">
+                            <input type="checkbox" id="rent-cost-enabled" onchange="toggleExternalCost('rent-cost')">
+                            <label for="rent-cost-enabled">Chi Phí Thuê Mặt Bằng</label>
+                        </div>
+                        <div id="rent-cost-inputs" class="fee-inputs" style="display: none;">
+                            <div class="fee-type-selector">
+                                <input type="radio" id="rent-cost-percent" name="rent-cost-type" value="percent" onchange="updateExternalCostType('rent-cost', 'percent')">
+                                <label for="rent-cost-percent">Phần trăm (%)</label>
+                                <input type="radio" id="rent-cost-fixed" name="rent-cost-type" value="fixed" onchange="updateExternalCostType('rent-cost', 'fixed')" checked>
+                                <label for="rent-cost-fixed">Cố định (VND)</label>
+                            </div>
+                            <input type="number" id="rent-cost-value" placeholder="Nhập giá trị" min="0" step="0.01">
+                        </div>
+                    </div>
+
+                    <!-- Utility Cost -->
+                    <div class="fee-group">
+                        <div class="fee-header">
+                            <input type="checkbox" id="utility-cost-enabled" onchange="toggleExternalCost('utility-cost')">
+                            <label for="utility-cost-enabled">Chi Phí Điện Nước</label>
+                        </div>
+                        <div id="utility-cost-inputs" class="fee-inputs" style="display: none;">
+                            <div class="fee-type-selector">
+                                <input type="radio" id="utility-cost-percent" name="utility-cost-type" value="percent" onchange="updateExternalCostType('utility-cost', 'percent')">
+                                <label for="utility-cost-percent">Phần trăm (%)</label>
+                                <input type="radio" id="utility-cost-fixed" name="utility-cost-type" value="fixed" onchange="updateExternalCostType('utility-cost', 'fixed')" checked>
+                                <label for="utility-cost-fixed">Cố định (VND)</label>
+                            </div>
+                            <input type="number" id="utility-cost-value" placeholder="Nhập giá trị" min="0" step="0.01">
+                        </div>
+                    </div>
+
+                    <!-- Insurance Cost -->
+                    <div class="fee-group">
+                        <div class="fee-header">
+                            <input type="checkbox" id="insurance-cost-enabled" onchange="toggleExternalCost('insurance-cost')">
+                            <label for="insurance-cost-enabled">Chi Phí Bảo Hiểm</label>
+                        </div>
+                        <div id="insurance-cost-inputs" class="fee-inputs" style="display: none;">
+                            <div class="fee-type-selector">
+                                <input type="radio" id="insurance-cost-percent" name="insurance-cost-type" value="percent" onchange="updateExternalCostType('insurance-cost', 'percent')">
+                                <label for="insurance-cost-percent">Phần trăm (%)</label>
+                                <input type="radio" id="insurance-cost-fixed" name="insurance-cost-type" value="fixed" onchange="updateExternalCostType('insurance-cost', 'fixed')" checked>
+                                <label for="insurance-cost-fixed">Cố định (VND)</label>
+                            </div>
+                            <input type="number" id="insurance-cost-value" placeholder="Nhập giá trị" min="0" step="0.01">
+                        </div>
+                    </div>
+
+                    <!-- Equipment Cost -->
+                    <div class="fee-group">
+                        <div class="fee-header">
+                            <input type="checkbox" id="equipment-cost-enabled" onchange="toggleExternalCost('equipment-cost')">
+                            <label for="equipment-cost-enabled">Chi Phí Thiết Bị</label>
+                        </div>
+                        <div id="equipment-cost-inputs" class="fee-inputs" style="display: none;">
+                            <div class="fee-type-selector">
+                                <input type="radio" id="equipment-cost-percent" name="equipment-cost-type" value="percent" onchange="updateExternalCostType('equipment-cost', 'percent')">
+                                <label for="equipment-cost-percent">Phần trăm (%)</label>
+                                <input type="radio" id="equipment-cost-fixed" name="equipment-cost-type" value="fixed" onchange="updateExternalCostType('equipment-cost', 'fixed')" checked>
+                                <label for="equipment-cost-fixed">Cố định (VND)</label>
+                            </div>
+                            <input type="number" id="equipment-cost-value" placeholder="Nhập giá trị" min="0" step="0.01">
+                        </div>
+                    </div>
+
+                    <!-- Administrative Cost -->
+                    <div class="fee-group">
+                        <div class="fee-header">
+                            <input type="checkbox" id="admin-cost-enabled" onchange="toggleExternalCost('admin-cost')">
+                            <label for="admin-cost-enabled">Chi Phí Hành Chính</label>
+                        </div>
+                        <div id="admin-cost-inputs" class="fee-inputs" style="display: none;">
+                            <div class="fee-type-selector">
+                                <input type="radio" id="admin-cost-percent" name="admin-cost-type" value="percent" onchange="updateExternalCostType('admin-cost', 'percent')">
+                                <label for="admin-cost-percent">Phần trăm (%)</label>
+                                <input type="radio" id="admin-cost-fixed" name="admin-cost-type" value="fixed" onchange="updateExternalCostType('admin-cost', 'fixed')" checked>
+                                <label for="admin-cost-fixed">Cố định (VND)</label>
+                            </div>
+                            <input type="number" id="admin-cost-value" placeholder="Nhập giá trị" min="0" step="0.01">
+                        </div>
+                    </div>
+
+                    <!-- Custom External Costs -->
+                    <h3>Chi Phí Tùy Chỉnh</h3>
+                    <div id="custom-external-costs-container">
+                        <!-- Custom costs will be populated here -->
+                    </div>
+                    
+                    <div id="add-custom-external-cost-form" style="display: none;">
+                        <div class="custom-cost-form">
+                            <input type="text" id="custom-external-cost-name" placeholder="Tên chi phí" title="Tên chi phí">
+                            <div class="fee-type-selector">
+                                <input type="radio" id="custom-external-cost-percent" name="custom-external-cost-type" value="percent">
+                                <label for="custom-external-cost-percent">Phần trăm (%)</label>
+                                <input type="radio" id="custom-external-cost-fixed" name="custom-external-cost-type" value="fixed" checked>
+                                <label for="custom-external-cost-fixed">Cố định (VND)</label>
+                            </div>
+                            <input type="number" id="custom-external-cost-value" placeholder="Giá trị" min="0" step="0.01" title="Giá trị chi phí">
+                            <button type="button" onclick="saveCustomExternalCost()">Lưu</button>
+                            <button type="button" onclick="cancelAddCustomExternalCost()">Hủy</button>
+                        </div>
+                    </div>
+                    
+                    <button type="button" id="add-custom-external-cost-btn" onclick="showAddCustomExternalCostForm()">
+                        + Thêm Chi Phí Tùy Chỉnh
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" onclick="saveExternalCosts()">Lưu Cài Đặt</button>
+                <button type="button" onclick="closeExternalCostsModal()">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Packaging Cost Configuration View -->
+    <div id="packaging-view" class="profit-view">
+        <div class="packaging-config-container">
+            <div class="packaging-header">
+                <h2><i class="fas fa-box"></i> Cấu hình Chi phí Thùng Đóng Gói</h2>
+                <p>Thiết lập chi phí thùng theo loại sản phẩm và khoảng khối lượng</p>
+            </div>
+
+            <!-- Product Type Tabs -->
+            <div class="product-type-tabs">
+                <button class="product-type-tab active" data-type="cold" onclick="switchProductType('cold')">
+                    <i class="fas fa-snowflake"></i>
+                    Hàng Lạnh
+                </button>
+                <button class="product-type-tab" data-type="dry" onclick="switchProductType('dry')">
+                    <i class="fas fa-box"></i>
+                    Hàng Khô
+                </button>
+                <button class="product-type-tab" data-type="liquid" onclick="switchProductType('liquid')">
+                    <i class="fas fa-tint"></i>
+                    Hàng Nước
+                </button>
+            </div>
+
+            <!-- Cold Products Configuration -->
+            <div id="cold-config" class="packaging-config-section active">
+                <div class="config-header">
+                    <h3>Cấu hình Chi phí Thùng - Hàng Lạnh</h3>
+                    <button class="btn-add-range" onclick="addWeightRange('cold')">
+                        <i class="fas fa-plus"></i> Thêm Khoảng Khối Lượng
+                    </button>
+                </div>
+                
+                <div class="weight-ranges-container" id="cold-ranges">
+                    <!-- Weight ranges will be populated here -->
+                </div>
+            </div>
+
+            <!-- Dry Products Configuration -->
+            <div id="dry-config" class="packaging-config-section">
+                <div class="config-header">
+                    <h3>Cấu hình Chi phí Thùng - Hàng Khô</h3>
+                    <button class="btn-add-range" onclick="addWeightRange('dry')">
+                        <i class="fas fa-plus"></i> Thêm Khoảng Khối Lượng
+                    </button>
+                </div>
+                
+                <div class="weight-ranges-container" id="dry-ranges">
+                    <!-- Weight ranges will be populated here -->
+                </div>
+            </div>
+
+            <!-- Liquid Products Configuration -->
+            <div id="liquid-config" class="packaging-config-section">
+                <div class="config-header">
+                    <h3>Cấu hình Chi phí Thùng - Hàng Nước</h3>
+                    <button class="btn-add-range" onclick="addWeightRange('liquid')">
+                        <i class="fas fa-plus"></i> Thêm Khoảng Khối Lượng
+                    </button>
+                </div>
+                
+                <div class="weight-ranges-container" id="liquid-ranges">
+                    <!-- Weight ranges will be populated here -->
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="packaging-actions">
+                <button class="btn-save" onclick="savePackagingConfig()">
+                    <i class="fas fa-save"></i> Lưu Cấu Hình
+                </button>
+                <button class="btn-reset" onclick="resetPackagingConfig()">
+                    <i class="fas fa-undo"></i> Khôi Phục Mặc Định
+                </button>
+                <button class="btn-preview" onclick="previewPackagingCost()">
+                    <i class="fas fa-eye"></i> Xem Trước Chi Phí
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Weight Range Modal -->
+    <div id="weightRangeModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Thêm Khoảng Khối Lượng</h3>
+                <span class="close" onclick="closeWeightRangeModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="weightRangeForm">
+                    <div class="form-group">
+                        <label for="minWeight">Khối lượng tối thiểu (kg):</label>
+                        <input type="number" id="minWeight" min="0" step="0.1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="maxWeight">Khối lượng tối đa (kg):</label>
+                        <input type="number" id="maxWeight" min="0" step="0.1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="packagingCost">Chi phí thùng (VNĐ):</label>
+                        <input type="number" id="packagingCost" min="0" step="1000" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="packagingType">Loại thùng:</label>
+                        <select id="packagingType" required>
+                            <option value="">-- Chọn loại thùng --</option>
+                            <option value="foam">Thùng xốp</option>
+                            <option value="cardboard">Thùng carton</option>
+                            <option value="plastic">Thùng nhựa</option>
+                            <option value="insulated">Thùng cách nhiệt</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="description">Mô tả:</label>
+                        <textarea id="description" rows="3" placeholder="Mô tả chi tiết về loại thùng và ứng dụng"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" onclick="saveWeightRange()">Lưu</button>
+                <button type="button" onclick="closeWeightRangeModal()">Hủy</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preview Modal -->
+    <div id="previewModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Xem Trước Chi Phí Thùng</h3>
+                <span class="close" onclick="closePreviewModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="preview-form">
+                    <div class="form-group">
+                        <label for="previewProductType">Loại sản phẩm:</label>
+                        <select id="previewProductType" onchange="updatePreview()">
+                            <option value="cold">Hàng Lạnh</option>
+                            <option value="dry">Hàng Khô</option>
+                            <option value="liquid">Hàng Nước</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="previewWeight">Khối lượng (kg):</label>
+                        <input type="number" id="previewWeight" min="0" step="0.1" onchange="updatePreview()">
+                    </div>
+                </div>
+                <div id="previewResult" class="preview-result">
+                    <!-- Preview result will be shown here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" onclick="closePreviewModal()">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
