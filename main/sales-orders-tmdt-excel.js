@@ -409,8 +409,14 @@ async function processTmdtExcelRow(row, columnMap, platform, rowNumber) {
         return null;
     }
     
-    // Generate order ID
-    const orderId = generateTmdtOrderId();
+    // Use Excel Order ID as primary, generate fallback if empty
+    const orderId = excelOrderId && excelOrderId.trim() !== '' ? excelOrderId.trim() : generateTmdtOrderId();
+    
+    console.log('📋 Order ID processing:', {
+        excelOrderId: excelOrderId,
+        finalOrderId: orderId,
+        usingExcelId: !!(excelOrderId && excelOrderId.trim() !== '')
+    });
     
     // Calculate prices and profit
     const sellingPrice = sellingProduct.sellingPrice || 0;

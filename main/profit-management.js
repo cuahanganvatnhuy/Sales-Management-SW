@@ -4367,7 +4367,9 @@ async function calculateOrderProfitWithPlatformFees(order) {
     console.log('📦 CALCULATION: Order data for packaging:', {
         productType: order.productType,
         weight: order.weight,
-        hasItems: !!(order.items && Array.isArray(order.items))
+        hasItems: !!(order.items && Array.isArray(order.items)),
+        itemsCount: order.items ? order.items.length : 0,
+        items: order.items || 'No items array'
     });
     
     // Get external costs from Firebase (for all orders including Excel imports)
