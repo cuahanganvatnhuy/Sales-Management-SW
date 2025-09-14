@@ -123,6 +123,19 @@
                                 <option value="other">Khác</option>
                             </select>
                         </div>
+                        <div class="platform-select-group">
+                            <label for="date-from">Từ Ngày:</label>
+                            <input type="date" id="date-from" onchange="filterOrdersByDate()" class="date-input">
+                        </div>
+                        <div class="platform-select-group">
+                            <label for="date-to">Đến Ngày:</label>
+                            <input type="date" id="date-to" onchange="filterOrdersByDate()" class="date-input">
+                        </div>
+                    </div>
+                    <div class="platform-actions">
+                        <button type="button" class="btn btn-secondary" onclick="clearDateFilter()">
+                            <i class="fas fa-times"></i> Xóa Lọc Ngày
+                        </button>
                         <button type="button" class="btn-platform-fees" onclick="openPlatformFeesModal()">
                             <i class="fas fa-cog"></i>
                             Cài Đặt Phí Sàn
@@ -605,27 +618,21 @@
                     </div>
                 </div>
 
-                <!-- TMĐT Platform Performance -->
-                <div class="analysis-section">
-                    <div class="section-header">
-                        <h3><i class="fas fa-chart-pie"></i> Hiệu Suất Theo Sàn</h3>
-                    </div>
-                    <div class="chart-container">
-                        <canvas id="tmdt-platform-chart"></canvas>
-                    </div>
-                </div>
+
 
                 <!-- TMĐT Top Products -->
                 <div class="analysis-section">
                     <div class="section-header">
-                        <h3><i class="fas fa-trophy"></i> Sản Phẩm Lợi Nhuận Cao Nhất</h3>
+                        <h3><i class="fas fa-fire"></i> Sản Phẩm Bán Chạy</h3>
                     </div>
                     <div class="table-container">
                         <table class="analysis-table" id="tmdt-top-products">
                             <thead>
                                 <tr>
+                                    <th>STT</th>
                                     <th>Sản Phẩm</th>
                                     <th>Sàn</th>
+                                    <th>Lượt Bán</th>
                                     <th>Doanh Thu</th>
                                     <th>Lợi Nhuận</th>
                                     <th>Tỷ Lệ (%)</th>
@@ -633,7 +640,9 @@
                             </thead>
                             <tbody>
                                 <tr>
+                                    <td>-</td>
                                     <td>Đang tải dữ liệu...</td>
+                                    <td>-</td>
                                     <td>-</td>
                                     <td>-</td>
                                     <td>-</td>
@@ -641,103 +650,46 @@
                                 </tr>
                             </tbody>
                         </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Charts Section -->
-            <div class="charts-section">
-                <div class="chart-container">
-                    <div class="chart-header">
-                        <h3><i class="fas fa-chart-pie"></i> Phân Bố Lợi Nhuận Theo Kênh</h3>
-                        <div class="chart-controls">
-                            <select id="chart-period" onchange="updateCharts()">
-                                <option value="7">7 ngày qua</option>
-                                <option value="30" selected>30 ngày qua</option>
-                                <option value="90">90 ngày qua</option>
-                                <option value="365">1 năm qua</option>
-                            </select>
+                        
+                        <!-- Pagination Controls -->
+                        <div class="pagination-container" id="top-products-pagination" style="display: none;">
+                            <div class="pagination-info">
+                                <span id="pagination-info-text">Hiển thị 1-5 của 0 sản phẩm</span>
+                            </div>
+                            <div class="pagination-controls">
+                                <button type="button" class="pagination-btn" id="prev-page-btn" onclick="changeTopProductsPage(-1)" disabled>
+                                    <i class="fas fa-chevron-left"></i> Trước
+                                </button>
+                                <span class="page-numbers" id="page-numbers"></span>
+                                <button type="button" class="pagination-btn" id="next-page-btn" onclick="changeTopProductsPage(1)" disabled>
+                                    Sau <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
-                    <div class="chart-content">
-                        <canvas id="profit-pie-chart"></canvas>
-                    </div>
-                </div>
-
-                <div class="chart-container">
-                    <div class="chart-header">
-                        <h3><i class="fas fa-chart-line"></i> Xu Hướng Lợi Nhuận Theo Thời Gian</h3>
-                    </div>
-                    <div class="chart-content">
-                        <canvas id="profit-trend-chart"></canvas>
-                    </div>
                 </div>
             </div>
+
 
             <!-- Detailed Analysis -->
             <div class="analysis-section">
                 <div class="analysis-card">
-                    <div class="analysis-header">
-                        <h3><i class="fas fa-analytics"></i> Phân Tích Chi Tiết</h3>
+                    
+                      
                         <div class="analysis-controls">
                             <button class="btn btn-outline" onclick="exportProfitReport()">
-                                <i class="fas fa-download"></i> Xuất Báo Cáo
+                                <i class="fas fa-download"></i> Xuất Báo Cáo Excel
                             </button>
                         </div>
-                    </div>
+    
                     
                     <div class="analysis-content">
-                        <!-- Profit by Channel Table -->
-                        <div class="table-section">
-                            <h4>Lợi Nhuận Theo Kênh Bán Hàng</h4>
-                            <div class="table-container">
-                                <table class="profit-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Kênh Bán Hàng</th>
-                                            <th>Số Đơn Hàng</th>
-                                            <th>Doanh Thu</th>
-                                            <th>Chi Phí</th>
-                                            <th>Lợi Nhuận</th>
-                                            <th>Tỷ Suất (%)</th>
-                                            <th>Xu Hướng</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="profit-by-channel-table">
-                                        <!-- Data will be populated by JavaScript -->
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
 
-                        <!-- Top Products by Profit -->
-                        <div class="table-section">
-                            <h4>Top Sản Phẩm Có Lợi Nhuận Cao Nhất</h4>
-                            <div class="table-container">
-                                <table class="profit-table">
-                                    <thead>
-                                        <tr>
-                                            <th>STT</th>
-                                            <th>Tên Sản Phẩm</th>
-                                            <th>SKU</th>
-                                            <th>Số Lượng Bán</th>
-                                            <th>Lợi Nhuận</th>
-                                            <th>Tỷ Suất (%)</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="top-products-table">
-                                        <!-- Data will be populated by JavaScript -->
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
 
                         <!-- TMĐT Orders Detail Table -->
                         <div class="table-section">
                             <div class="table-header">
-                                <h4>Danh Sách Đơn Hàng TMĐT Chi Tiết 
-                                    <button type="button" onclick="testTmdtDataLoading()" style="margin-left: 10px; padding: 5px 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">🔄 Test Load Data</button>
-                                </h4>
+                                <h4>Danh Sách Đơn Hàng TMĐT Chi Tiết</h4>
                                 <div class="table-actions">
                                     <button type="button" class="btn-action btn-select-all" onclick="selectAllOrders()">
                                         <i class="fas fa-check-square"></i> Chọn Tất Cả
@@ -748,6 +700,36 @@
                                     <button type="button" class="btn-action btn-delete-all" onclick="deleteAllOrders()">
                                         <i class="fas fa-trash-alt"></i> Xóa Tất Cả
                                     </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Search Bar -->
+                            <div class="search-container">
+                                <div class="search-box">
+                                    <i class="fas fa-search search-icon"></i>
+                                    <input type="text" id="order-search-input" placeholder="Tìm kiếm theo tên sản phẩm, SKU, mã đơn hàng..." onkeyup="searchOrders()" autocomplete="off">
+                                    <button type="button" class="clear-search-btn" onclick="clearSearch()" id="clear-search-btn" style="display: none;">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                <div class="search-filters">
+                                    <div class="filter-group">
+                                        <label for="search-date-from">Từ ngày:</label>
+                                        <input type="date" id="search-date-from" onchange="searchOrders()" onclick="this.showPicker()" class="search-date-input">
+                                    </div>
+                                    <div class="filter-group">
+                                        <label for="search-date-to">Đến ngày:</label>
+                                        <input type="date" id="search-date-to" onchange="searchOrders()" onclick="this.showPicker()" class="search-date-input">
+                                    </div>
+                                    <div class="filter-group">
+                                        <button type="button" class="clear-date-filter-btn" onclick="clearDateFilter()">
+                                            <i class="fas fa-calendar-times"></i> Xóa lọc ngày
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="search-results-info" id="search-results-count" style="display: none;">
+                                    <i class="fas fa-info-circle"></i>
+                                    <span id="search-results-text">Tìm thấy 0 kết quả</span>
                                 </div>
                             </div>
                             <div class="table-container">
@@ -776,6 +758,34 @@
                                         <!-- TMĐT orders data will be populated by JavaScript -->
                                     </tbody>
                                 </table>
+                            </div>
+                            
+                            <!-- Pagination Controls -->
+                            <div class="pagination-container">
+                                <div class="pagination-info">
+                                    <span id="pagination-info">Hiển thị 1-10 của 0 đơn hàng</span>
+                                </div>
+                                <div class="pagination-controls">
+                                    <button type="button" id="prev-page" class="pagination-btn" onclick="changePage(-1)" disabled>
+                                        <i class="fas fa-chevron-left"></i> Trước
+                                    </button>
+                                    <div class="pagination-numbers" id="pagination-numbers">
+                                        <!-- Page numbers will be populated by JavaScript -->
+                                    </div>
+                                    <button type="button" id="next-page" class="pagination-btn" onclick="changePage(1)" disabled>
+                                        Sau <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                </div>
+                                <div class="pagination-size">
+                                    <label for="page-size">Hiển thị:</label>
+                                    <select id="page-size" onchange="changePageSize()">
+                                        <option value="10">10</option>
+                                        <option value="25">25</option>
+                                        <option value="50">50</option>
+                                        <option value="100">100</option>
+                                    </select>
+                                    <span>đơn hàng/trang</span>
+                                </div>
                             </div>
                         </div>
 
@@ -1129,6 +1139,8 @@
     <script src="../main/store-context.js"></script>
     <script src="../main/navbar.js"></script>
     <script src="../main/header.js"></script>
+    <script src="../main/profit-management.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="../main/profit-management.js"></script>
     <script src="../main/packaging-config.js"></script>
 

@@ -17,10 +17,41 @@ let currentView = 'overview';
 let profitChart = null;
 let trendChart = null;
 
+// Chart instances
+const profitCharts = {
+    pieChart: null,
+    trendChart: null,
+    platformChart: null
+};
+
 // Fee display toggle functions
 function toggleFeeDisplay(feeType) {
-    const feeCard = document.querySelector(`.fee-${feeType}`);
-    const checkbox = document.getElementById(`show-${feeType}-fee`);
+    // Map fee types to their corresponding card classes
+    const feeTypeMapping = {
+        'shipping-cost': 'fee-shipping-cost',
+        'packaging-cost': 'fee-packaging-cost', 
+        'storage-cost': 'fee-storage-cost',
+        'marketing-cost': 'fee-marketing-cost',
+        'staff-cost': 'fee-staff-cost',
+        'rent-cost': 'fee-rent-cost',
+        'utility-cost': 'fee-utility-cost',
+        'insurance-cost': 'fee-insurance-cost',
+        'equipment-cost': 'fee-equipment-cost',
+        'admin-cost': 'fee-admin-cost'
+    };
+    
+    // Use mapping if available, otherwise use default pattern
+    const cardClass = feeTypeMapping[feeType] || `fee-${feeType}`;
+    const feeCard = document.querySelector(`.${cardClass}`);
+    
+    // For external costs, checkbox ID pattern is different
+    const checkboxId = feeTypeMapping[feeType] ? `show-${feeType}` : `show-${feeType}-fee`;
+    const checkbox = document.getElementById(checkboxId);
+    
+    if (!checkbox) {
+        console.warn(`Checkbox not found for fee type: ${feeType}, tried ID: ${checkboxId}`);
+        return;
+    }
     
     if (feeCard) {
         if (checkbox.checked) {
@@ -36,24 +67,30 @@ function toggleFeeDisplay(feeType) {
                 feeCard.style.display = 'none';
             }, 300);
         }
+    } else {
+        console.warn(`Fee card not found for class: ${cardClass}`);
     }
 }
 
 function selectAllFees() {
     const checkboxes = document.querySelectorAll('.fee-filter-item input[type="checkbox"]');
     checkboxes.forEach(checkbox => {
-        checkbox.checked = true;
-        const feeType = checkbox.id.replace('show-', '').replace('-fee', '');
-        toggleFeeDisplay(feeType);
+        if (checkbox && checkbox.id) {
+            checkbox.checked = true;
+            const feeType = checkbox.id.replace('show-', '').replace('-fee', '');
+            toggleFeeDisplay(feeType);
+        }
     });
 }
 
 function deselectAllFees() {
     const checkboxes = document.querySelectorAll('.fee-filter-item input[type="checkbox"]');
     checkboxes.forEach(checkbox => {
-        checkbox.checked = false;
-        const feeType = checkbox.id.replace('show-', '').replace('-fee', '');
-        toggleFeeDisplay(feeType);
+        if (checkbox && checkbox.id) {
+            checkbox.checked = false;
+            const feeType = checkbox.id.replace('show-', '').replace('-fee', '');
+            toggleFeeDisplay(feeType);
+        }
     });
 }
 
@@ -98,7 +135,7 @@ function switchProfitView(viewType) {
             break;
         case 'tmdt':
             loadTmdtProfitData();
-            showOverviewContent();
+            showTmdtOnlyContent();
             break;
         case 'wholesale':
             loadWholesaleProfitData();
@@ -136,6 +173,11 @@ function loadTmdtProfitData() {
     setTimeout(() => {
         console.log('🔥 Calling updateTmdtOrdersDetailTable from loadTmdtProfitData');
         updateTmdtOrdersDetailTable('all');
+        
+        // Update platform performance chart after data is loaded
+        setTimeout(() => {
+            updateTmdtPlatformChart();
+        }, 500);
     }, 100);
 }
 
@@ -212,8 +254,8 @@ function updatePlatformStats() {
 }
 
 // Function to calculate and update TMĐT statistics with real Firebase data
-async function updateTmdtStatistics(platform = 'all') {
-    console.log('Calculating TMĐT statistics for platform:', platform);
+async function updateTmdtStatistics(platform = 'all', store = 'all', dateFrom = null, dateTo = null) {
+    console.log('Calculating TMĐT statistics for:', { platform, store, dateFrom, dateTo });
     
     try {
         // Load TMĐT sales orders from Firebase
@@ -229,13 +271,58 @@ async function updateTmdtStatistics(platform = 'all') {
             return;
         }
         
-        // Filter orders by platform if specified
+        // Filter orders by platform, store, and date
         let filteredOrders = Object.values(salesOrdersData);
+        
+        // Filter by platform
         if (platform !== 'all') {
             filteredOrders = filteredOrders.filter(order => {
                 return order.platform === platform || 
                        (platform === 'other' && order.platform === 'other');
             });
+        }
+        
+        // Filter by store
+        if (store !== 'all') {
+            filteredOrders = filteredOrders.filter(order => {
+                return order.storeId === store || order.storeName === store;
+            });
+        }
+        
+        // Filter by date range
+        if (dateFrom || dateTo) {
+            filteredOrders = filteredOrders.filter(order => {
+                const orderDate = order.orderDate || order.createdAt || order.timestamp;
+                if (!orderDate) return false;
+                
+                // Convert order date to YYYY-MM-DD format for comparison
+                let orderDateStr;
+                if (typeof orderDate === 'string') {
+                    // Handle various date formats
+                    const date = new Date(orderDate);
+                    if (isNaN(date.getTime())) return false;
+                    orderDateStr = date.toISOString().split('T')[0];
+                } else if (orderDate.seconds) {
+                    // Firebase timestamp
+                    const date = new Date(orderDate.seconds * 1000);
+                    orderDateStr = date.toISOString().split('T')[0];
+                } else {
+                    const date = new Date(orderDate);
+                    if (isNaN(date.getTime())) return false;
+                    orderDateStr = date.toISOString().split('T')[0];
+                }
+                
+                // Check date range
+                if (dateFrom && orderDateStr < dateFrom) return false;
+                if (dateTo && orderDateStr > dateTo) return false;
+                
+                return true;
+            });
+        }
+        
+        console.log(`Filtered orders: ${filteredOrders.length} (from ${Object.keys(salesOrdersData).length} total)`);
+        if (dateFrom || dateTo) {
+            console.log(`Date filter applied: ${dateFrom} to ${dateTo}`);
         }
         
         // Calculate profit using fee settings
@@ -273,7 +360,8 @@ async function updateTmdtStatistics(platform = 'all') {
                 quantity: order.quantity
             });
             
-            const orderProfit = await calculateOrderProfitWithPlatformFees(order);
+            const orderProfitData = await calculateOrderProfitWithPlatformFees(order);
+            const orderProfit = orderProfitData.finalProfit || orderProfitData; // Support both old and new format
             const orderRevenue = (order.sellingPrice || 0) * (order.quantity || 1);
             const orderCost = (order.importPrice || 0) * (order.quantity || 1);
             const baseProfitOrder = orderRevenue - orderCost;
@@ -362,6 +450,9 @@ async function updateTmdtStatistics(platform = 'all') {
             updateTmdtDisplay(totalProfit, totalProfit, totalCost, totalRevenue, totalFees, totalGrossProfit, feeBreakdown);
             updateTmdtUI(totalProfit, totalRevenue, orderCount, platform);
         }
+        
+        // Update top products table with filtered orders
+        updateTmdtTopProductsTable(filteredOrders);
         
     } catch (error) {
         console.error('Error calculating TMĐT statistics:', error);
@@ -628,6 +719,7 @@ async function loadTmdtSalesOrders(targetStoreId = null) {
         // Store data globally for other functions to use
         console.log('📊 Storing TMĐT orders data globally for access by other functions');
         window.tmdtOrdersData = allTmdtOrders;
+        window.allTmdtOrders = allTmdtOrders; // Also store as global variable
         
         return allTmdtOrders;
         
@@ -1137,7 +1229,7 @@ function updateTmdtUI(totalProfit, totalRevenue, orderCount, platform) {
     const platformChange = document.getElementById('platform-change');
     
     if (platformProfitValue) {
-        platformProfitValue.textContent = formatCurrency(totalProfit) + '₫';
+        platformProfitValue.textContent = formatCurrency(totalProfit);
     }
     
     if (platformChange) {
@@ -1212,7 +1304,7 @@ async function updateTmdtOrdersDetailTable(platform = 'all') {
             const baseProfit = (sellingPrice - importPrice) * quantity;
             
             // Use the same calculation as sales-orders-tmdt.js
-            let orderProfit = await calculateOrderProfitWithPlatformFees({
+            let orderProfitData = await calculateOrderProfitWithPlatformFees({
                 sellingPrice: sellingPrice,
                 importPrice: importPrice,
                 quantity: quantity,
@@ -1223,6 +1315,7 @@ async function updateTmdtOrdersDetailTable(platform = 'all') {
                 orderId: order.orderId
             });
             
+            let orderProfit = orderProfitData.finalProfit || orderProfitData; // Support both old and new format
             const profitClass = orderProfit > 0 ? 'profit-positive' : 'profit-negative';
             console.log(`DEBUG Order ${orderId}: profit=${orderProfit}, class=${profitClass}`);
             
@@ -1250,10 +1343,10 @@ async function updateTmdtOrdersDetailTable(platform = 'all') {
                     <td>${order.productName || 'N/A'}</td>
                     <td>${order.sku || 'N/A'}</td>
                     <td>${quantity}</td>
-                    <td>${formatCurrency(importPrice)}₫</td>
-                    <td>${formatCurrency(sellingPrice)}₫</td>
-                    <td class="${profitClass}">${formatCurrency(orderProfit)}₫</td>
-                    <td>${formatCurrency(totalAmount)}₫</td>
+                    <td>${formatCurrency(importPrice)}</td>
+                    <td>${formatCurrency(sellingPrice)}</td>
+                    <td class="${profitClass}">${formatCurrency(orderProfit)}</td>
+                    <td>${formatCurrency(totalAmount)}</td>
                     <td>${platformDisplay}</td>
                     <td>${resolveStoreName(order)}</td>
                     <td>${getOrderDate(order)}</td>
@@ -1314,7 +1407,8 @@ async function calculateTmdtProfitFromOrders(orders, selectedPlatform) {
             sellingPrice: order.sellingPrice,
             importPrice: order.importPrice
         });
-        const orderProfit = await calculateOrderProfitWithPlatformFees(order);
+        const orderProfitData = await calculateOrderProfitWithPlatformFees(order);
+        const orderProfit = orderProfitData.finalProfit || orderProfitData; // Support both old and new format
         
         // Add to total TMĐT statistics
         totalRevenue += orderRevenue;
@@ -1356,6 +1450,14 @@ function getOrderPlatform(order) {
 
 // Helper function to update display values
 function updateTmdtDisplay(totalProfit, platformProfit, totalCost, totalRevenue, totalFees = 0, totalGrossProfit = 0, feeBreakdown = {}) {
+    // Ensure all values are valid numbers
+    totalProfit = isNaN(totalProfit) ? 0 : totalProfit;
+    platformProfit = isNaN(platformProfit) ? 0 : platformProfit;
+    totalCost = isNaN(totalCost) ? 0 : totalCost;
+    totalRevenue = isNaN(totalRevenue) ? 0 : totalRevenue;
+    totalFees = isNaN(totalFees) ? 0 : totalFees;
+    totalGrossProfit = isNaN(totalGrossProfit) ? 0 : totalGrossProfit;
+    
     const elements = {
         'tmdt-total-profit': totalProfit,
         'platform-profit-value': platformProfit,
@@ -2567,6 +2669,177 @@ function updatePieChart() {
     });
 }
 
+// Update TMĐT platform performance chart
+function updateTmdtPlatformChart() {
+    console.log('🎯 updateTmdtPlatformChart called');
+    
+    const ctx = document.getElementById('tmdt-platform-chart');
+    console.log('🎯 Canvas element:', ctx);
+    
+    if (!ctx) {
+        console.error('❌ TMĐT platform chart canvas not found');
+        return;
+    }
+    
+    const chartCtx = ctx.getContext('2d');
+    console.log('🎯 Chart context:', chartCtx);
+    
+    if (profitCharts.platformChart) {
+        profitCharts.platformChart.destroy();
+    }
+    
+    // Calculate profit by platform from loaded TMĐT orders
+    const platformProfits = calculatePlatformProfits();
+    
+    const platforms = Object.keys(platformProfits);
+    const profits = Object.values(platformProfits);
+    
+    if (platforms.length === 0) {
+        // Show empty state
+        chartCtx.clearRect(0, 0, ctx.width, ctx.height);
+        chartCtx.font = '16px Arial';
+        chartCtx.fillStyle = '#666';
+        chartCtx.textAlign = 'center';
+        chartCtx.fillText('Chưa có dữ liệu', ctx.width / 2, ctx.height / 2);
+        return;
+    }
+    
+    console.log('📊 Creating platform chart with platforms:', platforms);
+    console.log('📊 Platform profits:', profits);
+    
+    // Handle case where total profit might be negative or zero
+    const totalProfit = profits.reduce((sum, profit) => sum + profit, 0);
+    console.log('📊 Total profit for chart:', totalProfit);
+    
+    // If total profit is negative or zero, show absolute values for visualization
+    const displayProfits = totalProfit <= 0 ? profits.map(p => Math.abs(p)) : profits;
+    const displayTotal = displayProfits.reduce((sum, profit) => sum + profit, 0);
+    
+    profitCharts.platformChart = new Chart(chartCtx, {
+        type: 'doughnut',
+        data: {
+            labels: platforms,
+            datasets: [{
+                data: displayProfits,
+                backgroundColor: [
+                    '#FF6B35', // Shopee - Orange
+                    '#1877F2', // Facebook - Blue  
+                    '#FF0050', // TikTok - Pink
+                    '#0F4C75', // Lazada - Dark Blue
+                    '#E74C3C', // Sendo - Red
+                    '#00D4AA', // Tiki - Teal
+                    '#7B68EE', // Zalo - Purple
+                    '#95A5A6'  // Other - Gray
+                ],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 15,
+                        usePointStyle: true,
+                        font: {
+                            size: 12
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const originalValue = profits[context.dataIndex];
+                            const displayValue = displayProfits[context.dataIndex];
+                            const percentage = displayTotal > 0 ? ((displayValue / displayTotal) * 100).toFixed(1) : 0;
+                            const prefix = totalProfit <= 0 ? 'Lỗ: ' : '';
+                            return `${context.label}: ${prefix}${formatCurrency(Math.abs(originalValue))} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+    
+    console.log('✅ Platform chart created successfully');
+}
+
+// Calculate profit by platform from TMĐT orders
+function calculatePlatformProfits() {
+    const platformProfits = {};
+    
+    console.log('🔍 Debug calculatePlatformProfits:');
+    console.log('window.tmdtOrdersData:', window.tmdtOrdersData);
+    console.log('window.tmdtOrdersData length:', window.tmdtOrdersData ? window.tmdtOrdersData.length : 'undefined');
+    
+    const tmdtOrders = window.tmdtOrdersData || [];
+    
+    if (!tmdtOrders || tmdtOrders.length === 0) {
+        console.log('❌ No TMĐT orders data available for platform chart');
+        return platformProfits;
+    }
+    
+    tmdtOrders.forEach((order, index) => {
+        const platform = order.platform || 'Khác';
+        const platformName = getPlatformDisplayName(platform);
+        
+        console.log(`📊 Order ${index + 1}: platform=${platform}, platformName=${platformName}`);
+        
+        // Calculate profit for this order
+        const profit = calculateOrderProfitSync(order);
+        console.log(`💰 Calculated profit: ${profit}`);
+        
+        // Include all orders (positive and negative profit) for comprehensive view
+        if (!platformProfits[platformName]) {
+            platformProfits[platformName] = 0;
+        }
+        platformProfits[platformName] += profit;
+    });
+    
+    console.log('📈 Final platform profits:', platformProfits);
+    return platformProfits;
+}
+
+// Get display name for platform
+function getPlatformDisplayName(platform) {
+    const platformNames = {
+        'shopee': 'Shopee',
+        'lazada': 'Lazada',
+        'tiktok': 'TikTok Shop',
+        'sendo': 'Sendo',
+        'tiki': 'Tiki',
+        'facebook': 'Facebook Shop',
+        'zalo': 'Zalo Shop'
+    };
+    
+    return platformNames[platform?.toLowerCase()] || 'Khác';
+}
+
+// Synchronous profit calculation for chart
+function calculateOrderProfitSync(order) {
+    try {
+        const sellingPrice = parseFloat(order.sellingPrice) || 0;
+        const importPrice = parseFloat(order.importPrice) || 0;
+        const quantity = parseInt(order.quantity) || 1;
+        
+        // Basic profit calculation
+        const basicProfit = (sellingPrice - importPrice) * quantity;
+        
+        // Try to get platform fees if available
+        const platform = order.platform?.toLowerCase();
+        const platformFees = getPlatformFeesFromStorageSync(platform);
+        const feeAmount = calculatePlatformFeeAmount(sellingPrice * quantity, platformFees);
+        
+        return Math.max(0, basicProfit - feeAmount);
+    } catch (error) {
+        console.error('Error calculating order profit:', error);
+        return 0;
+    }
+}
+
 // Update trend chart
 function updateTrendChart() {
     const ctx = document.getElementById('profit-trend-chart').getContext('2d');
@@ -2693,21 +2966,47 @@ function updateChannelTable() {
     }).join('');
 }
 
-// Update top products table
-function updateTopProductsTable() {
-    const tbody = document.getElementById('top-products-table');
+// Update TMĐT top products table
+function updateTmdtTopProductsTable(orders = []) {
+    const tbody = document.querySelector('#tmdt-top-products tbody');
+    
+    if (!tbody) {
+        console.warn('TMĐT top products table body not found');
+        return;
+    }
+    
+    if (!orders || orders.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="text-center">Không có dữ liệu đơn hàng</td>
+            </tr>
+        `;
+        return;
+    }
+    
+    console.log('Updating TMĐT top products with orders:', orders.length);
+    
+    // Debug: Log first few orders to see platform data
+    if (orders.length > 0) {
+        console.log('Sample order platform data:', {
+            platform: orders[0].platform,
+            platformName: orders[0].platformName,
+            allPlatforms: orders.slice(0, 3).map(o => ({ platform: o.platform, platformName: o.platformName }))
+        });
+    }
     
     // Calculate product profits
     const productProfits = {};
     
-    Object.values(salesOrdersData).forEach(order => {
+    orders.forEach(order => {
         if (order.items && Array.isArray(order.items)) {
+            // Multi-item order
             order.items.forEach(item => {
                 const key = item.sku || item.productName || 'Unknown';
                 if (!productProfits[key]) {
                     productProfits[key] = {
                         name: item.productName || 'N/A',
-                        sku: item.sku || 'N/A',
+                        platform: order.platformName || order.platform || 'Khác',
                         quantity: 0,
                         profit: 0,
                         revenue: 0
@@ -2725,7 +3024,7 @@ function updateTopProductsTable() {
             if (!productProfits[key]) {
                 productProfits[key] = {
                     name: order.productName || 'N/A',
-                    sku: order.sku || 'N/A',
+                    platform: order.platformName || order.platform || 'Khác',
                     quantity: 0,
                     profit: 0,
                     revenue: 0
@@ -2739,24 +3038,65 @@ function updateTopProductsTable() {
         }
     });
     
-    // Sort by profit and take top 10
-    const topProducts = Object.values(productProfits)
-        .sort((a, b) => b.profit - a.profit)
-        .slice(0, 10);
+    // Sort by quantity (lượt bán) - get all products for pagination
+    const allProducts = Object.values(productProfits)
+        .sort((a, b) => b.quantity - a.quantity);
+    
+    // Initialize pagination if not exists
+    if (!window.topProductsPagination) {
+        window.topProductsPagination = {
+            currentPage: 1,
+            itemsPerPage: 5,
+            totalItems: 0
+        };
+    }
+    
+    window.topProductsPagination.totalItems = allProducts.length;
+    const totalPages = Math.ceil(allProducts.length / window.topProductsPagination.itemsPerPage);
+    
+    // Get products for current page
+    const startIndex = (window.topProductsPagination.currentPage - 1) * window.topProductsPagination.itemsPerPage;
+    const endIndex = startIndex + window.topProductsPagination.itemsPerPage;
+    const topProducts = allProducts.slice(startIndex, endIndex);
+    
+    if (allProducts.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center">Không có sản phẩm nào</td>
+            </tr>
+        `;
+        document.getElementById('top-products-pagination').style.display = 'none';
+        return;
+    }
     
     tbody.innerHTML = topProducts.map((product, index) => {
         const profitMargin = product.revenue > 0 ? ((product.profit / product.revenue) * 100).toFixed(1) : 0;
+        // Truncate long product names
+        const displayName = product.name.length > 50 ? product.name.substring(0, 47) + '...' : product.name;
+        // Get platform display name - debug the actual platform value
+        console.log(`Product ${index + 1} platform data:`, { 
+            originalPlatform: product.platform, 
+            displayName: getPlatformDisplayName(product.platform) 
+        });
+        const platformDisplay = getPlatformDisplayName(product.platform);
+        
         return `
             <tr>
                 <td class="text-center">${index + 1}</td>
-                <td>${product.name}</td>
-                <td class="text-center">${product.sku}</td>
+                <td title="${product.name}">${displayName}</td>
+                <td class="text-center">${platformDisplay}</td>
                 <td class="text-center">${product.quantity}</td>
-                <td class="text-right"><strong>${formatCurrency(product.profit)}</strong></td>
+                <td class="text-right">${formatCurrency(product.revenue)}</td>
+                <td class="text-right" style="color: ${product.profit >= 0 ? '#28a745' : '#dc3545'}">${formatCurrency(product.profit)}</td>
                 <td class="text-center">${profitMargin}%</td>
             </tr>
         `;
     }).join('');
+    
+    // Update pagination info and controls
+    // updateTopProductsPagination(allProducts.length, totalPages); // Function not implemented yet
+    
+    console.log('Updated TMĐT top products table with', topProducts.length, 'products on page', window.topProductsPagination.currentPage, 'of', totalPages);
 }
 
 // Update monthly comparison
@@ -2894,10 +3234,9 @@ function exportProfitReport() {
 // Utility functions - removed duplicate getCurrentStore function
 
 function formatCurrency(amount) {
-    return new Intl.NumberFormat('vi-VN', {
-        style: 'currency',
-        currency: 'VND'
-    }).format(amount || 0);
+    const numAmount = typeof amount === 'string' ? Number(amount) : amount;
+    if (isNaN(numAmount)) return '0';
+    return new Intl.NumberFormat('vi-VN').format(numAmount) + ' đ';
 }
 
 function formatDateForInput(date) {
@@ -3054,12 +3393,7 @@ function getCurrentStore() {
     return storeId;
 }
 
-// Format currency function
-function formatCurrency(amount) {
-    const numAmount = typeof amount === 'string' ? Number(amount) : amount;
-    if (isNaN(numAmount)) return '0';
-    return new Intl.NumberFormat('vi-VN').format(numAmount);
-}
+// Removed duplicate formatCurrency function
 
 // Format date function
 function formatDate(dateString) {
@@ -3208,7 +3542,8 @@ async function showOrderDetailModal(orderId, order) {
     const importPrice = parseFloat(order.importPrice || 0);
     const quantity = parseInt(order.quantity || 1);
     const baseProfit = (sellingPrice - importPrice) * quantity;
-    const finalProfit = await calculateOrderProfitWithPlatformFees(order);
+    const finalProfitData = await calculateOrderProfitWithPlatformFees(order);
+    const finalProfit = finalProfitData.finalProfit || finalProfitData; // Support both old and new format
     const totalAllCosts = baseProfit - finalProfit;
     
     const profitClass = finalProfit > 0 ? 'profit-positive' : 'profit-negative';
@@ -3265,7 +3600,7 @@ async function showOrderDetailModal(orderId, order) {
                     <div class="fees-breakdown">
                         <div class="fee-item">
                             <span class="fee-name">Chi Phí Thùng ${order.productType === 'cold' ? 'Lạnh' : order.productType === 'dry' ? 'Khô' : order.productType === 'liquid' ? 'Lỏng' : order.productType || 'Không xác định'} (${order.weight || 0}kg)</span>
-                            <span class="fee-amount">-${formatCurrency(packagingCostAmount)}₫</span>
+                            <span class="fee-amount">-${formatCurrency(packagingCostAmount)}</span>
                         </div>
                     </div>
                 </div>
@@ -3321,7 +3656,7 @@ async function showOrderDetailModal(orderId, order) {
                         platformFeeDetails += `
                             <div class="fee-item">
                                 <span class="fee-name">${feeName} (${feeRate})</span>
-                                <span class="fee-amount">-${formatCurrency(feeAmount)}₫</span>
+                                <span class="fee-amount">-${formatCurrency(feeAmount)}</span>
                             </div>
                         `;
                     }
@@ -3350,7 +3685,7 @@ async function showOrderDetailModal(orderId, order) {
                         platformFeeDetails += `
                             <div class="fee-item">
                                 <span class="fee-name">${customFeeConfig.name} (${feeRate})</span>
-                                <span class="fee-amount">-${formatCurrency(feeAmount)}₫</span>
+                                <span class="fee-amount">-${formatCurrency(feeAmount)}</span>
                             </div>
                         `;
                     }
@@ -3444,7 +3779,7 @@ async function showOrderDetailModal(orderId, order) {
                         ${platformFeeDetails}
                         <div class="fee-total">
                             <span class="fee-name"><strong>Tổng Phí Sàn</strong></span>
-                            <span class="fee-amount"><strong>-${formatCurrency(calculatedTotalFees)}₫</strong></span>
+                            <span class="fee-amount"><strong>-${formatCurrency(calculatedTotalFees)}</strong></span>
                         </div>
                     </div>
                 </div>
@@ -3459,7 +3794,7 @@ async function showOrderDetailModal(orderId, order) {
                         ${externalCostDetails}
                         <div class="fee-total">
                             <span class="fee-name"><strong>Tổng Chi Phí Bên Ngoài</strong></span>
-                            <span class="fee-amount"><strong>-${formatCurrency(calculatedTotalExternalCosts)}₫</strong></span>
+                            <span class="fee-amount"><strong>-${formatCurrency(calculatedTotalExternalCosts)}</strong></span>
                         </div>
                     </div>
                 </div>
@@ -3501,15 +3836,15 @@ async function showOrderDetailModal(orderId, order) {
         </div>
         <div class="info-group">
             <label>Giá Nhập</label>
-            <div class="value">${formatCurrency(order.importPrice || 0)}₫</div>
+            <div class="value">${formatCurrency(order.importPrice || 0)}</div>
         </div>
         <div class="info-group">
             <label>Giá Bán</label>
-            <div class="value">${formatCurrency(order.sellingPrice || 0)}₫</div>
+            <div class="value">${formatCurrency(order.sellingPrice || 0)}</div>
         </div>
         <div class="info-group">
             <label>Tổng Tiền</label>
-            <div class="value">${formatCurrency(sellingPrice * quantity)}₫</div>
+            <div class="value">${formatCurrency(sellingPrice * quantity)}</div>
         </div>
         <div class="info-group">
             <label>Sàn TMĐT</label>
@@ -3525,12 +3860,12 @@ async function showOrderDetailModal(orderId, order) {
         </div>
         <div class="info-group">
             <label>Lợi Nhuận Gộp (Trước Phí)</label>
-            <div class="value">${formatCurrency(baseProfit)}₫</div>
+            <div class="value">${formatCurrency(baseProfit)}</div>
         </div>
         ${costsHtml}
         <div class="info-group profit-info">
             <label>Lợi Nhuận Ròng (Sau Phí)</label>
-            <div class="value ${accurateProfitClass}">${formatCurrency(accurateFinalProfit)}₫</div>
+            <div class="value ${accurateProfitClass}">${formatCurrency(accurateFinalProfit)}</div>
         </div>
     `;
     
@@ -3657,7 +3992,9 @@ async function initializeProfitManagement() {
     
     // Load data with current store as default filter
     const currentStore = getCurrentStore();
-    updateTmdtOrdersDetailTableWithFilters('all', currentStore);
+    const dateFrom = document.getElementById('date-from')?.value;
+    const dateTo = document.getElementById('date-to')?.value;
+    updateTmdtOrdersDetailTableWithFilters('all', currentStore, dateFrom, dateTo);
     
     // Ensure packaging config is loaded before calculating profits
     await loadPackagingConfig();
@@ -3673,10 +4010,14 @@ function updateStoreFilter() {
     console.log('🏪 Store filter changed to:', selectedStore);
     
     // Update TMĐT orders table with both store and platform filters
-    updateTmdtOrdersDetailTableWithFilters(selectedPlatform, selectedStore);
+    // Get current date filters
+    const dateFrom = document.getElementById('date-from')?.value;
+    const dateTo = document.getElementById('date-to')?.value;
+    
+    updateTmdtOrdersDetailTableWithFilters(selectedPlatform, selectedStore, dateFrom, dateTo);
     
     // Update statistics for the selected store and platform
-    updateTmdtStatistics(selectedPlatform, selectedStore);
+    updateTmdtStatistics(selectedPlatform, selectedStore, dateFrom, dateTo);
 }
 
 function updatePlatformStats() {
@@ -3684,11 +4025,56 @@ function updatePlatformStats() {
     const selectedStore = document.getElementById('store-select').value;
     console.log('📊 Platform changed to:', selectedPlatform);
     
+    // Update card titles based on selected platform
+    updateCardTitlesForPlatform(selectedPlatform);
+    
+    // Get current date filters
+    const dateFrom = document.getElementById('date-from')?.value;
+    const dateTo = document.getElementById('date-to')?.value;
+    
     // Update TMĐT orders detail table with both filters
-    updateTmdtOrdersDetailTableWithFilters(selectedPlatform, selectedStore);
+    updateTmdtOrdersDetailTableWithFilters(selectedPlatform, selectedStore, dateFrom, dateTo);
     
     // Update statistics
-    updateTmdtStatistics(selectedPlatform, selectedStore);
+    updateTmdtStatistics(selectedPlatform, selectedStore, dateFrom, dateTo);
+}
+
+// Update card titles to show selected platform
+function updateCardTitlesForPlatform(selectedPlatform) {
+    // Platform name mapping
+    const platformNames = {
+        'all': 'Tất Cả Sàn',
+        'shopee': 'Shopee',
+        'lazada': 'Lazada',
+        'tiktok': 'TikTok Shop',
+        'sendo': 'Sendo',
+        'tiki': 'Tiki',
+        'facebook': 'Facebook Shop',
+        'zalo': 'Zalo Shop',
+        'other': 'Khác'
+    };
+    
+    const platformName = platformNames[selectedPlatform] || selectedPlatform;
+    const suffix = selectedPlatform === 'all' ? '' : ` - ${platformName}`;
+    
+    // Update card titles
+    const cardTitles = [
+        { selector: '.tmdt-total-profit h3', baseTitle: 'Tổng Lợi Nhuận TMĐT' },
+        { selector: '.tmdt-fees h3', baseTitle: 'Tổng Phí Sàn TMĐT' },
+        { selector: '.tmdt-cost h3', baseTitle: 'Tổng Giá Nhập TMĐT' },
+        { selector: '.tmdt-revenue h3', baseTitle: 'Tổng Doanh Thu TMĐT - (giá bán trên sàn)' },
+        { selector: '.tmdt-gross-profit h3', baseTitle: 'Lợi Nhuận Gộp (Chưa tính Phí)' },
+        { selector: '.platform-profit h3', baseTitle: 'Lợi Nhuận Tất Cả Sàn' }
+    ];
+    
+    cardTitles.forEach(({ selector, baseTitle }) => {
+        const titleElement = document.querySelector(selector);
+        if (titleElement) {
+            titleElement.textContent = baseTitle + suffix;
+        }
+    });
+    
+    console.log('📝 Updated card titles for platform:', platformName);
 }
 
 // Load stores for filter dropdown
@@ -3732,10 +4118,16 @@ async function loadStoresForFilter() {
     }
 }
 
+// Pagination variables
+let currentPage = 1;
+let pageSize = 10;
+let totalOrders = 0;
+let allFilteredOrders = [];
+
 // Update TMĐT orders table with both platform and store filters
-async function updateTmdtOrdersDetailTableWithFilters(platform = 'all', storeFilter = 'all') {
+async function updateTmdtOrdersDetailTableWithFilters(platform = 'all', storeFilter = 'all', dateFrom = null, dateTo = null) {
     try {
-        console.log('🔥 updateTmdtOrdersDetailTableWithFilters called with platform:', platform, 'store:', storeFilter);
+        console.log('🔥 updateTmdtOrdersDetailTableWithFilters called with:', { platform, storeFilter, dateFrom, dateTo });
         
         // Load orders for specific store or all stores
         const tmdtOrders = storeFilter === 'all' ? await loadTmdtSalesOrders() : await loadTmdtSalesOrders(storeFilter);
@@ -3766,108 +4158,305 @@ async function updateTmdtOrdersDetailTableWithFilters(platform = 'all', storeFil
             });
         }
         
-        console.log('🔥 Filtered orders count (platform + store):', filteredOrders.length);
-        
-        // Clear existing rows
-        tableBody.innerHTML = '';
-        
-        if (filteredOrders.length === 0) {
-            console.log('🔥 No orders found, showing empty message');
-            tableBody.innerHTML = `
-                <tr>
-                    <td colspan="13" style="text-align: center; color: #666; padding: 20px;">
-                        <i class="fas fa-inbox"></i><br>
-                        Không có đơn hàng TMĐT nào
-                    </td>
-                </tr>
-            `;
-            return;
-        }
-        
-        // Populate table with filtered orders
-        let tableRows = '';
-        for (let i = 0; i < filteredOrders.length; i++) {
-            const [orderId, order] = filteredOrders[i];
-            const sellingPrice = parseFloat(order.sellingPrice || 0);
-            const importPrice = parseFloat(order.importPrice || 0);
-            const quantity = parseInt(order.quantity || 1);
-            const totalAmount = sellingPrice * quantity;
-            
-            // Base profit before fees
-            const baseProfit = (sellingPrice - importPrice) * quantity;
-            
-            // Use the same calculation as sales-orders-tmdt.js
-            let orderProfit = await calculateOrderProfitWithPlatformFees({
-                sellingPrice: sellingPrice,
-                importPrice: importPrice,
-                quantity: quantity,
-                platform: order.platform,
-                storeId: order.storeId,
-                productType: order.productType,
-                weight: order.weight,
-                orderId: order.orderId
+        // Filter by date range
+        if (dateFrom || dateTo) {
+            filteredOrders = filteredOrders.filter(([orderId, order]) => {
+                const orderDate = order.orderDate || order.createdAt || order.timestamp;
+                if (!orderDate) return false;
+                
+                // Convert order date to YYYY-MM-DD format for comparison
+                let orderDateStr;
+                if (typeof orderDate === 'string') {
+                    // Handle various date formats
+                    const date = new Date(orderDate);
+                    if (isNaN(date.getTime())) return false;
+                    orderDateStr = date.toISOString().split('T')[0];
+                } else if (orderDate.seconds) {
+                    // Firebase timestamp
+                    const date = new Date(orderDate.seconds * 1000);
+                    orderDateStr = date.toISOString().split('T')[0];
+                } else {
+                    const date = new Date(orderDate);
+                    if (isNaN(date.getTime())) return false;
+                    orderDateStr = date.toISOString().split('T')[0];
+                }
+                
+                // Check date range
+                if (dateFrom && orderDateStr < dateFrom) return false;
+                if (dateTo && orderDateStr > dateTo) return false;
+                
+                return true;
             });
-            
-            const profitClass = orderProfit > 0 ? 'profit-positive' : 'profit-negative';
-            
-            // Platform display names
-            const platformNames = {
-                'shopee': 'Shopee',
-                'lazada': 'Lazada',
-                'tiktok': 'TikTok Shop',
-                'sendo': 'Sendo',
-                'tiki': 'Tiki',
-                'facebook': 'Facebook Shop',
-                'zalo': 'Zalo Shop',
-                'other': 'Khác'
-            };
-            
-            const platformDisplay = platformNames[order.platform] || order.platform || 'N/A';
-            
-            const row = `
-                <tr>
-                    <td>
-                        <input type="checkbox" class="order-checkbox" value="${orderId}" onchange="updateSelectedCount()">
-                    </td>
-                    <td>${i + 1}</td>
-                    <td>${orderId}</td>
-                    <td>${order.productName || 'N/A'}</td>
-                    <td>${order.sku || 'N/A'}</td>
-                    <td>${quantity}</td>
-                    <td>${formatCurrency(importPrice)}₫</td>
-                    <td>${formatCurrency(sellingPrice)}₫</td>
-                    <td class="${profitClass}">${formatCurrency(orderProfit)}₫</td>
-                    <td>${formatCurrency(totalAmount)}₫</td>
-                    <td>${platformDisplay}</td>
-                    <td>${resolveStoreName(order)}</td>
-                    <td>${getOrderDate(order)}</td>
-                    <td>
-                        <button type="button" class="btn-action btn-view-detail" onclick="viewOrderDetail('${orderId}')">
-                            <i class="fas fa-eye"></i> Xem
-                        </button>
-                    </td>
-                </tr>
-            `;
-            tableRows += row;
         }
         
-        tableBody.innerHTML = tableRows;
+        console.log('🔥 Filtered orders count (platform + store + date):', filteredOrders.length);
+        if (dateFrom || dateTo) {
+            console.log('🔥 Date filter applied:', { dateFrom, dateTo });
+        }
         
-        console.log(`Updated TMĐT orders detail table with ${filteredOrders.length} orders for platform: ${platform}, store: ${storeFilter}`);
+        // Store filtered orders for pagination
+        allFilteredOrders = filteredOrders;
+        totalOrders = filteredOrders.length;
+        
+        // Reset to first page when filters change
+        currentPage = 1;
+        
+        // Update pagination and display current page
+        updatePaginationInfo();
+        renderCurrentPage();
         
     } catch (error) {
-        console.error('Error updating TMĐT orders detail table with filters:', error);
+        console.error('🔥 Error updating TMĐT orders detail table:', error);
         const tableBody = document.getElementById('tmdt-orders-detail-table');
         if (tableBody) {
             tableBody.innerHTML = `
                 <tr>
                     <td colspan="13" style="text-align: center; color: #dc3545; padding: 20px;">
                         <i class="fas fa-exclamation-triangle"></i><br>
-                        Lỗi tải dữ liệu đơn hàng
+                        Lỗi khi tải dữ liệu đơn hàng
                     </td>
                 </tr>
             `;
         }
+    }
+}
+
+// Render current page of orders
+async function renderCurrentPage() {
+    const tableBody = document.getElementById('tmdt-orders-detail-table');
+    if (!tableBody) return;
+    
+    // Clear existing rows
+    tableBody.innerHTML = '';
+    
+    // Get filtered orders (includes search and date filters)
+    const allFilteredOrders = getFilteredOrders();
+    const totalFilteredOrders = allFilteredOrders.length;
+    
+    if (totalFilteredOrders === 0) {
+        const message = searchTerm ? 
+            `<i class="fas fa-search"></i><br>Không tìm thấy đơn hàng nào phù hợp với "${searchTerm}"` :
+            `<i class="fas fa-inbox"></i><br>Không có đơn hàng TMĐT nào`;
+            
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="14" style="text-align: center; color: #666; padding: 20px;">
+                    ${message}
+                </td>
+            </tr>
+        `;
+        updatePaginationInfo(0, 0, 0);
+        return;
+    }
+    
+    // Calculate pagination
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = Math.min(startIndex + pageSize, totalFilteredOrders);
+    const pageOrders = allFilteredOrders.slice(startIndex, endIndex);
+    
+    // Populate table with filtered orders
+    let tableRows = '';
+    for (let i = 0; i < pageOrders.length; i++) {
+        const [orderId, order] = pageOrders[i];
+        const sellingPrice = parseFloat(order.sellingPrice || 0);
+        const importPrice = parseFloat(order.importPrice || 0);
+        const quantity = parseInt(order.quantity || 1);
+        const totalAmount = sellingPrice * quantity;
+        
+        // Base profit before fees
+        const baseProfit = (sellingPrice - importPrice) * quantity;
+        
+        // Use the same calculation as sales-orders-tmdt.js
+        let orderProfitData = await calculateOrderProfitWithPlatformFees({
+            sellingPrice: sellingPrice,
+            importPrice: importPrice,
+            quantity: quantity,
+            platform: order.platform,
+            storeId: order.storeId,
+            productType: order.productType,
+            weight: order.weight,
+            orderId: order.orderId
+        });
+        
+        let orderProfit = orderProfitData.finalProfit || orderProfitData; // Support both old and new format
+        const profitClass = orderProfit > 0 ? 'profit-positive' : 'profit-negative';
+        
+        // Platform display names
+        const platformNames = {
+            'shopee': 'Shopee',
+            'lazada': 'Lazada',
+            'tiktok': 'TikTok Shop',
+            'sendo': 'Sendo',
+            'tiki': 'Tiki',
+            'facebook': 'Facebook Shop',
+            'zalo': 'Zalo Shop',
+            'other': 'Khác'
+        };
+        
+        const platformDisplay = platformNames[order.platform] || order.platform || 'N/A';
+        
+        // Calculate actual row number based on current page
+        const actualRowNumber = startIndex + i + 1;
+        
+        const row = `
+            <tr>
+                <td>
+                    <input type="checkbox" class="order-checkbox" value="${orderId}" onchange="updateSelectedCount()">
+                </td>
+                <td>${actualRowNumber}</td>
+                <td title="${orderId}">${orderId}</td>
+                <td title="${order.productName || 'N/A'}">${order.productName || 'N/A'}</td>
+                <td title="${order.sku || 'N/A'}">${order.sku || 'N/A'}</td>
+                <td>${quantity}</td>
+                <td>${formatCurrency(importPrice)}</td>
+                <td>${formatCurrency(sellingPrice)}</td>
+                <td class="${profitClass}">${formatCurrency(orderProfit)}</td>
+                <td>${formatCurrency(totalAmount)}</td>
+                <td>${platformDisplay}</td>
+                <td>${resolveStoreName(order)}</td>
+                <td>${getOrderDate(order)}</td>
+                <td>
+                    <button type="button" class="btn-action btn-view-detail" onclick="viewOrderDetail('${orderId}')">
+                        <i class="fas fa-eye"></i> Xem
+                    </button>
+                </td>
+            </tr>
+        `;
+        tableRows += row;
+    }
+    
+    tableBody.innerHTML = tableRows;
+    
+    // Update pagination info with filtered results
+    updatePaginationInfo(startIndex + 1, endIndex, totalFilteredOrders);
+    
+    console.log(`Rendered page ${currentPage} with ${pageOrders.length} orders (${totalFilteredOrders} total filtered)`);
+}
+
+// Update pagination info and controls
+function updatePaginationInfo(startItem = null, endItem = null, totalFilteredOrders = null) {
+    // If parameters not provided, calculate from filtered orders
+    if (startItem === null || endItem === null || totalFilteredOrders === null) {
+        const filteredOrders = getFilteredOrders();
+        totalFilteredOrders = filteredOrders.length;
+        startItem = totalFilteredOrders === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+        endItem = Math.min(currentPage * pageSize, totalFilteredOrders);
+    }
+    
+    const totalPages = Math.ceil(totalFilteredOrders / pageSize);
+    
+    // Update pagination info text
+    const paginationInfo = document.getElementById('pagination-info');
+    if (paginationInfo) {
+        const searchText = searchTerm ? ` (tìm kiếm: "${searchTerm}")` : '';
+        paginationInfo.textContent = `Hiển thị ${startItem}-${endItem} của ${totalFilteredOrders} đơn hàng${searchText}`;
+    }
+    
+    // Update pagination controls
+    const prevBtn = document.getElementById('prev-page');
+    const nextBtn = document.getElementById('next-page');
+    
+    if (prevBtn) {
+        prevBtn.disabled = currentPage <= 1;
+    }
+    
+    if (nextBtn) {
+        nextBtn.disabled = currentPage >= totalPages;
+    }
+    
+    // Update page numbers
+    updatePageNumbers(totalPages);
+}
+
+// Update page numbers display
+function updatePageNumbers(totalPages) {
+    const paginationNumbers = document.getElementById('pagination-numbers');
+    if (!paginationNumbers) return;
+    
+    paginationNumbers.innerHTML = '';
+    
+    if (totalPages <= 1) return;
+    
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    // Adjust start page if we're near the end
+    if (endPage - startPage + 1 < maxVisiblePages) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    // Add first page and ellipsis if needed
+    if (startPage > 1) {
+        addPageNumber(1);
+        if (startPage > 2) {
+            addEllipsis();
+        }
+    }
+    
+    // Add visible page numbers
+    for (let i = startPage; i <= endPage; i++) {
+        addPageNumber(i);
+    }
+    
+    // Add ellipsis and last page if needed
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            addEllipsis();
+        }
+        addPageNumber(totalPages);
+    }
+}
+
+// Add page number button
+function addPageNumber(pageNum) {
+    const paginationNumbers = document.getElementById('pagination-numbers');
+    const pageBtn = document.createElement('button');
+    pageBtn.type = 'button';
+    pageBtn.className = `page-number ${pageNum === currentPage ? 'active' : ''}`;
+    pageBtn.textContent = pageNum;
+    pageBtn.onclick = () => goToPage(pageNum);
+    paginationNumbers.appendChild(pageBtn);
+}
+
+// Add ellipsis
+function addEllipsis() {
+    const paginationNumbers = document.getElementById('pagination-numbers');
+    const ellipsis = document.createElement('span');
+    ellipsis.className = 'page-ellipsis';
+    ellipsis.textContent = '...';
+    paginationNumbers.appendChild(ellipsis);
+}
+
+// Change page
+function changePage(direction) {
+    const totalPages = Math.ceil(totalOrders / pageSize);
+    const newPage = currentPage + direction;
+    
+    if (newPage >= 1 && newPage <= totalPages) {
+        goToPage(newPage);
+    }
+}
+
+// Go to specific page
+function goToPage(pageNum) {
+    const totalPages = Math.ceil(totalOrders / pageSize);
+    
+    if (pageNum >= 1 && pageNum <= totalPages) {
+        currentPage = pageNum;
+        updatePaginationInfo();
+        renderCurrentPage();
+    }
+}
+
+// Change page size
+function changePageSize() {
+    const pageSizeSelect = document.getElementById('page-size');
+    if (pageSizeSelect) {
+        pageSize = parseInt(pageSizeSelect.value);
+        currentPage = 1; // Reset to first page
+        updatePaginationInfo();
+        renderCurrentPage();
     }
 }
 
@@ -4291,8 +4880,8 @@ async function calculateOrderProfitWithPlatformFees(order) {
     // Base profit before fees
     const baseProfit = (sellingPrice - importPrice) * quantity;
     
-    // Get platform fees from settings (using localStorage like sales-orders-tmdt.js)
-    const platformFees = getPlatformFeesFromStorageSync(order.platform);
+    // Get platform fees from Firebase (using async function like updated version)
+    const platformFees = await getPlatformFeesFromStorage(order.platform);
     
     if (!platformFees || Object.keys(platformFees).length === 0) {
         // Calculate packaging costs even if no platform fees
@@ -4406,7 +4995,80 @@ async function calculateOrderProfitWithPlatformFees(order) {
         weight: order.weight
     });
     
-    return finalProfit;
+    // Return detailed breakdown for Excel export
+    const result = {
+        finalProfit: finalProfit,
+        baseProfit: baseProfit,
+        totalFees: totalFees,
+        packagingCosts: packagingCosts,
+        externalCosts: externalCosts,
+        // Individual fee breakdown
+        transactionFee: 0,
+        commissionFee: 0,
+        actualShippingFee: 0,
+        shippingDiscount: 0,
+        sellerShippingDiscount: 0,
+        tiktokShippingDiscount: 0,
+        returnShippingFee: 0,
+        shippingSubsidy: 0,
+        affiliateCommission: 0,
+        voucherXtraFee: 0,
+        vatTax: 0,
+        personalIncomeTax: 0,
+        sellerDiscount: 0,
+        otherFees: 0
+    };
+    
+    // Calculate individual fees if platformFees exist
+    if (platformFees && Object.keys(platformFees).length > 0) {
+        const totalRevenue = sellingPrice * quantity;
+        
+        // Transaction fee
+        if (platformFees.transactionFee) {
+            if (platformFees.transactionFee.type === 'percent') {
+                result.transactionFee = totalRevenue * (platformFees.transactionFee.value / 100);
+            } else {
+                result.transactionFee = platformFees.transactionFee.value || 0;
+            }
+        }
+        
+        // Commission fee
+        if (platformFees.commissionFee) {
+            if (platformFees.commissionFee.type === 'percent') {
+                result.commissionFee = totalRevenue * (platformFees.commissionFee.value / 100);
+            } else {
+                result.commissionFee = platformFees.commissionFee.value || 0;
+            }
+        }
+        
+        // Add other fees with proper mapping
+        const feeMapping = {
+            actualShippingFee: 'actualShippingFee',
+            shippingDiscount: 'shippingDiscount', 
+            sellerShippingDiscount: 'sellerShippingDiscount',
+            tiktokShippingDiscount: 'tiktokShippingDiscount',
+            returnShippingFee: 'returnShippingFee',
+            shippingSubsidy: 'shippingSubsidy',
+            affiliateCommission: 'affiliateCommission',
+            voucherXtraFee: 'voucherXtraFee',
+            vatTax: 'vatTax',
+            personalIncomeTax: 'personalIncomeTax',
+            sellerDiscount: 'sellerDiscount',
+            otherFees: 'otherFees'
+        };
+        
+        Object.entries(feeMapping).forEach(([resultKey, configKey]) => {
+            if (platformFees[configKey]) {
+                if (platformFees[configKey].type === 'percent') {
+                    result[resultKey] = totalRevenue * (platformFees[configKey].value / 100);
+                } else {
+                    result[resultKey] = platformFees[configKey].value || 0;
+                }
+            }
+        });
+    }
+    
+    return result;
 }
 
 // Get platform fees from localStorage (same as sales-orders-tmdt.js)
@@ -4749,7 +5411,9 @@ async function saveExternalCosts() {
         if (typeof updateTmdtOrdersDetailTableWithFilters === 'function') {
             const platform = document.getElementById('platform-select').value || 'all';
             const store = document.getElementById('store-select').value || 'all';
-            await updateTmdtOrdersDetailTableWithFilters(platform, store);
+            const dateFrom = document.getElementById('date-from')?.value;
+            const dateTo = document.getElementById('date-to')?.value;
+            await updateTmdtOrdersDetailTableWithFilters(platform, store, dateFrom, dateTo);
         }
     } catch (error) {
         console.error('Error saving external costs:', error);
@@ -4850,18 +5514,18 @@ function debugPlatformFees() {
             feeDetails = `
                 <div class="fee-item">
                     <span class="fee-name">Phí Giao Dịch (5%)</span>
-                    <span class="fee-amount">-${formatCurrency(totalFees * 0.5)}₫</span>
+                    <span class="fee-amount">-${formatCurrency(totalFees * 0.5)}</span>
                 </div>
                 <div class="fee-item">
                     <span class="fee-name">Phí Hoa Hồng (5%)</span>
-                    <span class="fee-amount">-${formatCurrency(totalFees * 0.5)}₫</span>
+                    <span class="fee-amount">-${formatCurrency(totalFees * 0.5)}</span>
                 </div>
             `;
         }
         feeDetails = `
             <div class="fee-item">
                 <span class="fee-name">Phí Sàn TMĐT</span>
-                <span class="fee-amount">-${formatCurrency(totalFees)}₫</span>
+                <span class="fee-amount">-${formatCurrency(totalFees)}</span>
             </div>
         `;
     }).catch(error => {
@@ -4908,6 +5572,92 @@ function showOverviewContent() {
     if (chartsSection) {
         chartsSection.style.display = 'block';
     }
+    
+    // Show all stat cards for overview
+    showAllStatCards();
+}
+
+// Show only TMĐT-related content
+function showTmdtOnlyContent() {
+    console.log('Showing TMĐT only content');
+    
+    // Hide overview view and show TMĐT view
+    const overviewView = document.getElementById('overview-view');
+    const tmdtView = document.getElementById('tmdt-view');
+    const wholesaleView = document.getElementById('wholesale-view');
+    const retailView = document.getElementById('retail-view');
+    const packagingView = document.getElementById('packaging-view');
+    
+    // Hide all other views
+    if (overviewView) overviewView.style.display = 'none';
+    if (wholesaleView) wholesaleView.style.display = 'none';
+    if (retailView) retailView.style.display = 'none';
+    if (packagingView) packagingView.style.display = 'none';
+    
+    // Show TMĐT view
+    if (tmdtView) {
+        tmdtView.style.display = 'block';
+    }
+    
+    // Show analysis sections and charts
+    const analysisSections = document.querySelectorAll('.analysis-section');
+    const chartsSection = document.querySelector('.charts-section');
+    
+    analysisSections.forEach(section => {
+        section.style.display = 'block';
+    });
+    
+    if (chartsSection) {
+        chartsSection.style.display = 'block';
+    }
+}
+
+// Helper functions to show/hide specific stat cards
+function showAllStatCards() {
+    const statCards = document.querySelectorAll('.stat-card');
+    statCards.forEach(card => {
+        card.style.display = 'block';
+    });
+}
+
+function hideTotalStatCard() {
+    const totalElement = document.getElementById('total-profit');
+    if (totalElement) {
+        const totalCard = totalElement.closest('.stat-card');
+        if (totalCard) {
+            totalCard.style.display = 'none';
+        }
+    }
+}
+
+function hideWholesaleStatCard() {
+    const wholesaleElement = document.getElementById('wholesale-profit');
+    if (wholesaleElement) {
+        const wholesaleCard = wholesaleElement.closest('.stat-card');
+        if (wholesaleCard) {
+            wholesaleCard.style.display = 'none';
+        }
+    }
+}
+
+function hideRetailStatCard() {
+    const retailElement = document.getElementById('retail-profit');
+    if (retailElement) {
+        const retailCard = retailElement.closest('.stat-card');
+        if (retailCard) {
+            retailCard.style.display = 'none';
+        }
+    }
+}
+
+function showTmdtStatCard() {
+    const tmdtElement = document.getElementById('tmdt-profit');
+    if (tmdtElement) {
+        const tmdtCard = tmdtElement.closest('.stat-card');
+        if (tmdtCard) {
+            tmdtCard.style.display = 'block';
+        }
+    }
 }
 
 // Load packaging configuration data
@@ -4925,11 +5675,426 @@ function loadPackagingConfigData() {
     }
 }
 
+// Filter orders by date range
+function filterOrdersByDate() {
+    const dateFrom = document.getElementById('date-from')?.value;
+    const dateTo = document.getElementById('date-to')?.value;
+    
+    console.log('Date filter changed:', { dateFrom, dateTo });
+    
+    // Refresh data with current filters
+    const storeFilter = document.getElementById('store-select')?.value || 'all';
+    const platformFilter = document.getElementById('platform-select')?.value || 'all';
+    
+    // Apply all filters and refresh statistics
+    updateTmdtStatistics(platformFilter, storeFilter, dateFrom, dateTo);
+}
+
+// Clear date filter
+function clearDateFilter() {
+    const dateFrom = document.getElementById('date-from');
+    const dateTo = document.getElementById('date-to');
+    
+    if (dateFrom) dateFrom.value = '';
+    if (dateTo) dateTo.value = '';
+    
+    // Clear date filter and refresh data
+    filterOrdersByDate();
+}
+
+// Search functionality
+let searchTerm = '';
+let allTmdtOrders = null;
+let dateFrom = null;
+let dateTo = null;
+
+function searchOrders() {
+    const searchInput = document.getElementById('order-search-input');
+    const clearBtn = document.getElementById('clear-search-btn');
+    const resultsInfo = document.getElementById('search-results-count');
+    
+    searchTerm = searchInput.value.toLowerCase().trim();
+    
+    // Show/hide clear button
+    if (searchTerm) {
+        clearBtn.style.display = 'block';
+    } else {
+        clearBtn.style.display = 'none';
+    }
+    
+    // Reset to first page when searching
+    currentPage = 1;
+    
+    // Apply search and render
+    renderCurrentPage();
+    
+    // Update search results info
+    updateSearchResultsInfo();
+}
+
+function clearSearch() {
+    const searchInput = document.getElementById('order-search-input');
+    const clearBtn = document.getElementById('clear-search-btn');
+    const resultsInfo = document.getElementById('search-results-count');
+    
+    if (searchInput) searchInput.value = '';
+    searchTerm = '';
+    if (clearBtn) clearBtn.style.display = 'none';
+    if (resultsInfo) resultsInfo.innerHTML = '';
+    
+    // Reset to first page
+    currentPage = 1;
+    
+    // Re-render without search filter
+    renderCurrentPage();
+}
+
+function updateSearchResultsInfo() {
+    const resultsInfo = document.getElementById('search-results-count');
+    
+    if (searchTerm) {
+        const filteredCount = getFilteredOrders().length;
+        resultsInfo.innerHTML = `<span>Tìm thấy ${filteredCount} kết quả cho "${searchTerm}"</span>`;
+    } else {
+        resultsInfo.innerHTML = '';
+    }
+}
+
+function getFilteredOrders() {
+    console.log('🔍 getFilteredOrders called');
+    
+    // Use global data sources with fallback
+    const ordersData = allTmdtOrders || window.tmdtOrdersData || {};
+    if (!ordersData || Object.keys(ordersData).length === 0) {
+        console.log('🔍 No TMĐT orders available for filtering');
+        return [];
+    }
+
+    console.log('🔍 Starting with', Object.keys(ordersData).length, 'total orders');
+    
+    let filtered = Object.entries(ordersData);
+    
+    // Apply search date filter if dates are set
+    const searchDateFrom = document.getElementById('search-date-from');
+    const searchDateTo = document.getElementById('search-date-to');
+    
+    if (searchDateFrom && searchDateTo && (searchDateFrom.value || searchDateTo.value)) {
+        console.log('🔍 Search date filter - From:', searchDateFrom.value, 'To:', searchDateTo.value);
+        
+        filtered = filtered.filter(([orderId, order]) => {
+            // Try multiple date formats and fields
+            let orderDateString = order.createdAt || order.timestamp || order.date || order.orderDate;
+            
+            // If date is in DD/MM/YYYY format, convert to YYYY-MM-DD
+            if (orderDateString && typeof orderDateString === 'string') {
+                if (orderDateString.includes('/')) {
+                    const parts = orderDateString.split('/');
+                    if (parts.length === 3) {
+                        // Assume DD/MM/YYYY format
+                        orderDateString = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                    }
+                }
+            }
+            
+            const orderDate = new Date(orderDateString);
+            console.log('🔍 Order date for', orderId, ':', orderDate, 'Raw:', order.createdAt || order.timestamp || order.date, 'Converted:', orderDateString);
+            
+            // Skip invalid dates
+            if (isNaN(orderDate.getTime())) {
+                console.log('🔍 Invalid date, skipping filter for', orderId);
+                return true; // Don't filter out orders with invalid dates
+            }
+            
+            let passesFilter = true;
+            
+            if (searchDateFrom.value) {
+                const fromDate = new Date(searchDateFrom.value);
+                fromDate.setHours(0, 0, 0, 0);
+                passesFilter = passesFilter && orderDate >= fromDate;
+                console.log('🔍 From date check:', orderDate.toDateString(), '>=', fromDate.toDateString(), '=', passesFilter);
+            }
+            
+            if (searchDateTo.value) {
+                const toDate = new Date(searchDateTo.value);
+                toDate.setHours(23, 59, 59, 999);
+                passesFilter = passesFilter && orderDate <= toDate;
+                console.log('🔍 To date check:', orderDate.toDateString(), '<=', toDate.toDateString(), '=', passesFilter);
+            }
+            
+            return passesFilter;
+        });
+        
+        console.log('🔍 After search date filter:', filtered.length, 'orders');
+    }
+    
+    // Apply main date filter if dates are set (from top filter)
+    if (dateFrom && dateTo && dateFrom.value && dateTo.value) {
+        const fromDate = new Date(dateFrom.value);
+        const toDate = new Date(dateTo.value);
+        toDate.setHours(23, 59, 59, 999); // Include full end date
+        
+        filtered = filtered.filter(([orderId, order]) => {
+            const orderDate = new Date(order.createdAt || order.timestamp);
+            return orderDate >= fromDate && orderDate <= toDate;
+        });
+        
+        console.log('🔍 After main date filter:', filtered.length, 'orders');
+    }
+    
+    // Apply search filter if search term exists
+    if (searchTerm) {
+        console.log('🔍 Applying search filter for:', searchTerm);
+        
+        filtered = filtered.filter(([orderId, order]) => {
+            const productName = (order.productName || '').toLowerCase();
+            const sku = (order.sku || '').toLowerCase();
+            const orderIdLower = orderId.toLowerCase();
+            
+            return productName.includes(searchTerm) || 
+                   sku.includes(searchTerm) || 
+                   orderIdLower.includes(searchTerm);
+        });
+        console.log('🔍 After search filter:', filtered.length, 'orders');
+    }
+    
+    return filtered;
+}
+
+// Clear date filter function for search
+function clearDateFilter() {
+    const searchDateFrom = document.getElementById('search-date-from');
+    const searchDateTo = document.getElementById('search-date-to');
+    
+    if (searchDateFrom) searchDateFrom.value = '';
+    if (searchDateTo) searchDateTo.value = '';
+    
+    // Refresh search results
+    searchOrders();
+}
+
+// Export detailed profit report to Excel
+async function exportProfitReport() {
+    console.log('📊 Starting profit report export...');
+    
+    // Debug current store
+    const currentStoreId = getCurrentStore();
+    console.log('🏪 EXPORT: Current store ID:', currentStoreId);
+    
+    // Get filtered orders based on current search/date filters
+    const filteredOrders = getFilteredOrders();
+    
+    if (filteredOrders.length === 0) {
+        alert('Không có đơn hàng nào để xuất báo cáo!');
+        return;
+    }
+    
+    // Get date range for report title
+    const searchDateFrom = document.getElementById('search-date-from');
+    const searchDateTo = document.getElementById('search-date-to');
+    let dateRangeText = '';
+    
+    if (searchDateFrom?.value && searchDateTo?.value) {
+        dateRangeText = `từ ${searchDateFrom.value} đến ${searchDateTo.value}`;
+    } else if (searchDateFrom?.value) {
+        dateRangeText = `từ ${searchDateFrom.value}`;
+    } else if (searchDateTo?.value) {
+        dateRangeText = `đến ${searchDateTo.value}`;
+    } else {
+        dateRangeText = 'tất cả thời gian';
+    }
+    
+    // Prepare Excel data
+    const excelData = [];
+    let totalRevenue = 0;
+    let totalCost = 0;
+    let totalPlatformFees = 0;
+    let totalPackagingCost = 0;
+    let totalExternalCosts = 0;
+    let totalProfit = 0;
+    
+    // Create headers with all detailed cost columns
+    const headers = [
+        'STT', 'Mã ĐH', 'Sản Phẩm', 'SKU', 'Số Lượng', 
+        'Giá Nhập (VNĐ)', 'Giá Bán (VNĐ)', 'Lợi Nhuận Gộp', 'Tổng Tiền', 
+        'Sàn TMĐT', 'Cửa Hàng', 'Ngày Tạo', 
+        'Chi Phí Đóng Gói', 'Phí Giao Dịch', 'Phí Hoa Hồng', 'Phí Vận Chuyển Thực Tế',
+        'Chiết Khấu Phí VC', 'Giảm Phí VC Người Bán', 'Giảm Phí VC TikTok Shop', 'Phí VC Trả Hàng',
+        'Trợ Giá Vận Chuyển', 'Hoa Hồng Liên Kết', 'Phí Voucher Xtra', 'Thuế GTGT',
+        'Thuế TNCN', 'Giảm Giá Người Bán', 'Phí Khác', 'Chi Phí Nhân Viên',
+        'Chi Phí Thuê Mặt Bằng', 'Chi Phí Điện Nước', 'Chi Phí Bảo Hiểm', 'Chi Phí Thiết Bị',
+        'Chi Phí Marketing', 'Chi Phí Vận Chuyển', 'Chi Phí Lưu Kho', 'Chi Phí Hành Chính',
+        'Tổng Chi Phí', 'Lợi Nhuận Thực'
+    ];
+    
+    // Add header row
+    excelData.push(headers);
+    
+    // Process each order
+    for (let index = 0; index < filteredOrders.length; index++) {
+        const [orderId, order] = filteredOrders[index];
+        const quantity = parseInt(order.quantity) || 1;
+        const importPrice = parseFloat(order.importPrice) || 0;
+        const sellingPrice = parseFloat(order.sellingPrice) || 0;
+        const grossProfit = (sellingPrice - importPrice) * quantity;
+        const totalAmount = sellingPrice * quantity;
+        
+        // Calculate packaging cost
+        const packagingCost = calculatePackagingCost(order.productType || 'dry', order.weight || 1) || 0;
+        
+        // Ensure order has current store ID for proper external costs calculation
+        const currentStoreId = getCurrentStore();
+        const orderWithStore = {
+            ...order,
+            storeId: order.storeId || currentStoreId
+        };
+        
+        console.log(`🔍 EXPORT Order ${index + 1}: storeId=${orderWithStore.storeId}, orderId=${orderId}`);
+        
+        // Calculate platform fees using the same function as dashboard
+        const profitData = await calculateOrderProfitWithPlatformFees(orderWithStore);
+        console.log(`💰 EXPORT Order ${index + 1} profitData:`, profitData);
+        
+        // Extract individual fees for detailed breakdown
+        const transactionFee = profitData.transactionFee || 0;
+        const commissionFee = profitData.commissionFee || 0;
+        const actualShippingFee = profitData.actualShippingFee || 0;
+        const shippingDiscount = profitData.shippingDiscount || 0;
+        const sellerShippingDiscount = profitData.sellerShippingDiscount || 0;
+        const tiktokShippingDiscount = profitData.tiktokShippingDiscount || 0;
+        const returnShippingFee = profitData.returnShippingFee || 0;
+        const shippingSubsidy = profitData.shippingSubsidy || 0;
+        const affiliateCommission = profitData.affiliateCommission || 0;
+        const voucherXtraFee = profitData.voucherXtraFee || 0;
+        const vatTax = profitData.vatTax || 0;
+        const incomeTax = profitData.personalIncomeTax || 0;
+        const sellerDiscount = profitData.sellerDiscount || 0;
+        const otherFees = profitData.otherFees || 0;
+        
+        // Calculate total platform fees
+        const totalPlatformFeesForOrder = transactionFee + commissionFee + actualShippingFee + 
+            returnShippingFee + affiliateCommission + voucherXtraFee + vatTax + incomeTax + 
+            sellerDiscount + otherFees - shippingDiscount - sellerShippingDiscount - 
+            tiktokShippingDiscount - shippingSubsidy;
+        
+        // Get external costs from profitData
+        const externalCosts = profitData.externalCosts || 0;
+        
+        // Calculate real profit after all costs - ensure it's a valid number
+        const realProfit = (typeof profitData.finalProfit === 'number' && !isNaN(profitData.finalProfit)) 
+            ? profitData.finalProfit 
+            : (typeof profitData === 'number' && !isNaN(profitData)) 
+                ? profitData 
+                : 0;
+        
+        console.log(`💰 EXPORT Order ${index + 1} realProfit: ${realProfit}, type: ${typeof realProfit}`);
+        
+        const totalCosts = packagingCost + totalPlatformFeesForOrder + externalCosts;
+        
+        // Format date
+        let orderDate = order.createdAt || order.timestamp || order.date || '';
+        if (orderDate && typeof orderDate === 'string' && orderDate.includes('/')) {
+            const parts = orderDate.split('/');
+            if (parts.length === 3) {
+                orderDate = `${parts[0]}/${parts[1]}/${parts[2]}`;
+            }
+        }
+        
+        // Create row data with all cost details
+        const rowData = [
+            index + 1, // STT
+            orderId,
+            order.productName || 'N/A',
+            order.sku || 'N/A',
+            quantity,
+            formatCurrency(importPrice),
+            formatCurrency(sellingPrice),
+            formatCurrency(grossProfit),
+            formatCurrency(totalAmount),
+            order.platformName || order.platform || 'N/A',
+            order.storeName || 'N/A',
+            formatDate(order.orderDate),
+            formatCurrency(packagingCost),
+            formatCurrency(transactionFee),
+            formatCurrency(commissionFee),
+            formatCurrency(actualShippingFee), // Phí Vận Chuyển Thực Tế
+            formatCurrency(shippingDiscount), // Chiết Khấu Phí VC
+            formatCurrency(sellerShippingDiscount), // Giảm Phí VC Người Bán
+            formatCurrency(tiktokShippingDiscount), // Giảm Phí VC TikTok Shop
+            formatCurrency(returnShippingFee), // Phí VC Trả Hàng
+            formatCurrency(shippingSubsidy), // Trợ Giá Vận Chuyển
+            formatCurrency(affiliateCommission), // Hoa Hồng Liên Kết
+            formatCurrency(voucherXtraFee), // Phí Voucher Xtra
+            formatCurrency(vatTax), // Thuế GTGT
+            formatCurrency(incomeTax), // Thuế TNCN
+            formatCurrency(sellerDiscount), // Giảm Giá Người Bán
+            formatCurrency(otherFees), // Phí Khác
+            formatCurrency(externalCosts), // Chi Phí Nhân Viên (tổng external costs)
+            formatCurrency(0), // Chi Phí Thuê Mặt Bằng
+            formatCurrency(0), // Chi Phí Điện Nước
+            formatCurrency(0), // Chi Phí Bảo Hiểm
+            formatCurrency(0), // Chi Phí Thiết Bị
+            formatCurrency(0), // Chi Phí Marketing
+            formatCurrency(0), // Chi Phí Vận Chuyển
+            formatCurrency(0), // Chi Phí Lưu Kho
+            formatCurrency(0), // Chi Phí Hành Chính
+            formatCurrency(totalCosts),
+            formatCurrency(realProfit)
+        ];
+        
+        excelData.push(rowData);
+        
+        // Add to totals - ensure all values are valid numbers
+        totalRevenue += totalAmount;
+        totalCost += importPrice * quantity;
+        totalPlatformFees += totalPlatformFeesForOrder;
+        totalPackagingCost += packagingCost;
+        totalExternalCosts += externalCosts;
+        totalProfit += (typeof realProfit === 'number' && !isNaN(realProfit)) ? realProfit : 0;
+        
+        console.log(`📊 EXPORT Running totals after order ${index + 1}: totalProfit=${totalProfit}`);
+    }
+    
+    // Add summary rows
+    excelData.push([]);
+    excelData.push(['TỔNG KẾT']);
+    excelData.push(['Tổng số đơn hàng:', filteredOrders.length]);
+    excelData.push(['Tổng doanh thu:', totalRevenue.toLocaleString('vi-VN') + ' VNĐ']);
+    excelData.push(['Tổng giá nhập:', totalCost.toLocaleString('vi-VN') + ' VNĐ']);
+    excelData.push(['Tổng phí sàn:', totalPlatformFees.toLocaleString('vi-VN') + ' VNĐ']);
+    excelData.push(['Tổng chi phí đóng gói:', totalPackagingCost.toLocaleString('vi-VN') + ' VNĐ']);
+    excelData.push(['Tổng chi phí khác:', totalExternalCosts.toLocaleString('vi-VN') + ' VNĐ']);
+    // Ensure totalProfit is a valid number before formatting
+    const finalTotalProfit = (typeof totalProfit === 'number' && !isNaN(totalProfit)) ? totalProfit : 0;
+    console.log(`📊 EXPORT Final totalProfit: ${finalTotalProfit}, original: ${totalProfit}`);
+    excelData.push(['Tổng lợi nhuận thực:', finalTotalProfit.toLocaleString('vi-VN') + ' VNĐ']);
+    
+    // Create and download Excel file
+    const ws = XLSX.utils.aoa_to_sheet(excelData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Báo Cáo Lợi Nhuận TMĐT');
+    
+    // Generate filename with date range
+    const now = new Date();
+    const timestamp = now.toISOString().slice(0, 10);
+    const filename = `Bao_Cao_Loi_Nhuan_TMDT_${dateRangeText.replace(/[\/\s]/g, '_')}_${timestamp}.xlsx`;
+    
+    XLSX.writeFile(wb, filename);
+    
+    console.log('📊 Export completed:', filename);
+    alert(`Đã xuất báo cáo thành công!\nFile: ${filename}\nSố đơn hàng: ${filteredOrders.length}\nTổng lợi nhuận: ${finalTotalProfit.toLocaleString('vi-VN')} VNĐ`);
+}
+
 window.toggleFeeInput = toggleFeeInput;
 window.changeFeeType = changeFeeType;
+window.filterOrdersByDate = filterOrdersByDate;
+window.clearDateFilter = clearDateFilter;
 window.changeCustomFeeType = changeCustomFeeType;
 window.onPlatformChange = onPlatformChange;
 window.loadSavedFeesForPlatform = loadSavedFeesForPlatformWithCustom;
+window.changePage = changePage;
+window.goToPage = goToPage;
+window.changePageSize = changePageSize;
+window.exportProfitReport = exportProfitReport;
 window.resetAllFees = resetAllFees;
 window.savePlatformFees = savePlatformFees;
 window.showAddFeeForm = showAddFeeForm;
@@ -4938,3 +6103,28 @@ window.hideAddFeeForm = hideAddFeeForm;
 window.addCustomFee = addCustomFee;
 window.removeCustomFee = removeCustomFee;
 window.clearCustomFees = clearCustomFees;
+// Test function to debug search
+function testSearchFunction() {
+    console.log('🧪 Testing search function...');
+    console.log('🧪 allTmdtOrders:', allTmdtOrders);
+    console.log('🧪 searchTerm:', searchTerm);
+    
+    if (allTmdtOrders) {
+        const orders = Object.entries(allTmdtOrders);
+        console.log('🧪 Sample order data:');
+        orders.slice(0, 2).forEach(([orderId, order]) => {
+            console.log(`🧪 Order ${orderId}:`, {
+                productName: order.productName,
+                sku: order.sku,
+                orderId: orderId
+            });
+        });
+    }
+    
+    const filtered = getFilteredOrders();
+    console.log('🧪 Filtered results:', filtered);
+}
+
+window.searchOrders = searchOrders;
+window.clearSearch = clearSearch;
+window.testSearchFunction = testSearchFunction;

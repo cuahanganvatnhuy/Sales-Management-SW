@@ -1,5 +1,46 @@
 /* Profit Management Styles */
 
+/* Top Products Table Styling */
+#tmdt-top-products {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+#tmdt-top-products th,
+#tmdt-top-products td {
+    padding: 12px 8px;
+    border-bottom: 1px solid #e9ecef;
+    vertical-align: middle;
+}
+
+#tmdt-top-products th {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+    font-weight: 600;
+    text-align: center;
+    font-size: 14px;
+}
+
+#tmdt-top-products td:first-child {
+    max-width: 300px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    line-height: 1.4;
+}
+
+#tmdt-top-products tr:hover {
+    background-color: #f8f9fa;
+}
+
+#tmdt-top-products .text-right {
+    text-align: right;
+}
+
+#tmdt-top-products .text-center {
+    text-align: center;
+}
+
 /* External Costs Button */
 .btn-external-costs {
     background: linear-gradient(135deg, #28a745, #20c997);
@@ -997,6 +1038,17 @@ body {
     gap: 8px;
 }
 
+/* Pagination Styles */
+.pagination-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 0 25px;
+    border-radius: 8px;
+    margin-bottom: 3px;
+  
+}
+
 .fee-item {
     display: flex;
     justify-content: space-between;
@@ -1376,6 +1428,25 @@ body {
     font-weight: 600;
 }
 
+.platform-select-group select {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background: white;
+    font-size: 14px;
+    min-width: 150px;
+}
+
+.platform-select-group .date-input {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background: white;
+    font-size: 14px;
+    min-width: 150px;
+    color: #333;
+}
+
 .chart-controls select {
     padding: 8px 15px;
     border: 2px solid #dee2e6;
@@ -1439,6 +1510,7 @@ body {
     overflow-x: auto;
     border-radius: 10px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    margin: 20px 0;
 }
 
 .profit-table {
@@ -1473,6 +1545,292 @@ body {
 
 .profit-table .text-center {
     text-align: center;
+}
+
+/* TMĐT Top Products Table Styles */
+.analysis-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+.analysis-table th {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+    padding: 12px 8px;
+    text-align: center;
+    font-weight: 600;
+    border: 1px solid #ddd;
+}
+
+.analysis-table td {
+    padding: 10px 8px;
+    border: 1px solid #ddd;
+    word-wrap: break-word;
+    max-width: 200px;
+}
+
+.analysis-table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.analysis-table .text-center {
+    text-align: center;
+}
+
+.analysis-table .text-right {
+    text-align: right;
+}
+
+/* TMĐT Orders Detail Table Styles */
+#tmdt-orders-detail-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: center;
+}
+
+#tmdt-orders-detail-table th {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+    padding: 12px 8px;
+    text-align: center;
+    font-weight: 600;
+    border: 1px solid #ddd;
+    font-size: 13px;
+}
+
+#tmdt-orders-detail-table td {
+    padding: 8px 6px;
+    border: 1px solid #ddd;
+    font-size: 13px;
+    vertical-align: middle;
+}
+
+#tmdt-orders-detail-table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* Rút gọn cột Mã ĐH */
+#tmdt-orders-detail-table td:nth-child(3) {
+    max-width: 120px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Rút gọn cột Sản Phẩm */
+#tmdt-orders-detail-table td:nth-child(4) {
+    max-width: 150px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Rút gọn cột SKU */
+#tmdt-orders-detail-table td:nth-child(5) {
+    max-width: 100px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Tooltip cho text bị cắt */
+#tmdt-orders-detail-table td[title] {
+    cursor: help;
+}
+
+#tmdt-orders-detail-table .text-center {
+    text-align: center;
+}
+
+#tmdt-orders-detail-table .text-right {
+    text-align: right;
+}
+
+/* Search Container Styles */
+.search-container {
+    margin: 20px 0;
+    padding: 0;
+}
+
+.search-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+
+    margin: 0 auto;
+}
+
+.search-icon {
+    position: absolute;
+    left: 15px;
+    color: #6c757d;
+    font-size: 16px;
+    z-index: 2;
+}
+
+#order-search-input {
+    width: 100%;
+    padding: 12px 15px 12px 45px;
+    border: 2px solid #e9ecef;
+    border-radius: 25px;
+    font-size: 14px;
+    background: white;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+#order-search-input:focus {
+    border-color: #28a745;
+    box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1);
+}
+
+#order-search-input::placeholder {
+    color: #6c757d;
+    font-style: italic;
+}
+
+.clear-search-btn {
+    position: absolute;
+    right: 10px;
+    background: none;
+    border: none;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    z-index: 2;
+}
+
+.clear-search-btn:hover {
+    background-color: #f8f9fa;
+    color: #dc3545;
+}
+
+/* Search filters */
+.search-filters {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-top: 12px;
+    padding: 12px;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    flex-wrap: wrap;
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.filter-group label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #495057;
+    white-space: nowrap;
+}
+
+.search-date-input {
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    font-size: 14px;
+    background: white;
+    transition: all 0.2s ease;
+    min-width: 140px;
+    cursor: pointer;
+}
+
+.search-date-input::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+    opacity: 0.7;
+}
+
+.search-date-input::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+}
+
+.search-date-input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.clear-date-filter-btn {
+    padding: 8px 12px;
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.clear-date-filter-btn:hover {
+    background: #c82333;
+    transform: translateY(-1px);
+}
+
+.clear-date-filter-btn:active {
+    transform: translateY(0);
+}
+
+.search-results-info {
+    text-align: center;
+    margin-top: 10px;
+    font-size: 14px;
+    color: #6c757d;
+}
+
+.search-results-info span {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-weight: 500;
+}
+
+/* Responsive search */
+@media (max-width: 768px) {
+    .search-box {
+        max-width: 100%;
+    }
+    
+    #order-search-input {
+        font-size: 16px; /* Prevents zoom on iOS */
+    }
+    
+    .search-filters {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+    
+    .filter-group {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 6px;
+    }
+    
+    .search-date-input {
+        min-width: auto;
+        width: 100%;
+    }
 }
 
 /* Monthly Comparison */
@@ -2204,5 +2562,149 @@ body {
     to {
         opacity: 1;
         transform: translateY(0);
+    }
+}
+.platform-actions {
+    display: flex;
+    margin-top: 9px;
+    justify-content: end;
+}
+
+/* Pagination Styles */
+.pagination-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 20px;
+    padding: 15px 0;
+    border-top: 1px solid #e0e0e0;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.pagination-info {
+    color: #666;
+    font-size: 14px;
+    min-width: 150px;
+}
+
+.pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.pagination-btn {
+    background: #fff;
+    border: 1px solid #ddd;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #333;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    background: #f5f5f5;
+    border-color: #007bff;
+    color: #007bff;
+}
+
+.pagination-btn:disabled {
+    background: #f8f9fa;
+    color: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.pagination-numbers {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+}
+
+.page-number {
+    background: #fff;
+    border: 1px solid #ddd;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #333;
+    transition: all 0.3s ease;
+    min-width: 40px;
+    text-align: center;
+}
+
+.page-number:hover {
+    background: #f5f5f5;
+    border-color: #007bff;
+    color: #007bff;
+}
+
+.page-number.active {
+    background: #007bff;
+    border-color: #007bff;
+    color: white;
+}
+
+.page-ellipsis {
+    padding: 8px 4px;
+    color: #666;
+    font-size: 14px;
+}
+
+.pagination-size {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #666;
+}
+
+.pagination-size select {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 6px 8px;
+    font-size: 14px;
+    background: white;
+    cursor: pointer;
+}
+
+.pagination-size select:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+/* Responsive pagination */
+@media (max-width: 768px) {
+    .pagination-container {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .pagination-controls {
+        order: 2;
+    }
+    
+    .pagination-info {
+        order: 1;
+        text-align: center;
+        min-width: auto;
+    }
+    
+    .pagination-size {
+        order: 3;
+        justify-content: center;
+    }
+    
+    .pagination-numbers {
+        flex-wrap: wrap;
+        justify-content: center;
     }
 }
