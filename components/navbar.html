@@ -216,11 +216,38 @@ span.titlle {
                 <span>Quản Lý Đơn Hàng Bán</span>
             </a>
         </li>
-        <li id="nav-profit-management">
-            <a href="/view/profit-management.html" data-page="profit-management.html">
+        <li id="nav-profit-management" class="has-submenu">
+            <a href="#" class="nav-link" onclick="toggleProfitSubmenu(event)">
                 <i class="fas fa-coins"></i>
                 <span>Quản Lý Lợi Nhuận</span>
+                <i class="fas fa-chevron-down submenu-chevron"></i>
             </a>
+            <ul id="profitSubmenu" class="order-submenu">
+                <li class="order-submenu-item">
+                    <a href="/view/overview-profit.html" data-page="overview-profit.html" class="order-submenu-link">
+                        <i class="fas fa-chart-pie order-submenu-icon"></i>
+                        Tổng Quan Lợi Nhuận
+                    </a>
+                </li>
+                <li class="order-submenu-item">
+                    <a href="/view/profit-management.html" data-page="profit-management.html" class="order-submenu-link">
+                        <i class="fas fa-shopping-cart order-submenu-icon"></i>
+                        Lợi Nhuận Đơn TMĐT
+                    </a>
+                </li>
+                <li class="order-submenu-item">
+                    <a href="/view/retail-profit.html" data-page="retail-profit.html" class="order-submenu-link">
+                        <i class="fas fa-store order-submenu-icon"></i>
+                        Lợi Nhuận Đơn Lẻ
+                    </a>
+                </li>
+                <li class="order-submenu-item">
+                    <a href="/view/wholesale-profit.html" data-page="wholesale-profit.html" class="order-submenu-link">
+                        <i class="fas fa-warehouse order-submenu-icon"></i>
+                        Lợi Nhuận Đơn Sỉ
+                    </a>
+                </li>
+            </ul>
         </li>
         <li id="nav-stores"><a href="/view/stores.html" data-page="stores.html"><i class="fas fa-store"></i> <span>Cửa Hàng</span></a></li>
         <li id="nav-reports"><a href="/view/reports.html" data-page="reports.html"><i class="fas fa-chart-bar"></i> <span>Báo Cáo</span></a></li>
@@ -336,6 +363,21 @@ span.titlle {
             };
             console.log('✅ toggleSalesOrderSubmenu function defined');
         }
+        
+        // Profit submenu toggle function - Define immediately
+        if (typeof window.toggleProfitSubmenu === 'undefined') {
+            window.toggleProfitSubmenu = function(event) {
+                event.preventDefault();
+                const submenu = document.getElementById('profitSubmenu');
+                if (submenu) {
+                    submenu.classList.toggle('show');
+                    console.log('Profit submenu toggled');
+                } else {
+                    console.log('Profit submenu not found!');
+                }
+            };
+            console.log('✅ toggleProfitSubmenu function defined');
+        }
 
         
         // Dynamic link adjustment based on current path
@@ -365,6 +407,7 @@ span.titlle {
                 const orderSubmenu = document.getElementById('orderSubmenu');
                 const productSubmenu = document.getElementById('productSubmenu');
                 const salesOrderSubmenu = document.getElementById('salesOrderSubmenu');
+                const profitSubmenu = document.getElementById('profitSubmenu');
                 const hasSubmenu = e.target.closest('.has-submenu');
                 
                 if (invoiceSubmenu && !hasSubmenu) {
@@ -385,6 +428,11 @@ span.titlle {
                 if (salesOrderSubmenu && !hasSubmenu) {
                     salesOrderSubmenu.classList.remove('show');
                     console.log('Sales order submenu closed by clicking outside');
+                }
+                
+                if (profitSubmenu && !hasSubmenu) {
+                    profitSubmenu.classList.remove('show');
+                    console.log('Profit submenu closed by clicking outside');
                 }
             });
         });

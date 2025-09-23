@@ -105,36 +105,68 @@
                         <h2><i class="fas fa-bolt"></i> Thao Tác Nhanh</h2>
                     </div>
                     <div class="quick-actions">
-                        <a href="view/orders.html" class="quick-action-card">
+                        <a href="view/orders.html" class="quick-action-card create-order">
                             <div class="action-icon">
                                 <i class="fas fa-plus-circle"></i>
                             </div>
-                            <h3>Tạo Đơn Hàng</h3>
+                            <h3>📝 Tạo Đơn Hàng</h3>
                             <p>Tạo đơn hàng mới cho cửa hàng</p>
                         </a>
                         
-                        <a href="view/products.html" class="quick-action-card">
+                        <a href="view/products.html" class="quick-action-card manage-products">
                             <div class="action-icon">
                                 <i class="fas fa-box-open"></i>
                             </div>
-                            <h3>Quản Lý Sản Phẩm</h3>
+                            <h3>📦 Quản Lý Sản Phẩm</h3>
                             <p>Thêm, sửa, xóa sản phẩm</p>
                         </a>
                         
-                        <a href="view/order-management.html" class="quick-action-card">
+                        <a href="view/order-management.html" class="quick-action-card manage-orders">
                             <div class="action-icon">
-                                <i class="fas fa-list-alt"></i>
+                                <i class="fas fa-clipboard-list"></i>
                             </div>
-                            <h3>Quản Lý Đơn Hàng</h3>
+                            <h3>📋 Quản Lý Đơn Hàng</h3>
                             <p>Xem và quản lý đơn hàng</p>
                         </a>
                         
-                        <a href="/view/stores.html" class="quick-action-card">
+                        <a href="view/stores.html" class="quick-action-card manage-stores">
                             <div class="action-icon">
                                 <i class="fas fa-store"></i>
                             </div>
-                            <h3>Quản Lý Cửa Hàng</h3>
+                            <h3>🏪 Quản Lý Cửa Hàng</h3>
                             <p>Thêm, sửa thông tin cửa hàng</p>
+                        </a>
+                        
+                        <a href="view/warehouse-management.html" class="quick-action-card warehouse">
+                            <div class="action-icon">
+                                <i class="fas fa-warehouse"></i>
+                            </div>
+                            <h3>🏭 Quản Lý Kho</h3>
+                            <p>Quản lý tồn kho và xuất nhập</p>
+                        </a>
+                        
+                        <a href="view/profit-management.html" class="quick-action-card profit">
+                            <div class="action-icon">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <h3>💰 Quản Lý Lợi Nhuận</h3>
+                            <p>Xem báo cáo lợi nhuận</p>
+                        </a>
+                        
+                        <a href="view/sales-order-management.html" class="quick-action-card sales">
+                            <div class="action-icon">
+                                <i class="fas fa-shopping-cart"></i>
+                            </div>
+                            <h3>🛒 Đơn Hàng Bán</h3>
+                            <p>Quản lý đơn hàng đã bán</p>
+                        </a>
+                        
+                        <a href="view/reports.html" class="quick-action-card reports">
+                            <div class="action-icon">
+                                <i class="fas fa-chart-bar"></i>
+                            </div>
+                            <h3>📊 Báo Cáo</h3>
+                            <p>Xem các báo cáo thống kê</p>
                         </a>
                     </div>
                 </div>
@@ -177,25 +209,25 @@
         </div>
     </div>
 
-    <!-- Scripts -->
+<!-- Scripts -->
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-compat.js"></script>
-    <script src="main/firebase.js"></script>
+<script src="main/firebase.js"></script>
     <script src="main/store-context.js"></script>
     <script src="main/submenu.js"></script>
     <script src="main/navbar.js"></script>
-    <script src="main/header.js"></script>
-    <script src="main/dashboard.js"></script>
-    <script src="main/order-type-selection.js"></script>
-    <script src="main/new-retail-orders.js"></script>
-    <script src="main/new-wholesale-orders.js"></script>
+<script src="main/header.js"></script>
+<script src="main/dashboard.js"></script>
+<script src="main/order-type-selection.js"></script>
+<script src="main/new-retail-orders.js"></script>
+<script src="main/new-wholesale-orders.js"></script>
 
-    <script>
-        // Global submenu toggle function - simple inline style toggle
-        window.toggleSubmenu = function(event) {
-            event.preventDefault();
-            console.log('Toggle submenu clicked from index.html');
-            
-            const submenu = document.getElementById('invoiceSubmenu');
+<script>
+    // Global submenu toggle function - simple inline style toggle
+    window.toggleSubmenu = function(event) {
+        event.preventDefault();
+        console.log('Toggle submenu clicked from index.html');
+        
+        const submenu = document.getElementById('invoiceSubmenu');
             if (submenu) {
                 const isHidden = submenu.style.display === 'none' || submenu.style.display === '';
                 

@@ -1193,6 +1193,10 @@ textarea {
     z-index: 9999;
 }
 
+.loading-overlay.hidden {
+    display: none !important;
+}
+
 .loading-spinner {
     background: white;
     padding: 30px;
@@ -3073,15 +3077,7 @@ input[id^="total_"]:focus {
     justify-content: center;
 }
 
-.modal-backdrop {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.5);
-    backdrop-filter: blur(4px);
-}
+
 
 .modal-content {
     background: white;
