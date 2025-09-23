@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tạo Tài Khoản Admin</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2d5a27;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .status {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        button {
+            padding: 12px 24px;
+            margin: 10px 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .btn-primary {
+            background: #2d5a27;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #1e3f1c;
+        }
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            border: 1px solid #e9ecef;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        .actions {
+            text-align: center;
+            margin-top: 30px;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #2d5a27;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Tạo Tài Khoản Admin</h1>
+        
+        <div id="status"></div>
+        
+        <div class="form-group">
+            <label for="username">Tên đăng nhập:</label>
+            <input type="text" id="username" value="admin" placeholder="Nhập tên đăng nhập">
+        </div>
+        
+        <div class="form-group">
+            <label for="password">Mật khẩu:</label>
+            <input type="password" id="password" value="admin123" placeholder="Nhập mật khẩu">
+        </div>
+        
+        <div class="form-group">
+            <label for="fullName">Họ tên:</label>
+            <input type="text" id="fullName" value="Quản trị viên hệ thống" placeholder="Nhập họ tên">
+        </div>
+        
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" value="admin@system.com" placeholder="Nhập email">
+        </div>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Đang xử lý...</p>
+        </div>
+        
+        <div class="actions">
+            <button class="btn-primary" onclick="createAdmin()">
+                🔧 Tạo Tài Khoản Admin
+            </button>
+            <button class="btn-secondary" onclick="checkAdminExists()">
+                🔍 Kiểm Tra Admin
+            </button>
+            <button class="btn-secondary" onclick="testLogin()">
+                🔐 Test Đăng Nhập
+            </button>
+            <button class="btn-danger" onclick="clearData()">
+                🗑️ Xóa Dữ Liệu
+            </button>
+        </div>
+        
+        <div id="result"></div>
+        
+        <div style="margin-top: 30px; text-align: center;">
+            <a href="login.html" style="color: #2d5a27; text-decoration: none; font-weight: bold;">
+                ← Quay lại trang đăng nhập
+            </a>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-compat.js"></script>
+    <script src="main/firebase.js"></script>
+    <script src="main/auth.js"></script>
+
+    <script>
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = `status ${type}`;
+            statusDiv.innerHTML = message;
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        }
+
+        function showResult(data) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `
+                <h3>Kết quả:</h3>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            `;
+        }
+
+        async function waitForFirebase() {
+            return new Promise((resolve) => {
+                const checkFirebase = () => {
+                    if (typeof database !== 'undefined' && database) {
+                        resolve();
+                    } else {
+                        setTimeout(checkFirebase, 500);
+                    }
+                };
+                checkFirebase();
+            });
+        }
+
+        async function createAdmin() {
+            try {
+                showLoading(true);
+                showStatus('Đang tạo tài khoản admin...', 'info');
+
+                // Wait for Firebase
+                await waitForFirebase();
+
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+                const fullName = document.getElementById('fullName').value;
+                const email = document.getElementById('email').value;
+
+                if (!username || !password || !fullName || !email) {
+                    throw new Error('Vui lòng điền đầy đủ thông tin');
+                }
+
+                // Check if admin already exists
+                const usersRef = database.ref('users');
+                const snapshot = await usersRef.orderByChild('username').equalTo(username).once('value');
+
+                if (snapshot.exists()) {
+                    throw new Error('Tài khoản admin đã tồn tại');
+                }
+
+                // Create admin account
+                const adminData = {
+                    username: username,
+                    password: password,
+                    fullName: fullName,
+                    email: email,
+                    role: 'admin',
+                    status: 'active',
+                    storeAccess: ['all'],
+                    createdAt: new Date().toISOString(),
+                    createdBy: 'system',
+                    lastLogin: null,
+                    lastActivity: null
+                };
+
+                const newUserRef = await usersRef.push(adminData);
+                
+                showStatus(`✅ Tài khoản admin đã được tạo thành công!<br>
+                           User ID: ${newUserRef.key}<br>
+                           Username: ${username}<br>
+                           Password: ${password}`, 'success');
+                
+                showResult({
+                    success: true,
+                    userId: newUserRef.key,
+                    username: username,
+                    message: 'Admin account created successfully'
+                });
+
+            } catch (error) {
+                console.error('Error creating admin:', error);
+                showStatus(`❌ Lỗi tạo tài khoản: ${error.message}`, 'error');
+                showResult({
+                    success: false,
+                    error: error.message
+                });
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function checkAdminExists() {
+            try {
+                showLoading(true);
+                showStatus('Đang kiểm tra tài khoản admin...', 'info');
+
+                await waitForFirebase();
+
+                const usersRef = database.ref('users');
+                const snapshot = await usersRef.orderByChild('role').equalTo('admin').once('value');
+                
+                if (snapshot.exists()) {
+                    const users = snapshot.val();
+                    const adminUsers = Object.entries(users).map(([id, user]) => ({
+                        id,
+                        ...user
+                    }));
+                    
+                    showStatus(`✅ Tìm thấy ${adminUsers.length} tài khoản admin`, 'success');
+                    showResult({
+                        adminExists: true,
+                        adminCount: adminUsers.length,
+                        adminUsers: adminUsers
+                    });
+                } else {
+                    showStatus('⚠️ Không tìm thấy tài khoản admin nào', 'warning');
+                    showResult({
+                        adminExists: false,
+                        message: 'No admin accounts found'
+                    });
+                }
+
+            } catch (error) {
+                console.error('Error checking admin:', error);
+                showStatus(`❌ Lỗi kiểm tra: ${error.message}`, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function testLogin() {
+            try {
+                showLoading(true);
+                showStatus('Đang test đăng nhập...', 'info');
+
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+
+                if (typeof authSystem === 'undefined') {
+                    throw new Error('AuthSystem chưa sẵn sàng');
+                }
+
+                const result = await authSystem.login(username, password, false);
+                
+                showStatus(`✅ Đăng nhập thành công!<br>
+                           Chào mừng: ${result.fullName}<br>
+                           Role: ${result.role}`, 'success');
+                
+                showResult({
+                    loginSuccess: true,
+                    user: result
+                });
+
+            } catch (error) {
+                console.error('Login test failed:', error);
+                showStatus(`❌ Đăng nhập thất bại: ${error.message}`, 'error');
+                showResult({
+                    loginSuccess: false,
+                    error: error.message
+                });
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function clearData() {
+            if (!confirm('Bạn có chắc chắn muốn xóa tất cả dữ liệu người dùng?')) {
+                return;
+            }
+
+            try {
+                showLoading(true);
+                showStatus('Đang xóa dữ liệu...', 'warning');
+
+                await waitForFirebase();
+
+                await database.ref('users').remove();
+                
+                showStatus('✅ Đã xóa tất cả dữ liệu người dùng', 'success');
+                showResult({
+                    cleared: true,
+                    message: 'All user data cleared'
+                });
+
+            } catch (error) {
+                console.error('Error clearing data:', error);
+                showStatus(`❌ Lỗi xóa dữ liệu: ${error.message}`, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            showStatus('Trang tạo admin đã sẵn sàng. Nhấn "Kiểm Tra Admin" để xem tài khoản hiện có.', 'info');
+        });
+    </script>
+</body>
+</html>

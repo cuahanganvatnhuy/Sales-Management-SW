@@ -324,11 +324,30 @@
 
     <!-- Scripts -->
     <script src="../main/firebase.js"></script>
-    <script src="../main/selling-products.js"></script>
+    <script src="../main/simple-auth.js"></script>
+    <script src="../main/page-protection.js"></script>
     
     <script>
         // Load header and navbar
         document.addEventListener('DOMContentLoaded', function() {
+            // Check permissions first
+            console.log('🔍 Checking permissions for selling products page...');
+            
+            setTimeout(() => {
+                if (typeof requireAuth === 'function' && !requireAuth()) {
+                    console.log('❌ Auth check failed');
+                    return;
+                }
+                
+                if (typeof requirePermission === 'function' && !requirePermission('selling_product_manage')) {
+                    console.log('❌ Permission check failed for selling_product_manage');
+                    alert('Bạn không có quyền truy cập trang này!');
+                    window.location.href = '../index.html';
+                    return;
+                }
+                
+                console.log('✅ Permission check passed for selling products');
+            }, 1000);
             fetch('../components/header.html')
                 .then(response => response.text())
                 .then(data => {

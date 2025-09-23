@@ -7,16 +7,27 @@ let currentSelectedStore = null;
 function initializeHeader() {
     console.log('🏪 Initializing header functionality...');
     
+    // Update user info if authenticated
+    if (typeof authSystem !== 'undefined' && authSystem.isAuthenticated()) {
+        updateUserInfo();
+    }
+    
     // Load stores with delay to ensure Firebase is ready
     setTimeout(() => {
         loadStoresForSelector();
     }, 1500);
     
-    // Close dropdown when clicking outside
+    // Close dropdowns when clicking outside
     document.addEventListener('click', function(event) {
         const storeSelector = document.getElementById('storeSelectorContainer');
+        const userDropdown = document.getElementById('userDropdown');
+        
         if (storeSelector && !storeSelector.contains(event.target)) {
             closeStoreDropdown();
+        }
+        
+        if (userDropdown && !userDropdown.parentElement.contains(event.target)) {
+            closeUserDropdown();
         }
     });
 }
@@ -407,6 +418,80 @@ function updateCurrentStoreName(storeName) {
         currentStoreName.textContent = storeName;
     }
 }
+
+// ===== USER DROPDOWN FUNCTIONS =====
+
+// Update user info in header
+function updateUserInfo() {
+    if (typeof authSystem === 'undefined' || !authSystem.isAuthenticated()) {
+        return;
+    }
+    
+    const currentUser = authSystem.getCurrentUser();
+    if (!currentUser) return;
+    
+    // Update user name elements
+    const userNameElements = document.querySelectorAll('.current-user-name');
+    userNameElements.forEach(el => {
+        el.textContent = currentUser.fullName;
+    });
+    
+    // Update user role elements
+    const userRoleElements = document.querySelectorAll('.current-user-role');
+    userRoleElements.forEach(el => {
+        el.textContent = authSystem.getRoleDisplayName(currentUser.role);
+    });
+    
+    console.log('✅ User info updated in header:', currentUser.fullName);
+}
+
+// Toggle user dropdown
+function toggleUserDropdown() {
+    const userDropdown = document.getElementById('userDropdown');
+    if (userDropdown) {
+        userDropdown.classList.toggle('hidden');
+    }
+}
+
+// Close user dropdown
+function closeUserDropdown() {
+    const userDropdown = document.getElementById('userDropdown');
+    if (userDropdown) {
+        userDropdown.classList.add('hidden');
+    }
+}
+
+// Show profile modal
+function showProfile() {
+    closeUserDropdown();
+    alert('Chức năng thông tin cá nhân đang được phát triển');
+}
+
+// Change password
+function changePassword() {
+    closeUserDropdown();
+    alert('Chức năng đổi mật khẩu đang được phát triển');
+}
+
+// Logout function
+function logout() {
+    if (confirm('Bạn có chắc chắn muốn đăng xuất?')) {
+        if (typeof authSystem !== 'undefined') {
+            authSystem.logout();
+        } else {
+            // Fallback logout
+            localStorage.removeItem('currentUser');
+            sessionStorage.removeItem('currentUser');
+            window.location.href = '/login.html';
+        }
+    }
+}
+
+// Global functions for onclick handlers
+window.toggleUserDropdown = toggleUserDropdown;
+window.showProfile = showProfile;
+window.changePassword = changePassword;
+window.logout = logout;
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {

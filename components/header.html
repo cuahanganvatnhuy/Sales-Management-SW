@@ -26,9 +26,38 @@
                 </div>
             </div>
         </div>
-        <div class="user-info">
-            <i class="fas fa-user-circle"></i>
-            <span>Admin</span>
+        <div class="user-menu">
+            <div class="user-info" onclick="toggleUserDropdown()">
+                <i class="fas fa-user-circle"></i>
+                <span class="current-user-name">Admin</span>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="user-dropdown hidden" id="userDropdown">
+                <div class="user-dropdown-header">
+                    <div class="user-avatar">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                    <div class="user-details">
+                        <span class="user-name current-user-name">Admin</span>
+                        <span class="user-role current-user-role">Quản trị viên</span>
+                    </div>
+                </div>
+                <div class="user-dropdown-menu">
+                    <a href="#" class="dropdown-item" onclick="showProfile()">
+                        <i class="fas fa-user"></i> Thông tin cá nhân
+                    </a>
+                    <a href="#" class="dropdown-item" onclick="changePassword()">
+                        <i class="fas fa-key"></i> Đổi mật khẩu
+                    </a>
+                    <a href="/view/user-management.html" class="dropdown-item" data-permission="user_read">
+                        <i class="fas fa-users"></i> Quản lý tài khoản
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a href="#" class="dropdown-item logout" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i> Đăng xuất
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 </header>

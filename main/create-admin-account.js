@@ -178,8 +178,5 @@ window.createMainAdminAccount = createMainAdminAccount;
 window.createRolesAndPermissions = createRolesAndPermissions;
 window.initializeAuthSystem = initializeAuthSystem;
 
-// Auto-run khi file được load
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('📋 Script tạo admin account đã sẵn sàng!');
-    console.log('🔧 Chạy: initializeAuthSystem() để khởi tạo');
-});
+console.log('🔧 Admin Account Creator loaded');
+console.log('Available functions: createMainAdminAccount(), initializeAuthSystem()');
