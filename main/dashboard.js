@@ -112,6 +112,13 @@ function checkStoreContextAvailability() {
 
 // Initialize dashboard when page loads
 window.addEventListener('DOMContentLoaded', function() {
+    // Ensure loading overlay is hidden on page load
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    if (loadingOverlay) {
+        loadingOverlay.classList.add('hidden');
+        loadingOverlay.style.display = 'none';
+    }
+    
     // Wait for store context to be ready
     setTimeout(() => {
         checkStoreContextAvailability();
@@ -337,16 +344,49 @@ function loadRecentOrders() {
     
     let ordersHTML = '';
     recentOrders.forEach(([orderId, order]) => {
+        // Handle different order formats
+        let productName = 'Sản phẩm không xác định';
+        let quantity = 0;
+        let total = 0;
+        
+        // Check if order has items array (new retail format)
+        if (order.items && Array.isArray(order.items) && order.items.length > 0) {
+            // Multiple items format - show first item or summary
+            if (order.items.length === 1) {
+                productName = order.items[0].productName || 'Sản phẩm không xác định';
+                quantity = order.items[0].quantity || 0;
+            } else {
+                productName = `${order.items.length} sản phẩm`;
+                quantity = order.items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+            }
+            total = order.totalAmount || order.total || 0;
+        } else {
+            // Single product format (old format or TMDT)
+            productName = order.productName || 'Sản phẩm không xác định';
+            quantity = order.quantity || 0;
+            total = order.totalAmount || order.total || 0;
+        }
+        
+        // Determine unit based on order type
+        let unit = 'cái';
+        if (order.source === 'retail_sales' || order.orderType === 'retail') {
+            unit = 'cái';
+        } else if (order.source === 'tmdt_sales' || order.platform) {
+            unit = 'cái';
+        } else {
+            unit = 'kg'; // wholesale default
+        }
+        
         ordersHTML += `
             <div class="recent-order-item">
                 <div class="order-info">
                     <div class="order-product">
                         <i class="fas fa-box"></i>
-                        <span>${order.productName}</span>
+                        <span>${productName}</span>
                     </div>
                     <div class="order-details">
-                        <span class="order-quantity">${order.quantity} kg</span>
-                        <span class="order-total">${formatCurrency(order.total)} VNĐ</span>
+                        <span class="order-quantity">${quantity} ${unit}</span>
+                        <span class="order-total">${formatCurrency(total)} VNĐ</span>
                     </div>
                 </div>
                 <div class="order-date">

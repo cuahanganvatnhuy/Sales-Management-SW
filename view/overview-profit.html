@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tổng Quan Lợi Nhuận - Sales Management</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../style/man.css">
+    <link rel="stylesheet" href="../style/navbar-submenu.css">
+    <link rel="stylesheet" href="../css/overview-profit.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- XLSX for Excel export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+    <!-- Header -->
+    <div id="header-container"></div>
+    
+    <!-- Navigation -->
+    <div id="navbar-container"></div>
+    
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="container-fluid">
+            <!-- Page Header -->
+            <div class="page-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1><i class="fas fa-chart-pie"></i> Tổng Quan Lợi Nhuận</h1>
+                        <p class="text-muted">Phân tích tổng thể lợi nhuận từ tất cả kênh bán hàng</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn btn-success" onclick="exportOverviewProfitToExcel()">
+                            <i class="fas fa-file-excel"></i> Xuất Excel
+                        </button>
+                        <button class="btn btn-primary" onclick="refreshOverviewData()">
+                            <i class="fas fa-sync-alt"></i> Làm mới
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters Section -->
+            <div class="filters-section">
+                <div class="row">
+                    <div class="col-md-3">
+                        <label class="form-label">Từ ngày</label>
+                        <input type="date" id="overviewStartDate" class="form-control" onchange="filterOverviewData()">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Đến ngày</label>
+                        <input type="date" id="overviewEndDate" class="form-control" onchange="filterOverviewData()">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Cửa hàng</label>
+                        <select id="overviewStoreFilter" class="form-select" onchange="filterOverviewData()">
+                            <option value="">Tất cả cửa hàng</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Kênh bán hàng</label>
+                        <select id="overviewChannelFilter" class="form-select" onchange="filterOverviewData()">
+                            <option value="">Tất cả kênh</option>
+                            <option value="tmdt">TMĐT</option>
+                            <option value="retail">Bán lẻ</option>
+                            <option value="wholesale">Bán sỉ</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Overall Statistics -->
+            <div class="overall-stats-section">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="stat-card overall">
+                            <div class="stat-icon bg-gradient-primary">
+                                <i class="fas fa-shopping-cart"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="overallTotalOrders">0</h3>
+                                <p>Tổng đơn hàng</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card overall">
+                            <div class="stat-icon bg-gradient-success">
+                                <i class="fas fa-dollar-sign"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="overallTotalRevenue">0₫</h3>
+                                <p>Tổng doanh thu</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card overall">
+                            <div class="stat-icon bg-gradient-info">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="overallTotalProfit">0₫</h3>
+                                <p>Tổng lợi nhuận</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card overall">
+                            <div class="stat-icon bg-gradient-warning">
+                                <i class="fas fa-percentage"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="overallProfitMargin">0%</h3>
+                                <p>Tỷ suất lợi nhuận</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Channel Statistics -->
+            <div class="channel-stats-section">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="channel-card tmdt">
+                            <div class="channel-header">
+                                <h5><i class="fas fa-globe"></i> TMĐT</h5>
+                                <div class="channel-actions">
+                                    <a href="profit-management.html" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-external-link-alt"></i>
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="channel-stats">
+                                <div class="stat-item">
+                                    <span class="stat-label">Đơn hàng:</span>
+                                    <span class="stat-value" id="tmdtOrders">0</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Doanh thu:</span>
+                                    <span class="stat-value" id="tmdtRevenue">0₫</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Lợi nhuận:</span>
+                                    <span class="stat-value profit" id="tmdtProfit">0₫</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Tỷ suất:</span>
+                                    <span class="stat-value profit" id="tmdtMargin">0%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="channel-card retail">
+                            <div class="channel-header">
+                                <h5><i class="fas fa-store"></i> Bán lẻ</h5>
+                                <div class="channel-actions">
+                                    <a href="retail-profit.html" class="btn btn-sm btn-outline-success">
+                                        <i class="fas fa-external-link-alt"></i>
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="channel-stats">
+                                <div class="stat-item">
+                                    <span class="stat-label">Đơn hàng:</span>
+                                    <span class="stat-value" id="retailOrders">0</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Doanh thu:</span>
+                                    <span class="stat-value" id="retailRevenue">0₫</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Lợi nhuận:</span>
+                                    <span class="stat-value profit" id="retailProfit">0₫</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Tỷ suất:</span>
+                                    <span class="stat-value profit" id="retailMargin">0%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="channel-card wholesale">
+                            <div class="channel-header">
+                                <h5><i class="fas fa-warehouse"></i> Bán sỉ</h5>
+                                <div class="channel-actions">
+                                    <a href="wholesale-profit.html" class="btn btn-sm btn-outline-info">
+                                        <i class="fas fa-external-link-alt"></i>
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="channel-stats">
+                                <div class="stat-item">
+                                    <span class="stat-label">Đơn hàng:</span>
+                                    <span class="stat-value" id="wholesaleOrders">0</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Doanh thu:</span>
+                                    <span class="stat-value" id="wholesaleRevenue">0₫</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Lợi nhuận:</span>
+                                    <span class="stat-value profit" id="wholesaleProfit">0₫</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Tỷ suất:</span>
+                                    <span class="stat-value profit" id="wholesaleMargin">0%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="charts-section">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <h5><i class="fas fa-pie-chart"></i> Phân bố lợi nhuận theo kênh</h5>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="channelProfitDistributionChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <h5><i class="fas fa-chart-bar"></i> So sánh doanh thu theo kênh</h5>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="channelRevenueComparisonChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <h5><i class="fas fa-line-chart"></i> Xu hướng lợi nhuận theo thời gian</h5>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="overallProfitTrendChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Performing Items -->
+            <div class="top-performance-section">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="table-card">
+                            <div class="table-header">
+                                <h5><i class="fas fa-trophy"></i> Top cửa hàng có lợi nhuận cao</h5>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">#</th>
+                                            <th scope="col">Cửa hàng</th>
+                                            <th scope="col">Doanh thu</th>
+                                            <th scope="col">Lợi nhuận</th>
+                                            <th scope="col">Tỷ suất (%)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="topStoresTableBody">
+                                        <tr>
+                                            <td colspan="5" class="text-center">
+                                                <div class="loading-spinner">
+                                                    <i class="fas fa-spinner fa-spin"></i> Đang tải dữ liệu...
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="table-card">
+                            <div class="table-header">
+                                <h5><i class="fas fa-star"></i> Top sản phẩm có lợi nhuận cao</h5>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">#</th>
+                                            <th scope="col">Sản phẩm</th>
+                                            <th scope="col">Số lượng</th>
+                                            <th scope="col">Lợi nhuận</th>
+                                            <th scope="col">Tỷ suất (%)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="topProductsTableBody">
+                                        <tr>
+                                            <td colspan="5" class="text-center">
+                                                <div class="loading-spinner">
+                                                    <i class="fas fa-spinner fa-spin"></i> Đang tải dữ liệu...
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance Metrics -->
+            <div class="performance-metrics-section">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="metrics-card">
+                            <div class="metrics-header">
+                                <h5><i class="fas fa-analytics"></i> Chỉ số hiệu suất</h5>
+                            </div>
+                            <div class="metrics-grid">
+                                <div class="metric-item">
+                                    <div class="metric-icon">
+                                        <i class="fas fa-chart-line"></i>
+                                    </div>
+                                    <div class="metric-content">
+                                        <h6>Tăng trưởng doanh thu</h6>
+                                        <span class="metric-value" id="revenueGrowth">0%</span>
+                                    </div>
+                                </div>
+                                <div class="metric-item">
+                                    <div class="metric-icon">
+                                        <i class="fas fa-trending-up"></i>
+                                    </div>
+                                    <div class="metric-content">
+                                        <h6>Tăng trưởng lợi nhuận</h6>
+                                        <span class="metric-value" id="profitGrowth">0%</span>
+                                    </div>
+                                </div>
+                                <div class="metric-item">
+                                    <div class="metric-icon">
+                                        <i class="fas fa-calculator"></i>
+                                    </div>
+                                    <div class="metric-content">
+                                        <h6>Giá trị đơn hàng TB</h6>
+                                        <span class="metric-value" id="avgOrderValue">0₫</span>
+                                    </div>
+                                </div>
+                                <div class="metric-item">
+                                    <div class="metric-icon">
+                                        <i class="fas fa-percentage"></i>
+                                    </div>
+                                    <div class="metric-content">
+                                        <h6>Tỷ lệ lợi nhuận TB</h6>
+                                        <span class="metric-value" id="avgProfitMargin">0%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-compat.js"></script>
+    <script src="../main/firebase.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script src="../main/navbar-submenu.js"></script>
+    <script src="../main/navbar.js"></script>
+    <script src="../main/header.js"></script>
+    <script src="../main/overview-profit.js"></script>
+    
+    <!-- Load Components -->
+    <script>
+        // Initialize navbar loader
+        document.addEventListener('DOMContentLoaded', function() {
+            const navbarLoader = new NavbarLoader();
+            navbarLoader.loadHeader();
+            navbarLoader.loadNavbar();
+        });
+    </script>
+</body>
+</html>

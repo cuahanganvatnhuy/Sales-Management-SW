@@ -2,9 +2,15 @@
 let allStores = {};
 let currentSelectedStore = null;
 
+
 // Initialize header functionality
 function initializeHeader() {
-    loadStoresForSelector();
+    console.log('🏪 Initializing header functionality...');
+    
+    // Load stores with delay to ensure Firebase is ready
+    setTimeout(() => {
+        loadStoresForSelector();
+    }, 1500);
     
     // Close dropdown when clicking outside
     document.addEventListener('click', function(event) {
@@ -19,13 +25,24 @@ function initializeHeader() {
 async function loadStoresForSelector() {
     try {
         console.log('=== LOADING STORES FOR SELECTOR ===');
-        console.log('Database reference:', database);
         
-        const snapshot = await database.ref('stores').once('value');
-        allStores = snapshot.val() || {};
+        // Check if getAllStores function is available
+        if (typeof getAllStores === 'undefined') {
+            console.error('getAllStores function not loaded yet, retrying...');
+            setTimeout(loadStoresForSelector, 1000);
+            return;
+        }
         
-        console.log('Stores loaded:', allStores);
+        // Use getAllStores function from firebase.js (same as Dashboard)
+        allStores = await getAllStores();
+        
+        console.log('Stores loaded using getAllStores():', allStores);
         console.log('Number of stores:', Object.keys(allStores).length);
+        
+        // Log store count (no sample data creation)
+        if (Object.keys(allStores).length === 0) {
+            console.log('⚠️ No stores found in database');
+        }
         
         displayStoresInSelector();
         
@@ -38,6 +55,9 @@ async function loadStoresForSelector() {
     } catch (error) {
         console.error('Error loading stores for selector:', error);
         console.error('Error details:', error.message);
+        
+        // Retry after delay
+        setTimeout(loadStoresForSelector, 2000);
     }
 }
 
@@ -78,6 +98,8 @@ function displayStoresInSelector() {
         const isActive = currentSelectedStore === storeId ? 'active' : '';
         const statusIcon = store.status === 'active' ? 'fas fa-circle' : 'fas fa-pause-circle';
         
+        console.log(`Adding store: ${store.name} (${storeId})`);
+        
         storesHTML += `
             <div class="store-item ${isActive}" onclick="selectStore('${storeId}')">
                 <div class="store-item-icon">
@@ -85,26 +107,41 @@ function displayStoresInSelector() {
                 </div>
                 <div class="store-item-info">
                     <div class="store-item-name">${store.name}</div>
-                    <div class="store-item-address">${store.address}</div>
+                    <div class="store-item-address">${store.address || 'Chưa có địa chỉ'}</div>
                 </div>
             </div>
         `;
     }
     
+    console.log('Final stores HTML:', storesHTML);
     storeList.innerHTML = storesHTML;
+    console.log('✅ Store list updated successfully');
 }
 
 // Toggle store dropdown
 function toggleStoreDropdown() {
+    console.log('🏪 Toggle store dropdown clicked');
+    
     const dropdown = document.getElementById('storeDropdown');
     const currentStore = document.querySelector('.current-store');
     
-    if (!dropdown || !currentStore) return;
+    if (!dropdown || !currentStore) {
+        console.error('Dropdown or current store element not found');
+        return;
+    }
     
     if (dropdown.classList.contains('hidden')) {
+        console.log('Opening dropdown...');
         dropdown.classList.remove('hidden');
         currentStore.classList.add('active');
+        
+        // Force reload stores when opening dropdown
+        if (Object.keys(allStores).length === 0) {
+            console.log('No stores loaded, forcing reload...');
+            loadStoresForSelector();
+        }
     } else {
+        console.log('Closing dropdown...');
         dropdown.classList.add('hidden');
         currentStore.classList.remove('active');
     }
@@ -380,3 +417,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }, 500);
 });
+
+// Make functions globally available
+window.toggleStoreDropdown = toggleStoreDropdown;
+window.selectStore = selectStore;
+window.initializeHeader = initializeHeader;
+window.updateCurrentStoreName = updateCurrentStoreName;

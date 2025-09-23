@@ -9,6 +9,7 @@
     <link href="../style/man.css" rel="stylesheet">
     <link rel="stylesheet" href="../css/profit-management.css">
     <link rel="stylesheet" href="../css/packaging-config.css">
+    <link rel="stylesheet" href="../css/retail-profit-management.css">
     <link rel="stylesheet" href="../style/navbar-submenu.css">
 </head>
 <body>
@@ -24,22 +25,13 @@
             <!-- Profit View Navigation -->
             <div class="profit-view-navigation">
                 <div class="view-nav-buttons">
-                    <button class="view-nav-btn active" id="overviewBtn" onclick="switchProfitView('overview')">
-                        <i class="fas fa-chart-pie"></i>
-                        <span>Tổng Quan</span>
-                    </button>
+                  
                     <button class="view-nav-btn" id="tmdtBtn" onclick="switchProfitView('tmdt')">
                         <i class="fas fa-shopping-cart"></i>
                         <span>Lợi Nhuận TMĐT</span>
                     </button>
-                    <button class="view-nav-btn" id="wholesaleBtn" onclick="switchProfitView('wholesale')">
-                        <i class="fas fa-warehouse"></i>
-                        <span>Lợi Nhuận Đơn Sỉ</span>
-                    </button>
-                    <button class="view-nav-btn" id="retailBtn" onclick="switchProfitView('retail')">
-                        <i class="fas fa-store"></i>
-                        <span>Lợi Nhuận Đơn Lẻ</span>
-                    </button>
+                  
+    
                     <button type="button" class="view-nav-btn" id="packagingBtn" onclick="switchProfitView('packaging')">
                         <i class="fas fa-box"></i>
                         Cấu hình Chi phí Thùng
@@ -220,7 +212,7 @@
                         <h3><i class="fas fa-filter"></i> Chọn Phí Hiển Thị</h3>
                         <div class="filter-actions">
                             <button class="btn-filter" onclick="selectAllFees()">Chọn Tất Cả</button>
-                            <button class="btn-filter" onclick="deselectAllFees()">Bỏ Chọn Tất Cả</button>
+                            <button class="btn-filter" onclick="deselectAllFees()">Ẩn Tất Cả</button>
                         </div>
                     </div>
                     <div class="fee-filter-grid">
@@ -664,6 +656,272 @@
                                 <button type="button" class="pagination-btn" id="next-page-btn" onclick="changeTopProductsPage(1)" disabled>
                                     Sau <i class="fas fa-chevron-right"></i>
                                 </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Retail Profit View -->
+            <div id="retail-view" class="profit-view">
+                <!-- Store Selection -->
+                <div class="platform-selector">
+                    <div class="platform-controls">
+                        <div class="platform-select-group">
+                            <label for="retail-store-select">Chọn Cửa Hàng:</label>
+                            <select id="retail-store-select" onchange="updateRetailStoreFilter()">
+                                <option value="all">Tất Cả Cửa Hàng</option>
+                                <!-- Options will be populated by JavaScript -->
+                            </select>
+                        </div>
+                        <div class="platform-select-group">
+                            <label for="retail-date-from">Từ Ngày:</label>
+                            <input type="date" id="retail-date-from" onchange="filterRetailOrdersByDate()" class="date-input">
+                        </div>
+                        <div class="platform-select-group">
+                            <label for="retail-date-to">Đến Ngày:</label>
+                            <input type="date" id="retail-date-to" onchange="filterRetailOrdersByDate()" class="date-input">
+                        </div>
+                    </div>
+                    <div class="platform-actions">
+                        <button type="button" class="btn btn-secondary" onclick="clearRetailDateFilter()">
+                            <i class="fas fa-times"></i> Xóa Lọc Ngày
+                        </button>
+                        <button type="button" class="btn-external-costs" onclick="openRetailCostsModal()">
+                            <i class="fas fa-calculator"></i>
+                            Cài Đặt Chi Phí Bán Lẻ
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Retail Statistics -->
+                <div class="stats-grid">
+                    <div class="stat-card retail-total-profit">
+                        <div class="stat-icon">
+                            <i class="fas fa-coins"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Tổng Lợi Nhuận Bán Lẻ</h3>
+                            <div class="stat-value" id="retail-total-profit">0 ₫</div>
+                            <div class="stat-change positive">+12%</div>
+                        </div>
+                    </div>
+                    <div class="stat-card retail-revenue">
+                        <div class="stat-icon">
+                            <i class="fas fa-chart-bar"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Tổng Doanh Thu Bán Lẻ</h3>
+                            <div class="stat-value" id="retail-total-revenue">0 ₫</div>
+                            <div class="stat-change positive">+15%</div>
+                        </div>
+                    </div>
+                    <div class="stat-card retail-cost">
+                        <div class="stat-icon">
+                            <i class="fas fa-shopping-basket"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Tổng Giá Nhập</h3>
+                            <div class="stat-value" id="retail-total-cost">0 ₫</div>
+                            <div class="stat-change neutral">-</div>
+                        </div>
+                    </div>
+                    <div class="stat-card retail-orders">
+                        <div class="stat-icon">
+                            <i class="fas fa-receipt"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Tổng Số Đơn Hàng</h3>
+                            <div class="stat-value" id="retail-total-orders">0</div>
+                            <div class="stat-change positive">+8%</div>
+                        </div>
+                    </div>
+                    <div class="stat-card retail-avg-profit">
+                        <div class="stat-icon">
+                            <i class="fas fa-calculator"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Lợi Nhuận Trung Bình/Đơn</h3>
+                            <div class="stat-value" id="retail-avg-profit">0 ₫</div>
+                            <div class="stat-change positive">+5%</div>
+                        </div>
+                    </div>
+                    <div class="stat-card retail-margin">
+                        <div class="stat-icon">
+                            <i class="fas fa-percentage"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Tỷ Lệ Lợi Nhuận</h3>
+                            <div class="stat-value" id="retail-profit-margin">0%</div>
+                            <div class="stat-change positive">+2%</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Retail Top Products -->
+                <div class="analysis-section">
+                    <div class="section-header">
+                        <h3><i class="fas fa-fire"></i> Sản Phẩm Bán Chạy - Bán Lẻ</h3>
+                    </div>
+                    <div class="table-container">
+                        <table class="analysis-table" id="retail-top-products">
+                            <thead>
+                                <tr>
+                                    <th>STT</th>
+                                    <th>Sản Phẩm</th>
+                                    <th>SKU</th>
+                                    <th>Lượt Bán</th>
+                                    <th>Doanh Thu</th>
+                                    <th>Lợi Nhuận</th>
+                                    <th>Tỷ Lệ (%)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>-</td>
+                                    <td>Đang tải dữ liệu...</td>
+                                    <td>-</td>
+                                    <td>-</td>
+                                    <td>-</td>
+                                    <td>-</td>
+                                    <td>-</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        
+                        <!-- Pagination Controls -->
+                        <div class="pagination-container" id="retail-top-products-pagination">
+                            <div class="pagination-info">
+                                <span id="retail-pagination-info-text">Hiển thị 1-5 của 0 sản phẩm</span>
+                            </div>
+                            <div class="pagination-controls">
+                                <button type="button" class="pagination-btn" id="retail-prev-page-btn" onclick="changeRetailTopProductsPage(-1)" disabled>
+                                    <i class="fas fa-chevron-left"></i> Trước
+                                </button>
+                                <span class="page-numbers" id="retail-page-numbers"></span>
+                                <button type="button" class="pagination-btn" id="retail-next-page-btn" onclick="changeRetailTopProductsPage(1)" disabled>
+                                    Sau <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Retail Orders Detail Table -->
+                <div class="analysis-section">
+                    <div class="analysis-card">
+                        <div class="analysis-controls">
+                            <button class="btn btn-outline" onclick="exportRetailProfitReport()">
+                                <i class="fas fa-download"></i> Xuất Báo Cáo Excel
+                            </button>
+                        </div>
+                        
+                        <div class="analysis-content">
+                            <div class="table-section">
+                                <div class="table-header">
+                                    <h4>Danh Sách Đơn Hàng Bán Lẻ Chi Tiết</h4>
+                                    <div class="table-actions">
+                                        <button type="button" class="btn-action btn-select-all" onclick="selectAllRetailOrders()">
+                                            <i class="fas fa-check-square"></i> Chọn Tất Cả
+                                        </button>
+                                        <button type="button" class="btn-action btn-delete-selected" onclick="deleteSelectedRetailOrders()" disabled>
+                                            <i class="fas fa-trash"></i> Xóa Được Chọn (<span id="retail-selected-count">0</span>)
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Search Bar -->
+                                <div class="search-container">
+                                    <div class="search-box">
+                                        <i class="fas fa-search search-icon"></i>
+                                        <input type="text" id="retail-order-search-input" placeholder="Tìm kiếm theo tên sản phẩm, SKU, mã đơn hàng..." onkeyup="searchRetailOrders()" autocomplete="off">
+                                        <button type="button" class="clear-search-btn" onclick="clearRetailSearch()" id="retail-clear-search-btn">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                    <div class="search-filters">
+                                        <div class="filter-group">
+                                            <label for="retail-search-date-from">Từ ngày:</label>
+                                            <input type="date" id="retail-search-date-from" onchange="searchRetailOrders()" class="search-date-input">
+                                        </div>
+                                        <div class="filter-group">
+                                            <label for="retail-search-date-to">Đến ngày:</label>
+                                            <input type="date" id="retail-search-date-to" onchange="searchRetailOrders()" class="search-date-input">
+                                        </div>
+                                        <div class="filter-group">
+                                            <button type="button" class="clear-date-filter-btn" onclick="clearRetailDateFilter()">
+                                                <i class="fas fa-calendar-times"></i> Xóa lọc ngày
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="search-results-info" id="retail-search-results-count">
+                                        <i class="fas fa-info-circle"></i>
+                                        <span id="retail-search-results-text">Tìm thấy 0 kết quả</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="table-container">
+                                    <table class="profit-table">
+                                        <thead>
+                                            <tr>
+                                                <th>
+                                                    <input type="checkbox" id="retail-select-all-checkbox" onchange="toggleRetailSelectAll()">
+                                                </th>
+                                                <th>STT</th>
+                                                <th>Mã ĐH</th>
+                                                <th>Sản Phẩm</th>
+                                                <th>SKU</th>
+                                                <th>Số Lượng</th>
+                                                <th>Giá Nhập (VNĐ)</th>
+                                                <th>Giá Bán (VNĐ)</th>
+                                                <th>Lợi Nhuận</th>
+                                                <th>Tổng Tiền</th>
+                                                <th>Cửa Hàng</th>
+                                                <th>Ngày Tạo</th>
+                                                <th>Thao Tác</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="retail-orders-detail-table">
+                                            <!-- Retail orders data will be populated by JavaScript -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <!-- Pagination Controls -->
+                                <div class="pagination-container">
+                                    <div class="pagination-info">
+                                        <span id="retail-pagination-info">Hiển thị 1-10 của 0 đơn hàng</span>
+                                    </div>
+                                    <div class="pagination-controls">
+                                        <button type="button" id="retail-prev-page" class="pagination-btn" onclick="changeRetailPage(-1)" disabled>
+                                            <i class="fas fa-chevron-left"></i> Trước
+                                        </button>
+                                        <div class="pagination-numbers" id="retail-pagination-numbers">
+                                            <!-- Page numbers will be populated by JavaScript -->
+                                        </div>
+                                        <button type="button" id="retail-next-page" class="pagination-btn" onclick="changeRetailPage(1)" disabled>
+                                            Sau <i class="fas fa-chevron-right"></i>
+                                        </button>
+                                    </div>
+                                    <div class="pagination-size">
+                                        <label for="retail-page-size">Hiển thị:</label>
+                                        <select id="retail-page-size" onchange="changeRetailPageSize()">
+                                            <option value="10">10</option>
+                                            <option value="25">25</option>
+                                            <option value="50">50</option>
+                                            <option value="100">100</option>
+                                        </select>
+                                        <span>đơn hàng/trang</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Monthly Profit Comparison -->
+                            <div class="comparison-section">
+                                <h4>So Sánh Lợi Nhuận Bán Lẻ Theo Tháng</h4>
+                                <div class="monthly-comparison" id="retail-monthly-comparison">
+                                    <!-- Monthly comparison cards will be populated by JavaScript -->
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1143,6 +1401,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="../main/profit-management.js"></script>
     <script src="../main/packaging-config.js"></script>
+    <script src="../main/retail-profit-management.js"></script>
 
     <!-- Scripts -->
     <script>

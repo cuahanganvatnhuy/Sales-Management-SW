@@ -129,21 +129,13 @@ function switchProfitView(viewType) {
     
     // Load data for specific view
     switch(viewType) {
-        case 'overview':
-            loadOverviewData();
-            showOverviewContent();
-            break;
         case 'tmdt':
             loadTmdtProfitData();
             showTmdtOnlyContent();
             break;
-        case 'wholesale':
-            loadWholesaleProfitData();
-            showOverviewContent();
-            break;
         case 'retail':
             loadRetailProfitData();
-            showOverviewContent();
+            showRetailOnlyContent();
             break;
         case 'packaging':
             loadPackagingConfigData();
@@ -3286,6 +3278,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('🔥 Force loading TMĐT data...');
                 loadTmdtProfitData();
             }, 1000);
+            
+            // Initialize retail profit management if retail-profit-management.js is loaded
+            setTimeout(() => {
+                if (typeof initializeRetailProfitManagement === 'function') {
+                    console.log('🛍️ Initializing retail profit management...');
+                    // Don't auto-load retail data, only initialize the module
+                } else {
+                    console.log('⚠️ Retail profit management script not loaded');
+                }
+            }, 1500);
         }, 1000);
     }
 });
@@ -5582,10 +5584,8 @@ function showTmdtOnlyContent() {
     console.log('Showing TMĐT only content');
     
     // Hide overview view and show TMĐT view
-    const overviewView = document.getElementById('overview-view');
+    
     const tmdtView = document.getElementById('tmdt-view');
-    const wholesaleView = document.getElementById('wholesale-view');
-    const retailView = document.getElementById('retail-view');
     const packagingView = document.getElementById('packaging-view');
     
     // Hide all other views
@@ -6128,3 +6128,38 @@ function testSearchFunction() {
 window.searchOrders = searchOrders;
 window.clearSearch = clearSearch;
 window.testSearchFunction = testSearchFunction;
+
+// Retail profit management functions
+function loadRetailProfitData() {
+    console.log('🛍️ Loading retail profit data...');
+    
+    // Initialize retail profit management if available
+    if (typeof initializeRetailProfitManagement === 'function') {
+        initializeRetailProfitManagement();
+    } else {
+        console.warn('⚠️ Retail profit management functions not loaded yet');
+        // Retry after a short delay
+        setTimeout(() => {
+            if (typeof initializeRetailProfitManagement === 'function') {
+                initializeRetailProfitManagement();
+            }
+        }, 1000);
+    }
+}
+
+function showRetailOnlyContent() {
+    console.log('🛍️ Showing retail-only content...');
+    
+    // Hide overview content
+    hideOverviewContent();
+    
+    // Show retail-specific elements
+    const retailView = document.getElementById('retail-view');
+    if (retailView) {
+        retailView.style.display = 'block';
+    }
+}
+
+// Export retail functions to global scope
+window.loadRetailProfitData = loadRetailProfitData;
+window.showRetailOnlyContent = showRetailOnlyContent;

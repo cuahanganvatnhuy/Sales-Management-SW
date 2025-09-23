@@ -99,6 +99,13 @@ async function loadInvoiceData() {
         
         console.log('🏪 Loaded stores:', Object.keys(invoiceData.stores).length);
         
+        // Load products to get correct units
+        const productsSnapshot = await firebase.database().ref('products').once('value');
+        invoiceData.products = productsSnapshot.val() || {};
+        
+        console.log('📦 Loaded products:', Object.keys(invoiceData.products).length);
+        console.log('📦 Sample products data:', Object.values(invoiceData.products).slice(0, 3));
+        
         // Don't load orders initially, only after date filter is applied
         console.log('🕒 Date range not set yet, skipping order loading');
         
@@ -317,26 +324,87 @@ async function generateGlobalInvoice() {
                     storeSummaries[storeId].totalOrders++;
                     totalOrders++;
                     
-                    let orderTotal = parseFloat(order.total || 0);
+                    let orderTotal = parseFloat(order.totalAmount || order.total || 0);
                     storeSummaries[storeId].totalRevenue += orderTotal;
                     totalRevenue += orderTotal;
                     
-                    // Process single order (not array of items)
-                    const productName = order.productName || 'Sản phẩm không xác định';
-                    const quantity = parseFloat(order.quantity || 0);
-                    const price = parseFloat(order.price || 0);
-                    const itemTotal = quantity * price;
-                    
-                    if (!storeSummaries[storeId].productSummary[productName]) {
-                        storeSummaries[storeId].productSummary[productName] = {
-                            quantity: 0,
-                            price: price,
-                            total: 0
-                        };
+                    // Handle different order formats
+                    if (order.items && Array.isArray(order.items)) {
+                        // New format: Multiple items in one order (retail orders)
+                        order.items.forEach(item => {
+                            const productName = item.productName || 'Sản phẩm không xác định';
+                            const quantity = parseFloat(item.quantity || 0);
+                            const price = parseFloat(item.sellingPrice || item.price || 0);
+                            const itemTotal = quantity * price;
+                            
+                            // Find product unit from products data
+                            let productUnit = 'lỗi đơn vị'; // default
+                            const productId = item.productId || item.sku;
+                            console.log('🔍 Looking for product unit. ProductId:', productId, 'ProductName:', productName);
+                            if (productId && invoiceData.products) {
+                                const productData = Object.values(invoiceData.products).find(p => 
+                                    p.id === productId || p.sku === productId || p.productName === productName
+                                );
+                                console.log('🔍 Found product data:', productData);
+                                if (productData && productData.unit) {
+                                    productUnit = productData.unit;
+                                    console.log('🔍 Using product unit:', productUnit);
+                                } else {
+                                    console.log('🔍 No unit found, using default: lỗi đơn vị');
+                                }
+                            } else {
+                                console.log('🔍 No productId or products data available, using default: lỗi đơn vị');
+                            }
+                            
+                            if (!storeSummaries[storeId].productSummary[productName]) {
+                                storeSummaries[storeId].productSummary[productName] = {
+                                    quantity: 0,
+                                    price: price,
+                                    total: 0,
+                                    unit: productUnit
+                                };
+                            }
+                            storeSummaries[storeId].productSummary[productName].quantity += quantity;
+                            storeSummaries[storeId].productSummary[productName].total += itemTotal;
+                        });
+                    } else {
+                        // Single product format (old format or TMDT)
+                        const productName = order.productName || 'Sản phẩm không xác định';
+                        const quantity = parseFloat(order.quantity || 0);
+                        const price = parseFloat(order.sellingPrice || order.price || 0);
+                        const itemTotal = quantity * price;
+                        
+                        // Find product unit from products data
+                        let productUnit = 'lỗi đơn vị'; // default
+                        const productId = order.productId || order.sku;
+                        console.log('🔍 Looking for product unit (single order). ProductId:', productId, 'ProductName:', productName);
+                        if (productId && invoiceData.products) {
+                            const productData = Object.values(invoiceData.products).find(p => 
+                                p.id === productId || p.sku === productId || p.productName === productName
+                            );
+                            console.log('🔍 Found product data (single order):', productData);
+                            if (productData && productData.unit) {
+                                productUnit = productData.unit;
+                                console.log('🔍 Using product unit (single order):', productUnit);
+                            } else {
+                                console.log('🔍 No unit found (single order), using default: lỗi đơn vị');
+                            }
+                        } else {
+                            console.log('🔍 No productId or products data available (single order), using default: lỗi đơn vị');
+                        }
+                        
+                        if (!storeSummaries[storeId].productSummary[productName]) {
+                            storeSummaries[storeId].productSummary[productName] = {
+                                quantity: 0,
+                                price: price,
+                                total: 0,
+                                unit: productUnit
+                            };
+                        }
+                        
+                        storeSummaries[storeId].productSummary[productName].quantity += quantity;
+                        storeSummaries[storeId].productSummary[productName].total += itemTotal;
                     }
-                    
-                    storeSummaries[storeId].productSummary[productName].quantity += quantity;
-                    storeSummaries[storeId].productSummary[productName].total += itemTotal;
                 }
             });
         });
@@ -392,7 +460,8 @@ function generateInvoiceHTML(data) {
                         productSummary[productName] = {
                             quantity: 0,
                             price: storeCount > 0 ? totalPrice / storeCount : store.productSummary[productName].price,
-                            total: 0
+                            total: 0,
+                            unit: store.productSummary[productName].unit || 'lỗi đơn vị'
                         };
                     }
                     productSummary[productName].quantity += store.productSummary[productName].quantity;
@@ -406,6 +475,18 @@ function generateInvoiceHTML(data) {
     const formattedStartDate = formatDate(startDate);
     const formattedEndDate = formatDate(endDate);
     
+    // Function to format quantity with appropriate unit
+    function formatQuantity(quantity, unit = 'lỗi đơn vị') {
+        console.log('formatQuantity called with:', {quantity, unit, unitType: typeof unit});
+        // If unit is an object (product summary), extract the unit property
+        if (typeof unit === 'object' && unit !== null) {
+            console.log('Using unit from product object:', unit.unit);
+            return `${quantity.toLocaleString()} ${unit.unit || 'lỗi đơn vị'}`;
+        }
+        console.log('Using unit as string:', unit);
+        return `${quantity.toLocaleString()} ${unit}`;
+    }
+    
     // Generate product rows
     let productRows = '';
     
@@ -418,7 +499,7 @@ function generateInvoiceHTML(data) {
                 <tr>
                     <td>${stt}</td>
                     <td>${productName}</td>
-                    <td class="text-right">${product.quantity.toLocaleString()} kg</td>
+                    <td class="text-right">${formatQuantity(product.quantity, product)}</td>
                     <td class="text-right">${formatCurrency(product.price)}</td>
                     <td class="text-right">${formatCurrency(product.total)}</td>
                 </tr>
@@ -451,11 +532,12 @@ function generateInvoiceHTML(data) {
                 
                 Object.keys(store.productSummary).forEach(productName => {
                     const product = store.productSummary[productName];
+                    console.log('Debug product in store details:', productName, product);
                     storeProductRows += `
                         <tr>
                             <td>${stt}</td>
                             <td>${productName}</td>
-                            <td class="text-right">${product.quantity.toLocaleString()} kg</td>
+                            <td class="text-right">${formatQuantity(product.quantity, product)}</td>
                             <td class="text-right">${formatCurrency(product.price)}</td>
                             <td class="text-right">${formatCurrency(product.total)}</td>
                         </tr>
@@ -512,13 +594,15 @@ function generateInvoiceHTML(data) {
     } else {
         // Regular store invoice (existing logic)
         let stt = 1;
+        productRows = '';
         Object.keys(productSummary).forEach(productName => {
             const product = productSummary[productName];
+            console.log('Debug product in main summary:', productName, product);
             productRows += `
                 <tr>
                     <td>${stt}</td>
                     <td>${productName}</td>
-                    <td class="text-right">${product.quantity.toLocaleString()} kg</td>
+                    <td class="text-right">${formatQuantity(product.quantity, product)}</td>
                     <td class="text-right">${formatCurrency(product.price)}</td>
                     <td class="text-right">${formatCurrency(product.total)}</td>
                 </tr>

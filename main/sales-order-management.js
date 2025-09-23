@@ -77,86 +77,96 @@ async function loadSalesOrdersData() {
     try {
         console.log('Loading sales orders for store:', storeId);
         
-        // Load from the actual sales order collections
+        // Load from the dedicated sales order collections only
         const promises = [
-            // Load TMDT sales orders from multiple possible sources
-            window.database.ref(`stores/${storeId}/tmdtSalesOrders`).once('value'),
-            window.database.ref(`stores/${storeId}/orders`).once('value'), // Check regular orders
-            window.database.ref(`stores/${storeId}/salesOrders`).once('value'), // Check sales orders from TMDT module
-            // Load retail sales orders  
+            // Load TMDT sales orders from dedicated TMDT sales module
+            window.database.ref(`stores/${storeId}/salesOrders`).once('value'), // From sales-orders-tmdt.html
+            // Load retail sales orders from dedicated retail sales module
             window.database.ref(`stores/${storeId}/retailSalesOrders`).once('value'),
-            // Load wholesale sales orders
-            window.database.ref(`stores/${storeId}/wholesaleSalesOrders`).once('value'),
-            // Also check global orders collection (not store-specific)
-            window.database.ref('orders').once('value')
+            // Load wholesale sales orders from dedicated wholesale sales module
+            window.database.ref(`stores/${storeId}/wholesaleSalesOrders`).once('value')
         ];
         
-        const [tmdtSnapshot, ordersSnapshot, salesOrdersSnapshot, retailSnapshot, wholesaleSnapshot, globalOrdersSnapshot] = await Promise.all(promises);
+        const [salesOrdersSnapshot, retailSnapshot, wholesaleSnapshot] = await Promise.all(promises);
         
-        const tmdtOrders = tmdtSnapshot.val() || {};
-        const regularOrders = ordersSnapshot.val() || {};
-        const salesOrders = salesOrdersSnapshot.val() || {};
+        const salesOrders = salesOrdersSnapshot.val() || {}; // TMDT orders from sales-orders-tmdt.html
         const retailOrders = retailSnapshot.val() || {};
         const wholesaleOrders = wholesaleSnapshot.val() || {};
-        const globalOrders = globalOrdersSnapshot.val() || {};
         
-        console.log('TMDT orders loaded:', Object.keys(tmdtOrders).length);
-        console.log('Regular orders loaded:', Object.keys(regularOrders).length);
-        console.log('Sales orders loaded:', Object.keys(salesOrders).length);
-        console.log('Retail orders loaded:', Object.keys(retailOrders).length);
-        console.log('Wholesale orders loaded:', Object.keys(wholesaleOrders).length);
-        console.log('Global orders loaded:', Object.keys(globalOrders).length);
+        console.log('📊 Sales Orders Data Loaded:');
+        console.log('- TMDT sales orders:', Object.keys(salesOrders).length);
+        console.log('- Retail sales orders:', Object.keys(retailOrders).length);
+        console.log('- Wholesale sales orders:', Object.keys(wholesaleOrders).length);
         
-        // Debug: Check for wholesale orders in regular orders
-        console.log('🔍 Checking regular orders for wholesale orders:');
-        console.log('🔍 All regular orders:', Object.keys(regularOrders));
-        Object.entries(regularOrders).forEach(([orderId, order]) => {
-            console.log('🔍 Checking order:', orderId, {
-                source: order.source,
-                orderType: order.orderType, 
-                orderId: order.orderId,
-                hasWholesaleInId: order.orderId && order.orderId.includes('WHOLESALE')
-            });
-            
-            if (order.source === 'wholesale_sales' || order.orderType === 'wholesale' || 
-                (order.orderId && order.orderId.includes('WHOLESALE'))) {
-                console.log('✅ Found wholesale order in regular orders:', orderId, order);
-            }
+        // Debug: Show all orders in salesOrders collection
+        console.log('🔍 All orders in salesOrders collection:');
+        Object.entries(salesOrders).forEach(([orderId, order]) => {
+            console.log(`  - ${orderId}: ${order.orderId || 'no orderId'} (source: ${order.source || 'none'}, type: ${order.orderType || 'none'})`);
         });
         
         // Combine all orders with proper source identification
         const allOrders = {};
         
-        // Add TMDT orders with source identification
-        Object.entries(tmdtOrders).forEach(([orderId, order]) => {
-            allOrders[orderId] = {
-                ...order,
-                source: 'tmdt_sales',
-                orderType: 'ecommerce'
-            };
-        });
-        
-        // Add TMDT orders from regular orders collection (check for platform field)
-        Object.entries(regularOrders).forEach(([orderId, order]) => {
-            if (order.platform || order.platformName || order.source === 'tmdt_sales' || order.orderType === 'ecommerce') {
-                allOrders[orderId] = {
-                    ...order,
-                    source: 'tmdt_sales',
-                    orderType: 'ecommerce'
-                };
-            }
-        });
-        
-        // Add TMDT orders from salesOrders collection (from TMDT module)
+        // Add TMDT orders from salesOrders collection (from sales-orders-tmdt.html)
         Object.entries(salesOrders).forEach(([orderId, order]) => {
-            if (order.platform || order.platformName || order.source === 'tmdt_sales' || order.orderType === 'ecommerce') {
+            console.log('🔍 Checking order for TMDT:', orderId, {
+                orderId: order.orderId || orderId,
+                source: order.source,
+                orderType: order.orderType,
+                platform: order.platform,
+                platformName: order.platformName
+            });
+            
+            // STRICT filtering: First check if it's retail or wholesale (exclude immediately)
+            const isRetailOrder = order.source === 'retail_sales' || 
+                                 order.orderType === 'retail' || 
+                                 (order.orderId && order.orderId.includes('RETAIL')) ||
+                                 orderId.includes('RETAIL');
+            
+            const isWholesaleOrder = order.source === 'wholesale_sales' || 
+                                    order.orderType === 'wholesale' || 
+                                    (order.orderId && order.orderId.includes('WHOLESALE')) ||
+                                    orderId.includes('WHOLESALE');
+            
+            // If it's retail or wholesale, skip immediately
+            if (isRetailOrder) {
+                console.log('❌ SKIPPED: Retail order detected:', orderId, order.orderId || orderId);
+                return;
+            }
+            
+            if (isWholesaleOrder) {
+                console.log('❌ SKIPPED: Wholesale order detected:', orderId, order.orderId || orderId);
+                return;
+            }
+            
+            // Now check if it's explicitly TMDT
+            const isExplicitlyTMDT = order.source === 'tmdt_sales' || order.platform || order.platformName;
+            
+            if (isExplicitlyTMDT) {
                 allOrders[orderId] = {
                     ...order,
                     source: 'tmdt_sales',
                     orderType: 'ecommerce'
                 };
+                console.log('✅ ADDED: TMDT order:', orderId, order.orderId || orderId);
+            } else {
+                console.log('❌ SKIPPED: Not TMDT order (no platform/source):', orderId, order.orderId || orderId);
             }
         });
+        
+        // REMOVED: Don't add TMDT orders from regular orders collection
+        // We only want TMDT orders from the dedicated sales-orders-tmdt.html module
+        // Object.entries(regularOrders).forEach(([orderId, order]) => {
+        //     if (order.platform || order.platformName || order.source === 'tmdt_sales' || order.orderType === 'ecommerce') {
+        //         allOrders[orderId] = {
+        //             ...order,
+        //             source: 'tmdt_sales',
+        //             orderType: 'ecommerce'
+        //         };
+        //     }
+        // });
+        
+        // REMOVED: Duplicate code - already handled above
         
         // Add retail orders with source identification
         Object.entries(retailOrders).forEach(([orderId, order]) => {
@@ -165,6 +175,7 @@ async function loadSalesOrdersData() {
                 source: 'retail_sales',
                 orderType: 'retail'
             };
+            console.log('✅ Added retail order:', orderId, order.orderId || orderId);
         });
         
         // Add wholesale orders with source identification
@@ -174,74 +185,34 @@ async function loadSalesOrdersData() {
                 source: 'wholesale_sales',
                 orderType: 'wholesale'
             };
+            console.log('✅ Added wholesale order:', orderId, order.orderId || orderId);
         });
         
-        // Add wholesale orders from regular orders collection (check for wholesale indicators)
-        Object.entries(regularOrders).forEach(([orderId, order]) => {
-            if (order.source === 'wholesale_sales' || order.orderType === 'wholesale' || 
-                (order.orderId && order.orderId.includes('WHOLESALE'))) {
-                allOrders[orderId] = {
-                    ...order,
-                    source: 'wholesale_sales',
-                    orderType: 'wholesale'
-                };
-            }
-        });
+        // REMOVED: No longer loading from regular orders collection
         
-        // Add wholesale orders from salesOrders collection (from wholesale module)
-        Object.entries(salesOrders).forEach(([orderId, order]) => {
-            if (order.source === 'wholesale_sales' || order.orderType === 'wholesale' || 
-                (order.orderId && order.orderId.includes('WHOLESALE'))) {
-                allOrders[orderId] = {
-                    ...order,
-                    source: 'wholesale_sales',
-                    orderType: 'wholesale'
-                };
-            }
-        });
+        // REMOVED: Wholesale orders are already handled from wholesaleSalesOrders collection above
         
-        // Add wholesale orders from global orders collection (where wholesale orders are actually saved)
-        console.log('🔍 Checking global orders for wholesale orders:');
-        Object.entries(globalOrders).forEach(([orderId, order]) => {
-            console.log('🔍 Checking global order:', orderId, {
-                source: order.source,
-                orderType: order.orderType, 
-                orderId: order.orderId,
-                storeId: order.storeId,
-                hasWholesaleInId: order.orderId && order.orderId.includes('WHOLESALE')
-            });
-            
-            // Only include orders from the selected store
-            if (order.storeId === storeId && (
-                order.source === 'wholesale_sales' || 
-                order.orderType === 'wholesale' || 
-                (order.orderId && order.orderId.includes('WHOLESALE'))
-            )) {
-                console.log('✅ Found wholesale order in global orders:', orderId, order);
-                allOrders[orderId] = {
-                    ...order,
-                    source: 'wholesale_sales',
-                    orderType: 'wholesale'
-                };
-            }
-        });
+        // REMOVED: No longer loading from global orders collection
         
         salesOrdersData = allOrders;
         filteredSalesOrders = {};
-        console.log('Total sales orders loaded:', Object.keys(salesOrdersData).length);
+        console.log('✅ Total sales orders loaded:', Object.keys(salesOrdersData).length);
         
-        // Debug: Check final wholesale orders count
-        const wholesaleOrdersCount = Object.values(salesOrdersData).filter(order => 
+        // Debug: Check final counts by type
+        const tmdtCount = Object.values(salesOrdersData).filter(order => 
+            order.source === 'tmdt_sales' || order.orderType === 'ecommerce'
+        ).length;
+        const retailCount = Object.values(salesOrdersData).filter(order => 
+            order.source === 'retail_sales' || order.orderType === 'retail'
+        ).length;
+        const wholesaleCount = Object.values(salesOrdersData).filter(order => 
             order.source === 'wholesale_sales' || order.orderType === 'wholesale'
         ).length;
-        console.log('🔍 Final wholesale orders count:', wholesaleOrdersCount);
         
-        // Debug: List all wholesale orders with full data
-        Object.entries(salesOrdersData).forEach(([orderId, order]) => {
-            if (order.source === 'wholesale_sales' || order.orderType === 'wholesale') {
-                console.log('📦 Wholesale order found:', orderId, order);
-            }
-        });
+        console.log('📊 Final counts by type:');
+        console.log('- TMĐT (from sales-orders-tmdt.html):', tmdtCount);
+        console.log('- Retail (from sales-orders-retail.html):', retailCount);
+        console.log('- Wholesale (from wholesale-orders.html):', wholesaleCount);
         
         displayCurrentViewOrders();
         updateStatistics();
@@ -317,15 +288,32 @@ async function deleteSelectedOrders(orderType) {
         for (const orderId of selectedOrders) {
             const order = salesOrdersData[orderId];
             if (order) {
+                console.log('🗑️ Deleting order:', orderId, {
+                    source: order.source,
+                    orderType: order.orderType,
+                    orderId: order.orderId
+                });
+                
                 // Determine which collection to delete from based on order source
                 let collectionPath;
                 if (order.source === 'tmdt_sales' || order.orderType === 'ecommerce') {
                     collectionPath = `stores/${storeId}/salesOrders/${orderId}`;
-                } else if (order.source === 'retail_sales') {
+                } else if (order.source === 'retail_sales' || order.orderType === 'retail') {
                     collectionPath = `stores/${storeId}/retailSalesOrders/${orderId}`;
-                } else if (order.source === 'wholesale_sales') {
+                } else if (order.source === 'wholesale_sales' || order.orderType === 'wholesale') {
                     collectionPath = `stores/${storeId}/wholesaleSalesOrders/${orderId}`;
+                } else {
+                    // If source is unclear, try to determine from orderId
+                    if (orderId.includes('RETAIL') || (order.orderId && order.orderId.includes('RETAIL'))) {
+                        collectionPath = `stores/${storeId}/retailSalesOrders/${orderId}`;
+                    } else if (orderId.includes('WHOLESALE') || (order.orderId && order.orderId.includes('WHOLESALE'))) {
+                        collectionPath = `stores/${storeId}/wholesaleSalesOrders/${orderId}`;
+                    } else {
+                        collectionPath = `stores/${storeId}/salesOrders/${orderId}`;
+                    }
                 }
+                
+                console.log('🗑️ Delete path:', collectionPath);
                 
                 if (collectionPath) {
                     promises.push(window.database.ref(collectionPath).remove());
@@ -364,15 +352,49 @@ async function deleteAllOrders(orderType) {
         const storeId = localStorage.getItem('selectedStoreId');
         const promises = [];
         
-        for (const order of orders) {
-            let collectionPath;
+        // Find the actual orderId keys from salesOrdersData
+        const orderIdsToDelete = [];
+        Object.entries(salesOrdersData).forEach(([orderId, order]) => {
+            let shouldDelete = false;
             if (orderType === 'tmdt') {
-                collectionPath = `stores/${storeId}/salesOrders/${order.orderId || order.id}`;
+                shouldDelete = order.source === 'tmdt_sales' || order.orderType === 'ecommerce' || order.platform;
             } else if (orderType === 'retail') {
-                collectionPath = `stores/${storeId}/retailSalesOrders/${order.orderId || order.id}`;
+                shouldDelete = order.source === 'retail_sales' || order.orderType === 'retail' || 
+                             orderId.includes('RETAIL') || (order.orderId && order.orderId.includes('RETAIL'));
             } else if (orderType === 'wholesale') {
-                collectionPath = `stores/${storeId}/wholesaleSalesOrders/${order.orderId || order.id}`;
+                shouldDelete = order.source === 'wholesale_sales' || order.orderType === 'wholesale' ||
+                             orderId.includes('WHOLESALE') || (order.orderId && order.orderId.includes('WHOLESALE'));
             }
+            
+            if (shouldDelete) {
+                orderIdsToDelete.push(orderId);
+            }
+        });
+        
+        console.log(`🗑️ Deleting all ${orderType} orders:`, orderIdsToDelete);
+        
+        for (const orderId of orderIdsToDelete) {
+            const order = salesOrdersData[orderId];
+            let collectionPath;
+            
+            if (orderType === 'tmdt') {
+                collectionPath = `stores/${storeId}/salesOrders/${orderId}`;
+            } else if (orderType === 'retail') {
+                collectionPath = `stores/${storeId}/retailSalesOrders/${orderId}`;
+            } else if (orderType === 'wholesale') {
+                collectionPath = `stores/${storeId}/wholesaleSalesOrders/${orderId}`;
+            } else {
+                // Fallback: determine from orderId pattern
+                if (orderId.includes('RETAIL') || (order.orderId && order.orderId.includes('RETAIL'))) {
+                    collectionPath = `stores/${storeId}/retailSalesOrders/${orderId}`;
+                } else if (orderId.includes('WHOLESALE') || (order.orderId && order.orderId.includes('WHOLESALE'))) {
+                    collectionPath = `stores/${storeId}/wholesaleSalesOrders/${orderId}`;
+                } else {
+                    collectionPath = `stores/${storeId}/salesOrders/${orderId}`;
+                }
+            }
+            
+            console.log(`🗑️ Delete path for ${orderId}:`, collectionPath);
             
             if (collectionPath) {
                 promises.push(window.database.ref(collectionPath).remove());
@@ -385,7 +407,7 @@ async function deleteAllOrders(orderType) {
         selectedOrders.clear();
         await loadSalesOrdersData();
         
-        alert(`Đã xóa thành công tất cả ${promises.length} đơn hàng ${getOrderTypeLabel(orderType)}.`);
+        alert(`Đã xóa thành công tất cả ${orderIdsToDelete.length} đơn hàng ${getOrderTypeLabel(orderType)}.`);
         
     } catch (error) {
         console.error('Error deleting all orders:', error);

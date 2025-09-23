@@ -135,6 +135,12 @@ async function loadInvoiceData() {
         
         console.log('🏪 Loaded stores:', Object.keys(invoiceData.stores).length);
         
+        // Load products to get correct units
+        const productsSnapshot = await firebase.database().ref('products').once('value');
+        invoiceData.products = productsSnapshot.val() || {};
+        
+        console.log('📦 Loaded products:', Object.keys(invoiceData.products).length);
+        
         // Populate store dropdown
         populateStoreDropdown();
         
@@ -415,6 +421,18 @@ async function generateStoreInvoice() {
                     let quantity = parseFloat(order.quantity || order.qty || 1);
                     let unitPrice = parseFloat(order.price || order.unitPrice || (orderTotal / quantity));
                     
+                    // Find product unit from products data
+                    let productUnit = 'kg'; // default
+                    const productId = order.productId || order.sku;
+                    if (productId && invoiceData.products) {
+                        const productData = Object.values(invoiceData.products).find(p => 
+                            p.id === productId || p.sku === productId || p.productName === productName
+                        );
+                        if (productData && productData.unit) {
+                            productUnit = productData.unit;
+                        }
+                    }
+                    
                     // If no product name found, try to find it in order keys
                     if (!productName) {
                         const orderKeys = Object.keys(order);
@@ -449,7 +467,8 @@ async function generateStoreInvoice() {
                         productSummary[productName] = {
                             quantity: 0,
                             unitPrice: unitPrice,
-                            total: 0
+                            total: 0,
+                            unit: productUnit  // Use found product unit
                         };
                     }
                     
@@ -479,6 +498,18 @@ async function generateStoreInvoice() {
                         const price = parseFloat(item.price || item.unitPrice || 0);
                         const itemTotal = quantity * price;
                         
+                        // Find product unit from products data
+                        let productUnit = 'kg'; // default
+                        const productId = item.productId || item.sku;
+                        if (productId && invoiceData.products) {
+                            const productData = Object.values(invoiceData.products).find(p => 
+                                p.id === productId || p.sku === productId || p.productName === productName
+                            );
+                            if (productData && productData.unit) {
+                                productUnit = productData.unit;
+                            }
+                        }
+                        
                         console.log('📋 Processing item:', productName, 'Qty:', quantity, 'Price:', price, 'Total:', itemTotal);
                         
                         // Check if we have valid product data
@@ -497,7 +528,8 @@ async function generateStoreInvoice() {
                             productSummary[productName] = {
                                 quantity: 0,
                                 unitPrice: price, // Store unit price
-                                total: 0
+                                total: 0,
+                                unit: productUnit  // Use found product unit
                             };
                             console.log('🆕 New product added to summary:', productName);
                             console.log('🆕 Current productSummary keys:', Object.keys(productSummary));
@@ -617,7 +649,7 @@ function generateInvoiceHTML(data) {
             <tr>
                 <td>${stt}</td>
                 <td>${productName}</td>
-                <td class="text-right">${product.quantity.toLocaleString()} kg</td>
+                <td class="text-right">${product.quantity.toLocaleString()} ${product.unit || 'kg'}</td>
                 <td class="text-right">${product.unitPrice.toLocaleString()}đ</td>
                 <td class="text-right">${product.total.toLocaleString()}đ</td>
             </tr>

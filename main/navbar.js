@@ -19,7 +19,11 @@ class NavbarLoader {
             'stores': 'nav-stores',
             'reports': 'nav-reports',
             'warehouse-management': 'nav-warehouse',
-            'settings': 'nav-settings'
+            'settings': 'nav-settings',
+            'profit-management': 'nav-profit-management',
+            'retail-profit': 'nav-profit-management',
+            'wholesale-profit': 'nav-profit-management',
+            'overview-profit': 'nav-profit-management'
         };
         
         return pageMap[filename] || 'nav-home';
@@ -39,7 +43,11 @@ class NavbarLoader {
             'stores': 'Quản Lý Cửa Hàng',
             'reports': 'Báo Cáo & Thống Kê',
             'warehouse-management': 'Quản Lý Kho',
-            'settings': 'Cài Đặt Hệ Thống'
+            'settings': 'Cài Đặt Hệ Thống',
+            'profit-management': 'Lợi Nhuận Đơn TMĐT',
+            'retail-profit': 'Lợi Nhuận Đơn Lẻ',
+            'wholesale-profit': 'Lợi Nhuận Đơn Sỉ',
+            'overview-profit': 'Tổng Quan Lợi Nhuận'
         };
         
         return titleMap[filename] || 'PMQLDH';
