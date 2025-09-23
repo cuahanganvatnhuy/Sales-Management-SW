@@ -117,26 +117,26 @@ span.titlle {
     </div>
     <ul class="sidebar-menu">
         <li id="nav-home"><a href="/index.html"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
-        <li class="has-submenu">
+        <li class="has-submenu" data-permission="product_read">
             <a href="#" onclick="toggleProductSubmenu(event)">
                 <i class="fas fa-box"></i>
                 <span>Sản Phẩm</span>
                 <i class="fas fa-chevron-down submenu-chevron"></i>
             </a>
             <ul id="productSubmenu" class="order-submenu">
-                <li class="order-submenu-item">
+                <li class="order-submenu-item" data-permission="product_create">
                     <a href="/view/products.html" data-page="products.html" class="order-submenu-link">
                         <i class="fas fa-plus order-submenu-icon"></i>
                         Thêm Sản Phẩm
                     </a>
                 </li>
-                <li class="order-submenu-item">
+                <li class="order-submenu-item" data-permission="product_read">
                     <a href="/view/product-management.html" data-page="product-management.html" class="order-submenu-link">
                         <i class="fas fa-list order-submenu-icon"></i>
                         Quản Lý Sản Phẩm
                     </a>
                 </li>
-                <li class="order-submenu-item">
+                <li class="order-submenu-item" data-permission="product_category_manage">
                     <a href="/view/product-categories.html" data-page="product-categories.html" class="order-submenu-link">
                         <i class="fas fa-tags order-submenu-icon"></i>
                         Danh Mục Sản Phẩm
@@ -144,7 +144,7 @@ span.titlle {
                 </li>
             </ul>
         </li>
-        <li id="nav-selling-products">
+        <li id="nav-selling-products" data-permission="selling_product_manage">
             <a href="/view/selling-products.html" data-page="selling-products.html">
                 <i class="fas fa-money-bill-wave"></i>
                 <span>Quản Lý Sản Phẩm Bán</span>
@@ -249,10 +249,11 @@ span.titlle {
                 </li>
             </ul>
         </li>
-        <li id="nav-stores"><a href="/view/stores.html" data-page="stores.html"><i class="fas fa-store"></i> <span>Cửa Hàng</span></a></li>
-        <li id="nav-reports"><a href="/view/reports.html" data-page="reports.html"><i class="fas fa-chart-bar"></i> <span>Báo Cáo</span></a></li>
-        <li id="nav-warehouse"><a href="/view/warehouse-management.html" data-page="warehouse-management.html"><i class="fas fa-warehouse"></i> <span>Quản Lý Kho</span></a></li>
-        <li id="nav-shipping-cost"><a href="/view/shipping-cost-management.html" data-page="shipping-cost-management.html"><i class="fas fa-shipping-fast"></i> <span>Chi Phí Vận Chuyển</span></a></li>
+        <li id="nav-stores" data-permission="store_read"><a href="/view/stores.html" data-page="stores.html"><i class="fas fa-store"></i> <span>Cửa Hàng</span></a></li>
+        <li id="nav-user-management" data-permission="user_read"><a href="/view/user-management.html" data-page="user-management.html"><i class="fas fa-users"></i> <span>Quản Lý Người Dùng</span></a></li>
+        <li id="nav-reports" data-permission="report_read"><a href="/view/reports.html" data-page="reports.html"><i class="fas fa-chart-bar"></i> <span>Báo Cáo</span></a></li>
+        <li id="nav-warehouse" data-permission="warehouse_read"><a href="/view/warehouse-management.html" data-page="warehouse-management.html"><i class="fas fa-warehouse"></i> <span>Quản Lý Kho</span></a></li>
+        <li id="nav-shipping-cost" data-permission="shipping_read"><a href="/view/shipping-cost-management.html" data-page="shipping-cost-management.html"><i class="fas fa-shipping-fast"></i> <span>Chi Phí Vận Chuyển</span></a></li>
         <li class="has-submenu">
             <script>
                 // Immediate fallback - ensure function is available right away
@@ -378,6 +379,59 @@ span.titlle {
             };
             console.log('✅ toggleProfitSubmenu function defined');
         }
+        
+        // Permission-based menu visibility
+        function updateMenuVisibility() {
+            console.log('🔍 Updating menu visibility based on permissions...');
+            
+            // Check if authSystem is available
+            if (typeof window.authSystem === 'undefined') {
+                console.log('⚠️ AuthSystem not available, showing all menus');
+                return;
+            }
+            
+            // Get all menu items with data-permission attribute
+            const menuItems = document.querySelectorAll('[data-permission]');
+            
+            menuItems.forEach(item => {
+                const requiredPermission = item.getAttribute('data-permission');
+                const hasPermission = window.authSystem.hasPermission(requiredPermission);
+                
+                const itemText = item.textContent.trim().substring(0, 30);
+                console.log(`🔍 Menu: "${itemText}", Permission: ${requiredPermission}, Access: ${hasPermission}`);
+                
+                if (hasPermission) {
+                    item.style.display = '';
+                    item.classList.remove('hidden');
+                } else {
+                    item.style.display = 'none';
+                    item.classList.add('hidden');
+                }
+            });
+            
+            // Check if parent menus should be hidden (if all children are hidden)
+            const parentMenus = document.querySelectorAll('.has-submenu');
+            parentMenus.forEach(parentMenu => {
+                const submenu = parentMenu.querySelector('.order-submenu');
+                if (submenu) {
+                    const visibleChildren = submenu.querySelectorAll('.order-submenu-item:not([style*="display: none"]):not(.hidden)');
+                    
+                    if (visibleChildren.length === 0) {
+                        parentMenu.style.display = 'none';
+                        parentMenu.classList.add('hidden');
+                        console.log(`🚫 Hiding parent menu: ${parentMenu.textContent.trim()} (no visible children)`);
+                    } else {
+                        parentMenu.style.display = '';
+                        parentMenu.classList.remove('hidden');
+                    }
+                }
+            });
+            
+            console.log('✅ Menu visibility update completed');
+        }
+        
+        // Export function globally
+        window.updateMenuVisibility = updateMenuVisibility;
 
         
         // Dynamic link adjustment based on current path
@@ -400,6 +454,11 @@ span.titlle {
                     }
                 }
             });
+            
+            // Update menu visibility based on permissions
+            setTimeout(() => {
+                updateMenuVisibility();
+            }, 1000);
             
             // Close submenu when clicking outside
             document.addEventListener('click', function(e) {

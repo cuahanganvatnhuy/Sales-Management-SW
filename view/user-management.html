@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Tài Khoản - Quản Lý Đơn Hàng</title>
+    <link rel="stylesheet" href="../style/man.css">
+    <link rel="stylesheet" href="../css/user-management.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <div id="navbar-placeholder"></div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <div id="header-placeholder"></div>
+            
+            <!-- User Management Content -->
+            <div class="user-management-content">
+                <div class="page-header">
+                    <div class="header-left">
+                        <h1><i class="fas fa-users"></i> Quản Lý Tài Khoản</h1>
+                        <p>Quản lý người dùng và phân quyền hệ thống</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" onclick="showCreateUserModal()" data-permission="user_create">
+                            <i class="fas fa-plus"></i> Thêm Tài Khoản
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Statistics Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card total-users">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalUsers">0</h3>
+                            <p>Tổng Tài Khoản</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card active-users">
+                        <div class="stat-icon">
+                            <i class="fas fa-user-check"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="activeUsers">0</h3>
+                            <p>Đang Hoạt Động</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card admin-users">
+                        <div class="stat-icon">
+                            <i class="fas fa-user-shield"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="adminUsers">0</h3>
+                            <p>Quản Trị Viên</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card online-users">
+                        <div class="stat-icon">
+                            <i class="fas fa-circle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="onlineUsers">1</h3>
+                            <p>Đang Online</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Search and Filters -->
+                <div class="search-filter-section">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="userSearch" placeholder="Tìm kiếm theo tên, email, username..." onkeyup="filterUsers()">
+                    </div>
+                    
+                    <div class="filter-group">
+                        <select id="roleFilter" onchange="filterUsers()">
+                            <option value="">Tất cả vai trò</option>
+                            <option value="admin">Quản trị viên</option>
+                            <option value="manager">Quản lý</option>
+                            <option value="employee">Nhân viên</option>
+                            <option value="viewer">Người xem</option>
+                        </select>
+                        
+                        <select id="statusFilter" onchange="filterUsers()">
+                            <option value="">Tất cả trạng thái</option>
+                            <option value="active">Hoạt động</option>
+                            <option value="inactive">Vô hiệu hóa</option>
+                        </select>
+                        
+                        <button class="btn btn-outline" onclick="clearFilters()">
+                            <i class="fas fa-times"></i> Xóa bộ lọc
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Users Table -->
+                <div class="users-table-section">
+                    <div class="table-header">
+                        <h3>Danh Sách Tài Khoản</h3>
+                        <div class="table-actions">
+                            <button class="btn btn-outline" onclick="exportUsers()">
+                                <i class="fas fa-download"></i> Xuất Excel
+                            </button>
+                            <button class="btn btn-outline" onclick="refreshUsers()">
+                                <i class="fas fa-sync-alt"></i> Làm mới
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="table-container">
+                        <table class="users-table">
+                            <thead>
+                                <tr>
+                                    <th>
+                                        <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                                    </th>
+                                    <th>Avatar</th>
+                                    <th>Thông tin</th>
+                                    <th>Vai trò</th>
+                                    <th>Cửa hàng</th>
+                                    <th>Trạng thái</th>
+                                    <th>Hoạt động cuối</th>
+                                    <th>Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTableBody">
+                                <!-- Users will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    <div class="pagination-container">
+                        <div class="pagination-info">
+                            Hiển thị <span id="showingFrom">0</span> - <span id="showingTo">0</span> trong tổng số <span id="totalCount">0</span> tài khoản
+                        </div>
+                        <div class="pagination" id="pagination">
+                            <!-- Pagination will be generated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Create/Edit User Modal -->
+    <div id="userModal" class="modal hidden">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h2 id="modalTitle">
+                    <i class="fas fa-user-plus"></i> Thêm Tài Khoản Mới
+                </h2>
+                <button class="modal-close" onclick="hideUserModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="modal-body">
+                <form id="userForm" class="user-form">
+                    <div class="form-grid">
+                        <!-- Basic Information -->
+                        <div class="form-section">
+                            <h3><i class="fas fa-user"></i> Thông Tin Cơ Bản</h3>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="username">Tên đăng nhập *</label>
+                                    <input type="text" id="username" name="username" required placeholder="Nhập tên đăng nhập">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="fullName">Họ và tên *</label>
+                                    <input type="text" id="fullName" name="fullName" required placeholder="Nhập họ và tên">
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="email">Email *</label>
+                                    <input type="email" id="email" name="email" required placeholder="Nhập địa chỉ email">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="phone">Số điện thoại</label>
+                                    <input type="tel" id="phone" name="phone" placeholder="Nhập số điện thoại">
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="password">Mật khẩu *</label>
+                                    <div class="password-input">
+                                        <input type="password" id="password" name="password" required placeholder="Nhập mật khẩu">
+                                        <button type="button" class="toggle-password" onclick="togglePasswordVisibility('password')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="confirmPassword">Xác nhận mật khẩu *</label>
+                                    <div class="password-input">
+                                        <input type="password" id="confirmPassword" name="confirmPassword" required placeholder="Nhập lại mật khẩu">
+                                        <button type="button" class="toggle-password" onclick="togglePasswordVisibility('confirmPassword')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Role and Permissions -->
+                        <div class="form-section">
+                            <h3><i class="fas fa-shield-alt"></i> Vai Trò & Quyền Hạn</h3>
+                            
+                            <div class="form-group">
+                                <label for="role">Vai trò *</label>
+                                <select id="role" name="role" required onchange="updatePermissions()">
+                                    <option value="">Chọn vai trò</option>
+                                    <option value="admin">Quản trị viên</option>
+                                    <option value="manager">Quản lý</option>
+                                    <option value="employee">Nhân viên</option>
+                                    <option value="viewer">Người xem</option>
+                                    <option value="custom">Vai trò tùy chỉnh</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Custom Role Name -->
+                            <div class="form-group" id="customRoleGroup" style="display: none;">
+                                <label for="customRoleName">Tên vai trò tùy chỉnh *</label>
+                                <input type="text" id="customRoleName" name="customRoleName" placeholder="Nhập tên vai trò">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="status">Trạng thái</label>
+                                <select id="status" name="status">
+                                    <option value="active">Hoạt động</option>
+                                    <option value="inactive">Vô hiệu hóa</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Quyền truy cập cửa hàng</label>
+                                <div class="store-access-container">
+                                    <div class="store-access-option">
+                                        <input type="radio" id="allStores" name="storeAccess" value="all" checked>
+                                        <label for="allStores">Tất cả cửa hàng</label>
+                                    </div>
+                                    <div class="store-access-option">
+                                        <input type="radio" id="specificStores" name="storeAccess" value="specific">
+                                        <label for="specificStores">Cửa hàng cụ thể</label>
+                                    </div>
+                                </div>
+                                <div id="storesList" class="stores-list hidden">
+                                    <!-- Stores will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Permissions Selection -->
+                    <div class="permissions-selection">
+                        <h3><i class="fas fa-key"></i> Chọn Quyền Hạn Chi Tiết</h3>
+                        <div class="permissions-note">
+                            <i class="fas fa-info-circle"></i>
+                            <span>Chọn vai trò có sẵn để tự động chọn quyền, hoặc tích chọn quyền tùy chỉnh</span>
+                        </div>
+                        
+                        <!-- Select All Permissions -->
+                        <div class="permission-controls">
+                            <label class="permission-checkbox">
+                                <input type="checkbox" id="selectAllPermissions" onchange="toggleAllPermissions()">
+                                <span class="checkmark"></span>
+                                <strong>Chọn tất cả quyền</strong>
+                            </label>
+                        </div>
+                        
+                        <div id="permissionsCheckboxes" class="permissions-checkboxes">
+                            <!-- Permission checkboxes will be generated here -->
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="hideUserModal()">
+                    <i class="fas fa-times"></i> Hủy
+                </button>
+                <button type="submit" class="btn btn-primary" onclick="saveUser()">
+                    <i class="fas fa-save"></i> Lưu Tài Khoản
+                </button>
+            </div>
+        </div>
+        <div class="modal-backdrop" onclick="hideUserModal()"></div>
+    </div>
+    
+    <!-- User Detail Modal -->
+    <div id="userDetailModal" class="modal hidden">
+        <div class="modal-content medium">
+            <div class="modal-header">
+                <h2><i class="fas fa-user"></i> Chi Tiết Tài Khoản</h2>
+                <button class="modal-close" onclick="hideUserDetailModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="userDetailContent">
+                <!-- User details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="hideUserDetailModal()">
+                    <i class="fas fa-times"></i> Đóng
+                </button>
+            </div>
+        </div>
+        <div class="modal-backdrop" onclick="hideUserDetailModal()"></div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-compat.js"></script>
+    <script src="../main/firebase.js"></script>
+    <script src="../main/simple-auth.js"></script>
+    <script src="../main/page-protection.js"></script>
+    <script src="../main/user-management.js"></script>
+    <script src="../main/user-management-extended.js"></script>
+
+    <script>
+        // Load components using XMLHttpRequest
+        function loadComponent(url, elementId, callback) {
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', url, true);
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4) {
+                    if (xhr.status === 200) {
+                        let content = xhr.responseText;
+                        if (elementId === 'header-placeholder') {
+                            content = content.replace('{{PAGE_TITLE}}', 'Quản Lý Tài Khoản');
+                        }
+                        document.getElementById(elementId).innerHTML = content;
+                        if (callback) callback();
+                    } else {
+                        console.error('Failed to load component:', url, xhr.status);
+                    }
+                }
+            };
+            xhr.send();
+        }
+        
+        // Load components when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check authentication first
+            console.log('🔍 User management page loading...');
+            
+            setTimeout(() => {
+                if (typeof requireAuth === 'function') {
+                    if (!requireAuth()) {
+                        console.log('❌ Auth check failed');
+                        return;
+                    }
+                    console.log('✅ Auth check passed');
+                }
+                
+                if (typeof requirePermission === 'function') {
+                    if (!requirePermission('user_read')) {
+                        console.log('❌ Permission check failed');
+                        return;
+                    }
+                    console.log('✅ Permission check passed');
+                }
+                
+                console.log('🚀 Loading page components...');
+            }, 500);
+            
+            // Load navbar first
+            loadComponent('../components/navbar.html', 'navbar-placeholder', function() {
+                console.log('Navbar loaded successfully');
+            });
+            
+            // Load header
+            loadComponent('../components/header.html', 'header-placeholder', function() {
+                console.log('Header loaded successfully');
+                
+                // Test permissions display after components load
+                setTimeout(() => {
+                    console.log('🔧 Testing permissions display...');
+                    console.log('ROLE_PERMISSIONS available:', !!window.ROLE_PERMISSIONS);
+                    console.log('updatePermissions function available:', typeof window.updatePermissions);
+                    
+                    // Manually trigger permissions update for admin role
+                    if (window.ROLE_PERMISSIONS && window.ROLE_PERMISSIONS.admin) {
+                        console.log('Admin permissions:', window.ROLE_PERMISSIONS.admin);
+                        const permissionsDisplay = document.getElementById('permissionsDisplay');
+                        if (permissionsDisplay) {
+                            console.log('Permissions display element found');
+                        } else {
+                            console.log('❌ Permissions display element not found');
+                        }
+                    }
+                }, 1000);
+                if (typeof initializeHeader === 'function') {
+                    initializeHeader();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -119,11 +119,34 @@ window.addEventListener('DOMContentLoaded', function() {
         loadingOverlay.style.display = 'none';
     }
     
-    // Wait for store context to be ready
+    // Wait for auth system to initialize before checking
     setTimeout(() => {
-        checkStoreContextAvailability();
-        initializeDashboard();
-    }, 300);
+        console.log('🔍 Checking authentication after delay...');
+        
+        // Check authentication with retry
+        const checkAuth = () => {
+            if (typeof authSystem === 'undefined') {
+                console.log('⏳ AuthSystem not ready, retrying...');
+                setTimeout(checkAuth, 500);
+                return;
+            }
+            
+            if (!authSystem.isAuthenticated()) {
+                console.log('❌ Not authenticated, redirecting to login');
+                const loginUrl = window.location.origin.includes('localhost') || window.location.protocol === 'file:' 
+                    ? 'login.html' 
+                    : '/login.html';
+                window.location.href = loginUrl;
+                return;
+            }
+            
+            console.log('✅ Authentication verified, initializing dashboard');
+            checkStoreContextAvailability();
+            initializeDashboard();
+        };
+        
+        checkAuth();
+    }, 1000);
 });
 
 // Listen for store context changes
