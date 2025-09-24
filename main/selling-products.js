@@ -514,6 +514,37 @@ function createSelectedProducts() {
         });
 }
 
+// Open product selection modal
+function openProductSelectionModal() {
+    const modal = document.getElementById('productSelectionModal');
+    const productList = document.getElementById('productList');
+    
+    // Clear previous selections
+    selectedProducts.clear();
+    updateSelectedCount();
+    
+    // Load available products (not already in selling products)
+    const availableProducts = allProducts.filter(product => {
+        const isInSelling = sellingProducts.some(sp => sp.productId === product.id);
+        return !isInSelling && product.id && (product.productName || product.name || product.title);
+    });
+    
+    // Clear and populate product list
+    productList.innerHTML = '';
+    
+    if (availableProducts.length === 0) {
+        productList.innerHTML = '<tr><td colspan="9" class="text-center">Không có sản phẩm nào để chọn</td></tr>';
+    } else {
+        availableProducts.forEach((product, index) => {
+            const productItem = createProductListItemWithCheckbox(product, index);
+            productList.appendChild(productItem);
+        });
+    }
+    
+    // Show modal
+    modal.style.display = 'block';
+}
+
 // Close product selection modal
 function closeProductSelectionModal() {
     document.getElementById('productSelectionModal').style.display = 'none';
@@ -1733,6 +1764,8 @@ window.selectAllProducts = selectAllProducts;
 window.clearAllSelections = clearAllSelections;
 window.createSelectedProducts = createSelectedProducts;
 window.switchActiveButton = switchActiveButton;
+window.openProductSelectionModal = openProductSelectionModal;
+window.closeProductSelectionModal = closeProductSelectionModal;
 window.showSyncConfirmModal = showSyncConfirmModal;
 window.toggleSellingProductSelection = toggleSellingProductSelection;
 window.toggleSelectAllSellingProducts = toggleSelectAllSellingProducts;
