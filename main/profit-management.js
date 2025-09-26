@@ -739,8 +739,32 @@ function calculateOrderProfitWithFees(order) {
         }
     }
     
-    // Add other fees (shipping, voucher, etc.)
-    // ... (implement based on fee settings)
+    // Add other fees (shipping, voucher, VAT, Income Tax, etc.)
+    ['shippingFee', 'voucherFee', 'affiliateCommission', 'vatTax', 'incomeTax', 'sellerDiscount'].forEach(feeType => {
+        if (platformFees[feeType]) {
+            if (platformFees[feeType].type === 'percent') {
+                totalFees += sellingPrice * quantity * (platformFees[feeType].value / 100);
+            } else {
+                totalFees += platformFees[feeType].value;
+            }
+        }
+    });
+    
+    // Add custom fees if configured
+    if (platformFees.customFeesList && Array.isArray(platformFees.customFeesList)) {
+        platformFees.customFeesList.forEach(customFee => {
+            const customFeeKey = `custom_${customFee.id}`;
+            const customFeeConfig = platformFees[customFeeKey];
+            
+            if (customFeeConfig && customFeeConfig.value && customFeeConfig.value > 0) {
+                if (customFeeConfig.type === 'percent') {
+                    totalFees += sellingPrice * quantity * (customFeeConfig.value / 100);
+                } else {
+                    totalFees += customFeeConfig.value;
+                }
+            }
+        });
+    }
     
     return baseProfit - totalFees;
 }
@@ -830,6 +854,40 @@ function calculateDetailedFees(order) {
             name: 'Phí Marketing',
             amount: feeAmount,
             rate: platformFees.marketingFee.type === 'percent' ? `${platformFees.marketingFee.value}%` : 'Cố định'
+        });
+        feeBreakdown.totalFees += feeAmount;
+    }
+    
+    // VAT Tax
+    if (platformFees.vatTax && platformFees.vatTax.value > 0) {
+        let feeAmount = 0;
+        if (platformFees.vatTax.type === 'percent') {
+            feeAmount = totalRevenue * (platformFees.vatTax.value / 100);
+        } else {
+            feeAmount = platformFees.vatTax.value;
+        }
+        
+        feeBreakdown.fees.push({
+            name: 'Thuế GTGT',
+            amount: feeAmount,
+            rate: platformFees.vatTax.type === 'percent' ? `${platformFees.vatTax.value}%` : 'Cố định'
+        });
+        feeBreakdown.totalFees += feeAmount;
+    }
+    
+    // Income Tax
+    if (platformFees.incomeTax && platformFees.incomeTax.value > 0) {
+        let feeAmount = 0;
+        if (platformFees.incomeTax.type === 'percent') {
+            feeAmount = totalRevenue * (platformFees.incomeTax.value / 100);
+        } else {
+            feeAmount = platformFees.incomeTax.value;
+        }
+        
+        feeBreakdown.fees.push({
+            name: 'Thuế TNCN',
+            amount: feeAmount,
+            rate: platformFees.incomeTax.type === 'percent' ? `${platformFees.incomeTax.value}%` : 'Cố định'
         });
         feeBreakdown.totalFees += feeAmount;
     }
@@ -3949,6 +4007,9 @@ function setupFeeConfigListeners() {
 async function initializeProfitManagement() {
     console.log('🚀 Initializing Profit Management System...');
     
+    // Initialize custom fees variables
+    initializeCustomFees();
+    
     // Setup fee configuration listeners for real-time updates
     await setupFeeConfigListeners();
     
@@ -4451,8 +4512,20 @@ window.updateTmdtOrdersDetailTable = updateTmdtOrdersDetailTable;
 window.calculateOrderProfitWithFees = calculateOrderProfitWithFees;
 
 // Custom fee management variables
-let customFeeCounter = 0;
-let customFees = [];
+var customFeeCounter = 0;
+var customFees = [];
+
+// Initialize custom fees variables safely
+function initializeCustomFees() {
+    // Ensure customFees is an array
+    if (!Array.isArray(customFees)) {
+        customFees = [];
+    }
+    // Ensure customFeeCounter is a number
+    if (typeof customFeeCounter !== 'number') {
+        customFeeCounter = 0;
+    }
+}
 
 // Show add custom fee form
 function showAddFeeForm() {
@@ -4562,6 +4635,9 @@ function createCustomFeeElement(customFee) {
 
 // Remove custom fee
 function removeCustomFee(customFeeId) {
+    // Initialize custom fees safely
+    initializeCustomFees();
+    
     // Remove from array
     customFees = customFees.filter(fee => fee.id !== customFeeId);
     
@@ -4576,6 +4652,9 @@ function removeCustomFee(customFeeId) {
 
 // Save platform fees including custom fees
 function savePlatformFees() {
+    // Initialize custom fees safely
+    initializeCustomFees();
+    
     const selectedPlatform = document.getElementById('modal-platform-select').value;
     const currentStore = getCurrentStore();
     
@@ -4623,27 +4702,29 @@ function savePlatformFees() {
         }
     });
     
-    // Collect custom fees
-    customFees.forEach(customFee => {
-        const checkbox = document.getElementById(`fee-${customFee.id}`);
-        const input = document.getElementById(`value-${customFee.id}`);
-        
-        if (checkbox && checkbox.checked && input && input.value) {
-            const value = parseFloat(input.value);
-            if (!isNaN(value)) {
-                // Custom fees use the type from when they were created
-                fees[`custom_${customFee.id}`] = {
-                    name: customFee.name,
-                    value: value,
-                    type: customFee.type || 'fixed' // Use stored type or default to fixed
-                };
-                console.log(`✅ Saved custom fee: ${customFee.name} = ${value} (${customFee.type || 'fixed'})`);
+    // Collect custom fees (with safety check)
+    if (Array.isArray(customFees) && customFees.length > 0) {
+        customFees.forEach(customFee => {
+            const checkbox = document.getElementById(`fee-${customFee.id}`);
+            const input = document.getElementById(`value-${customFee.id}`);
+            
+            if (checkbox && checkbox.checked && input && input.value) {
+                const value = parseFloat(input.value);
+                if (!isNaN(value)) {
+                    // Custom fees use the type from when they were created
+                    fees[`custom_${customFee.id}`] = {
+                        name: customFee.name,
+                        value: value,
+                        type: customFee.type || 'fixed' // Use stored type or default to fixed
+                    };
+                    console.log(`✅ Saved custom fee: ${customFee.name} = ${value} (${customFee.type || 'fixed'})`);
+                }
             }
-        }
-    });
+        });
+    }
     
-    // Save custom fees list
-    fees.customFeesList = customFees;
+    // Save custom fees list (always save, even if empty)
+    fees.customFeesList = Array.isArray(customFees) ? customFees : [];
     
     // Save to localStorage
     localStorage.setItem(`platformFees_${currentStore}_${selectedPlatform}`, JSON.stringify(fees));
@@ -4764,6 +4845,9 @@ function loadSavedFeesForPlatformWithCustom(platform) {
 
 // Clear all custom fees
 function clearCustomFees() {
+    // Initialize custom fees safely
+    initializeCustomFees();
+    
     customFees.forEach(fee => {
         const feeElement = document.getElementById(`fee-item-${fee.id}`);
         if (feeElement) {
@@ -4891,16 +4975,36 @@ async function calculateOrderProfitWithPlatformFees(order) {
         }
     }
     
-    // Add other fees if configured
-    ['shippingFee', 'voucherFee', 'affiliateCommission'].forEach(feeType => {
+    // Add other fees if configured (including VAT and Income Tax)
+    ['shippingFee', 'voucherFee', 'affiliateCommission', 'vatTax', 'incomeTax', 'sellerDiscount'].forEach(feeType => {
         if (platformFees[feeType]) {
             if (platformFees[feeType].type === 'percent') {
                 totalFees += totalRevenue * (platformFees[feeType].value / 100);
             } else {
                 totalFees += platformFees[feeType].value;
             }
+            console.log(`💰 CALCULATION: Added ${feeType}: ${platformFees[feeType].value} (${platformFees[feeType].type})`);
         }
     });
+    
+    // Add custom fees if configured
+    if (platformFees.customFeesList && Array.isArray(platformFees.customFeesList)) {
+        platformFees.customFeesList.forEach(customFee => {
+            const customFeeKey = `custom_${customFee.id}`;
+            const customFeeConfig = platformFees[customFeeKey];
+            
+            if (customFeeConfig && customFeeConfig.value && customFeeConfig.value > 0) {
+                let feeAmount = 0;
+                if (customFeeConfig.type === 'percent') {
+                    feeAmount = totalRevenue * (customFeeConfig.value / 100);
+                } else {
+                    feeAmount = customFeeConfig.value;
+                }
+                totalFees += feeAmount;
+                console.log(`💰 CALCULATION: Added custom fee "${customFee.name}": ${customFeeConfig.value} (${customFeeConfig.type}) = ${feeAmount}`);
+            }
+        });
+    }
     
     // Calculate packaging costs using new multi-item logic
     let packagingCosts = 0;
@@ -6069,6 +6173,7 @@ window.hideAddFeeForm = hideAddFeeForm;
 window.addCustomFee = addCustomFee;
 window.removeCustomFee = removeCustomFee;
 window.clearCustomFees = clearCustomFees;
+window.initializeCustomFees = initializeCustomFees;
 // Test function to debug search
 function testSearchFunction() {
     console.log('🧪 Testing search function...');
@@ -6176,3 +6281,26 @@ async function testTmdtDataLoadingAndFiltering() {
 
 // Export test function
 window.testTmdtDataLoadingAndFiltering = testTmdtDataLoadingAndFiltering;
+
+// Test function for custom fees initialization
+function testCustomFeesInitialization() {
+    console.log('🧪 Testing custom fees initialization...');
+    console.log('🧪 customFees type:', typeof customFees);
+    console.log('🧪 customFees isArray:', Array.isArray(customFees));
+    console.log('🧪 customFees value:', customFees);
+    console.log('🧪 customFeeCounter type:', typeof customFeeCounter);
+    console.log('🧪 customFeeCounter value:', customFeeCounter);
+    
+    // Test initialization
+    try {
+        initializeCustomFees();
+        console.log('✅ initializeCustomFees() executed successfully');
+        console.log('🧪 After init - customFees:', customFees);
+        console.log('🧪 After init - customFeeCounter:', customFeeCounter);
+    } catch (error) {
+        console.error('❌ Error in initializeCustomFees():', error);
+    }
+}
+
+// Export test function
+window.testCustomFeesInitialization = testCustomFeesInitialization;
