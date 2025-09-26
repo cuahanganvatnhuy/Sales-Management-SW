@@ -824,7 +824,7 @@ function displaySellingProducts() {
     const paginatedProducts = filteredSellingProducts.slice(startIndex, endIndex);
     
     console.log('Paginated products:', paginatedProducts.length);
-    
+        
     if (paginatedProducts.length === 0) {
         console.log('No products to display');
         tbody.innerHTML = '<tr><td colspan="10" class="text-center" style="color: #6b7280; padding: 2rem;">Không có sản phẩm nào</td></tr>';
