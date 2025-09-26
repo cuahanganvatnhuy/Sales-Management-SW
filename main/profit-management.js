@@ -551,46 +551,32 @@ async function loadTmdtSalesOrders(targetStoreId = null) {
             console.error('🔥 Firebase connectivity test failed:', error);
         }
         
-        // Try multiple Firebase paths to find TMĐT orders
+        // Try multiple Firebase paths to find TMĐT sales orders (from sales-orders-tmdt.js)
         const promises = [
             window.database.ref(`stores/${storeId}/tmdtSalesOrders`).once('value'),
-            window.database.ref(`stores/${storeId}/orders`).once('value'),
             window.database.ref(`stores/${storeId}/salesOrders`).once('value'),
-            window.database.ref('orders').once('value'),
             window.database.ref('salesOrders').once('value'),
-            // Additional paths that might contain TMĐT orders
+            // Additional paths that might contain TMĐT sales orders
             window.database.ref(`tmdtSalesOrders`).once('value'),
             window.database.ref(`ecommerceOrders`).once('value')
         ];
         
         console.log('🔥 Firebase references created, fetching data...');
-        const [tmdtSnapshot, ordersSnapshot, salesOrdersSnapshot, globalOrdersSnapshot, globalSalesOrdersSnapshot, globalTmdtSnapshot, ecommerceSnapshot] = await Promise.all(promises);
+        const [tmdtSnapshot, salesOrdersSnapshot, globalSalesOrdersSnapshot, globalTmdtSnapshot, ecommerceSnapshot] = await Promise.all(promises);
         
         const tmdtOrders = tmdtSnapshot.val() || {};
-        const regularOrders = ordersSnapshot.val() || {};
         const salesOrders = salesOrdersSnapshot.val() || {};
-        const globalOrders = globalOrdersSnapshot.val() || {};
         const globalSalesOrders = globalSalesOrdersSnapshot.val() || {};
         const globalTmdtOrders = globalTmdtSnapshot.val() || {};
         const ecommerceOrders = ecommerceSnapshot.val() || {};
         
         console.log('🔥 TMDT orders loaded:', Object.keys(tmdtOrders).length);
-        console.log('🔥 Regular orders loaded:', Object.keys(regularOrders).length);
         console.log('🔥 Sales orders loaded:', Object.keys(salesOrders).length);
-        console.log('🔥 Global orders loaded:', Object.keys(globalOrders).length);
         console.log('🔥 Global sales orders loaded:', Object.keys(globalSalesOrders).length);
         console.log('🔥 Global TMDT orders loaded:', Object.keys(globalTmdtOrders).length);
         console.log('🔥 Ecommerce orders loaded:', Object.keys(ecommerceOrders).length);
         
         // Debug: Show sample data from each source
-        if (Object.keys(regularOrders).length > 0) {
-            const sampleOrder = Object.values(regularOrders)[0];
-            console.log('🔥 Sample regular order:', sampleOrder);
-        }
-        if (Object.keys(globalOrders).length > 0) {
-            const sampleGlobalOrder = Object.values(globalOrders)[0];
-            console.log('🔥 Sample global order:', sampleGlobalOrder);
-        }
         if (Object.keys(globalTmdtOrders).length > 0) {
             const sampleGlobalTmdt = Object.values(globalTmdtOrders)[0];
             console.log('🔥 Sample global TMDT order:', sampleGlobalTmdt);
@@ -611,33 +597,15 @@ async function loadTmdtSalesOrders(targetStoreId = null) {
             if (shouldIncludeOrder(order)) {
                 console.log('🔥 Loading TMDT order from store path:', {
                     orderId,
-                    productType: order.productType,
-                    weight: order.weight,
-                    hasProductType: !!order.productType,
-                    hasWeight: !!order.weight
+                    source: order.source,
+                    platform: order.platform,
+                    orderType: order.orderType,
+                    productName: order.productName
                 });
                 allTmdtOrders[orderId] = {
                     ...order,
-                    source: 'tmdt_sales',
-                    orderType: 'ecommerce'
-                };
-            }
-        });
-        
-        // Add TMDT orders from regular orders with platform info
-        Object.entries(regularOrders).forEach(([orderId, order]) => {
-            if (shouldIncludeOrder(order)) {
-                console.log('🔥 Loading TMDT order from regular orders:', {
-                    orderId,
-                    productType: order.productType,
-                    weight: order.weight,
-                    hasProductType: !!order.productType,
-                    hasWeight: !!order.weight
-                });
-                allTmdtOrders[orderId] = {
-                    ...order,
-                    source: 'tmdt_sales',
-                    orderType: 'ecommerce'
+                    source: order.source || 'tmdt_sales',
+                    orderType: order.orderType || 'ecommerce'
                 };
             }
         });
@@ -645,21 +613,17 @@ async function loadTmdtSalesOrders(targetStoreId = null) {
         // Add TMDT orders from sales orders
         Object.entries(salesOrders).forEach(([orderId, order]) => {
             if (shouldIncludeOrder(order)) {
+                console.log('🔥 Loading TMDT order from sales orders:', {
+                    orderId,
+                    source: order.source,
+                    platform: order.platform,
+                    orderType: order.orderType,
+                    productName: order.productName
+                });
                 allTmdtOrders[orderId] = {
                     ...order,
-                    source: 'tmdt_sales',
-                    orderType: 'ecommerce'
-                };
-            }
-        });
-        
-        // Add TMDT orders from global orders
-        Object.entries(globalOrders).forEach(([orderId, order]) => {
-            if (shouldIncludeOrder(order)) {
-                allTmdtOrders[orderId] = {
-                    ...order,
-                    source: 'tmdt_sales',
-                    orderType: 'ecommerce'
+                    source: order.source || 'tmdt_sales',
+                    orderType: order.orderType || 'ecommerce'
                 };
             }
         });
@@ -667,10 +631,17 @@ async function loadTmdtSalesOrders(targetStoreId = null) {
         // Add TMDT orders from global sales orders
         Object.entries(globalSalesOrders).forEach(([orderId, order]) => {
             if (shouldIncludeOrder(order)) {
+                console.log('🔥 Loading TMDT order from global sales orders:', {
+                    orderId,
+                    source: order.source,
+                    platform: order.platform,
+                    orderType: order.orderType,
+                    productName: order.productName
+                });
                 allTmdtOrders[orderId] = {
                     ...order,
-                    source: 'tmdt_sales',
-                    orderType: 'ecommerce'
+                    source: order.source || 'tmdt_sales',
+                    orderType: order.orderType || 'ecommerce'
                 };
             }
         });
@@ -678,10 +649,17 @@ async function loadTmdtSalesOrders(targetStoreId = null) {
         // Add TMDT orders from global TMDT collection
         Object.entries(globalTmdtOrders).forEach(([orderId, order]) => {
             if (shouldIncludeOrder(order)) {
+                console.log('🔥 Loading TMDT order from global TMDT collection:', {
+                    orderId,
+                    source: order.source,
+                    platform: order.platform,
+                    orderType: order.orderType,
+                    productName: order.productName
+                });
                 allTmdtOrders[orderId] = {
                     ...order,
-                    source: 'tmdt_sales',
-                    orderType: 'ecommerce'
+                    source: order.source || 'tmdt_sales',
+                    orderType: order.orderType || 'ecommerce'
                 };
             }
         });
@@ -689,10 +667,17 @@ async function loadTmdtSalesOrders(targetStoreId = null) {
         // Add TMDT orders from ecommerce collection
         Object.entries(ecommerceOrders).forEach(([orderId, order]) => {
             if (shouldIncludeOrder(order)) {
+                console.log('🔥 Loading TMDT order from ecommerce collection:', {
+                    orderId,
+                    source: order.source,
+                    platform: order.platform,
+                    orderType: order.orderType,
+                    productName: order.productName
+                });
                 allTmdtOrders[orderId] = {
                     ...order,
-                    source: 'tmdt_sales',
-                    orderType: 'ecommerce'
+                    source: order.source || 'tmdt_sales',
+                    orderType: order.orderType || 'ecommerce'
                 };
             }
         });
@@ -754,8 +739,32 @@ function calculateOrderProfitWithFees(order) {
         }
     }
     
-    // Add other fees (shipping, voucher, etc.)
-    // ... (implement based on fee settings)
+    // Add other fees (shipping, voucher, VAT, Income Tax, etc.)
+    ['shippingFee', 'voucherFee', 'affiliateCommission', 'vatTax', 'incomeTax', 'sellerDiscount'].forEach(feeType => {
+        if (platformFees[feeType]) {
+            if (platformFees[feeType].type === 'percent') {
+                totalFees += sellingPrice * quantity * (platformFees[feeType].value / 100);
+            } else {
+                totalFees += platformFees[feeType].value;
+            }
+        }
+    });
+    
+    // Add custom fees if configured
+    if (platformFees.customFeesList && Array.isArray(platformFees.customFeesList)) {
+        platformFees.customFeesList.forEach(customFee => {
+            const customFeeKey = `custom_${customFee.id}`;
+            const customFeeConfig = platformFees[customFeeKey];
+            
+            if (customFeeConfig && customFeeConfig.value && customFeeConfig.value > 0) {
+                if (customFeeConfig.type === 'percent') {
+                    totalFees += sellingPrice * quantity * (customFeeConfig.value / 100);
+                } else {
+                    totalFees += customFeeConfig.value;
+                }
+            }
+        });
+    }
     
     return baseProfit - totalFees;
 }
@@ -845,6 +854,40 @@ function calculateDetailedFees(order) {
             name: 'Phí Marketing',
             amount: feeAmount,
             rate: platformFees.marketingFee.type === 'percent' ? `${platformFees.marketingFee.value}%` : 'Cố định'
+        });
+        feeBreakdown.totalFees += feeAmount;
+    }
+    
+    // VAT Tax
+    if (platformFees.vatTax && platformFees.vatTax.value > 0) {
+        let feeAmount = 0;
+        if (platformFees.vatTax.type === 'percent') {
+            feeAmount = totalRevenue * (platformFees.vatTax.value / 100);
+        } else {
+            feeAmount = platformFees.vatTax.value;
+        }
+        
+        feeBreakdown.fees.push({
+            name: 'Thuế GTGT',
+            amount: feeAmount,
+            rate: platformFees.vatTax.type === 'percent' ? `${platformFees.vatTax.value}%` : 'Cố định'
+        });
+        feeBreakdown.totalFees += feeAmount;
+    }
+    
+    // Income Tax
+    if (platformFees.incomeTax && platformFees.incomeTax.value > 0) {
+        let feeAmount = 0;
+        if (platformFees.incomeTax.type === 'percent') {
+            feeAmount = totalRevenue * (platformFees.incomeTax.value / 100);
+        } else {
+            feeAmount = platformFees.incomeTax.value;
+        }
+        
+        feeBreakdown.fees.push({
+            name: 'Thuế TNCN',
+            amount: feeAmount,
+            rate: platformFees.incomeTax.type === 'percent' ? `${platformFees.incomeTax.value}%` : 'Cố định'
         });
         feeBreakdown.totalFees += feeAmount;
     }
@@ -1422,14 +1465,29 @@ async function calculateTmdtProfitFromOrders(orders, selectedPlatform) {
 
 // Helper function to check if order is TMĐT type
 function isTmdtOrderType(order) {
-    // Check various indicators that this is a TMĐT order
-    return (
+    // Only include orders from TMĐT Sales Management System (sales-orders-tmdt.js)
+    // Exclude orders from warehouse order management (orders.html)
+    const result = (
         order.source === 'tmdt_sales' ||
-        order.orderType === 'ecommerce' ||
-        order.platform ||
-        order.ecommercePlatform ||
-        (order.type && order.type.includes('tmdt'))
+        (order.orderType === 'ecommerce' && order.source !== 'order_management') ||
+        (order.platform && order.source !== 'order_management') ||
+        (order.ecommercePlatform && order.source !== 'order_management') ||
+        (order.type && order.type.includes('tmdt') && order.source !== 'order_management')
     );
+    
+    // Debug log for filtering
+    if (order.orderId) {
+        console.log('🔥 isTmdtOrderType check:', {
+            orderId: order.orderId,
+            source: order.source,
+            platform: order.platform,
+            orderType: order.orderType,
+            result: result,
+            reason: result ? 'INCLUDED' : 'EXCLUDED (warehouse order or invalid)'
+        });
+    }
+    
+    return result;
 }
 
 // Helper function to get platform from order
@@ -3419,40 +3477,6 @@ window.loadTmdtSalesOrders = loadTmdtSalesOrders;
 window.updateTmdtOrdersDetailTable = updateTmdtOrdersDetailTable;
 window.calculateOrderProfitWithFees = calculateOrderProfitWithFees;
 
-// Test function to manually trigger data loading
-function testTmdtDataLoading() {
-    console.log('🔥 Manual test triggered');
-    console.log('🔥 Firebase available:', !!window.database);
-    console.log('🔥 Firebase object:', window.database);
-    console.log('🔥 Store ID:', getCurrentStore());
-    
-    // Check if we need to wait for Firebase initialization
-    if (!window.database) {
-        console.log('🔥 Firebase not ready, waiting...');
-        setTimeout(() => {
-            console.log('🔥 Retrying after Firebase delay...');
-            testTmdtDataLoading();
-        }, 2000);
-        return;
-    }
-    
-    // Check store selection
-    const storeId = getCurrentStore();
-    if (!storeId) {
-        console.log('🔥 No store selected, trying to get from localStorage...');
-        const storedId = localStorage.getItem('selectedStoreId');
-        console.log('🔥 LocalStorage store ID:', storedId);
-        
-        if (!storedId) {
-            showNotification('Vui lòng chọn cửa hàng trước khi xem dữ liệu lợi nhuận!', 'warning');
-            return;
-        }
-    }
-    
-    // Force load data
-    loadTmdtProfitData();
-    updateTmdtOrdersDetailTable('all');
-}
 
 // Checkbox and selection management functions
 function toggleSelectAll() {
@@ -3983,6 +4007,9 @@ function setupFeeConfigListeners() {
 async function initializeProfitManagement() {
     console.log('🚀 Initializing Profit Management System...');
     
+    // Initialize custom fees variables
+    initializeCustomFees();
+    
     // Setup fee configuration listeners for real-time updates
     await setupFeeConfigListeners();
     
@@ -4485,8 +4512,20 @@ window.updateTmdtOrdersDetailTable = updateTmdtOrdersDetailTable;
 window.calculateOrderProfitWithFees = calculateOrderProfitWithFees;
 
 // Custom fee management variables
-let customFeeCounter = 0;
-let customFees = [];
+var customFeeCounter = 0;
+var customFees = [];
+
+// Initialize custom fees variables safely
+function initializeCustomFees() {
+    // Ensure customFees is an array
+    if (!Array.isArray(customFees)) {
+        customFees = [];
+    }
+    // Ensure customFeeCounter is a number
+    if (typeof customFeeCounter !== 'number') {
+        customFeeCounter = 0;
+    }
+}
 
 // Show add custom fee form
 function showAddFeeForm() {
@@ -4596,6 +4635,9 @@ function createCustomFeeElement(customFee) {
 
 // Remove custom fee
 function removeCustomFee(customFeeId) {
+    // Initialize custom fees safely
+    initializeCustomFees();
+    
     // Remove from array
     customFees = customFees.filter(fee => fee.id !== customFeeId);
     
@@ -4610,6 +4652,9 @@ function removeCustomFee(customFeeId) {
 
 // Save platform fees including custom fees
 function savePlatformFees() {
+    // Initialize custom fees safely
+    initializeCustomFees();
+    
     const selectedPlatform = document.getElementById('modal-platform-select').value;
     const currentStore = getCurrentStore();
     
@@ -4657,27 +4702,29 @@ function savePlatformFees() {
         }
     });
     
-    // Collect custom fees
-    customFees.forEach(customFee => {
-        const checkbox = document.getElementById(`fee-${customFee.id}`);
-        const input = document.getElementById(`value-${customFee.id}`);
-        
-        if (checkbox && checkbox.checked && input && input.value) {
-            const value = parseFloat(input.value);
-            if (!isNaN(value)) {
-                // Custom fees use the type from when they were created
-                fees[`custom_${customFee.id}`] = {
-                    name: customFee.name,
-                    value: value,
-                    type: customFee.type || 'fixed' // Use stored type or default to fixed
-                };
-                console.log(`✅ Saved custom fee: ${customFee.name} = ${value} (${customFee.type || 'fixed'})`);
+    // Collect custom fees (with safety check)
+    if (Array.isArray(customFees) && customFees.length > 0) {
+        customFees.forEach(customFee => {
+            const checkbox = document.getElementById(`fee-${customFee.id}`);
+            const input = document.getElementById(`value-${customFee.id}`);
+            
+            if (checkbox && checkbox.checked && input && input.value) {
+                const value = parseFloat(input.value);
+                if (!isNaN(value)) {
+                    // Custom fees use the type from when they were created
+                    fees[`custom_${customFee.id}`] = {
+                        name: customFee.name,
+                        value: value,
+                        type: customFee.type || 'fixed' // Use stored type or default to fixed
+                    };
+                    console.log(`✅ Saved custom fee: ${customFee.name} = ${value} (${customFee.type || 'fixed'})`);
+                }
             }
-        }
-    });
+        });
+    }
     
-    // Save custom fees list
-    fees.customFeesList = customFees;
+    // Save custom fees list (always save, even if empty)
+    fees.customFeesList = Array.isArray(customFees) ? customFees : [];
     
     // Save to localStorage
     localStorage.setItem(`platformFees_${currentStore}_${selectedPlatform}`, JSON.stringify(fees));
@@ -4798,6 +4845,9 @@ function loadSavedFeesForPlatformWithCustom(platform) {
 
 // Clear all custom fees
 function clearCustomFees() {
+    // Initialize custom fees safely
+    initializeCustomFees();
+    
     customFees.forEach(fee => {
         const feeElement = document.getElementById(`fee-item-${fee.id}`);
         if (feeElement) {
@@ -4925,16 +4975,36 @@ async function calculateOrderProfitWithPlatformFees(order) {
         }
     }
     
-    // Add other fees if configured
-    ['shippingFee', 'voucherFee', 'affiliateCommission'].forEach(feeType => {
+    // Add other fees if configured (including VAT and Income Tax)
+    ['shippingFee', 'voucherFee', 'affiliateCommission', 'vatTax', 'incomeTax', 'sellerDiscount'].forEach(feeType => {
         if (platformFees[feeType]) {
             if (platformFees[feeType].type === 'percent') {
                 totalFees += totalRevenue * (platformFees[feeType].value / 100);
             } else {
                 totalFees += platformFees[feeType].value;
             }
+            console.log(`💰 CALCULATION: Added ${feeType}: ${platformFees[feeType].value} (${platformFees[feeType].type})`);
         }
     });
+    
+    // Add custom fees if configured
+    if (platformFees.customFeesList && Array.isArray(platformFees.customFeesList)) {
+        platformFees.customFeesList.forEach(customFee => {
+            const customFeeKey = `custom_${customFee.id}`;
+            const customFeeConfig = platformFees[customFeeKey];
+            
+            if (customFeeConfig && customFeeConfig.value && customFeeConfig.value > 0) {
+                let feeAmount = 0;
+                if (customFeeConfig.type === 'percent') {
+                    feeAmount = totalRevenue * (customFeeConfig.value / 100);
+                } else {
+                    feeAmount = customFeeConfig.value;
+                }
+                totalFees += feeAmount;
+                console.log(`💰 CALCULATION: Added custom fee "${customFee.name}": ${customFeeConfig.value} (${customFeeConfig.type}) = ${feeAmount}`);
+            }
+        });
+    }
     
     // Calculate packaging costs using new multi-item logic
     let packagingCosts = 0;
@@ -6103,6 +6173,7 @@ window.hideAddFeeForm = hideAddFeeForm;
 window.addCustomFee = addCustomFee;
 window.removeCustomFee = removeCustomFee;
 window.clearCustomFees = clearCustomFees;
+window.initializeCustomFees = initializeCustomFees;
 // Test function to debug search
 function testSearchFunction() {
     console.log('🧪 Testing search function...');
@@ -6163,3 +6234,73 @@ function showRetailOnlyContent() {
 // Export retail functions to global scope
 window.loadRetailProfitData = loadRetailProfitData;
 window.showRetailOnlyContent = showRetailOnlyContent;
+
+// Test function to manually trigger TMĐT data loading and verify filtering
+async function testTmdtDataLoadingAndFiltering() {
+    console.log('🔥 Manual test: Loading TMĐT data and testing filtering...');
+    
+    try {
+        // Test data loading
+        const orders = await loadTmdtSalesOrders();
+        console.log('🔥 Test result - Total orders loaded:', Object.keys(orders).length);
+        
+        // Show breakdown by source
+        const sourceBreakdown = {};
+        Object.values(orders).forEach(order => {
+            const source = order.source || 'unknown';
+            sourceBreakdown[source] = (sourceBreakdown[source] || 0) + 1;
+        });
+        console.log('🔥 Test result - Orders by source:', sourceBreakdown);
+        
+        // Show sample orders
+        const sampleOrders = Object.entries(orders).slice(0, 3);
+        console.log('🔥 Test result - Sample orders:', sampleOrders.map(([id, order]) => ({
+            orderId: id,
+            source: order.source,
+            platform: order.platform,
+            productName: order.productName
+        })));
+        
+        // Test filtering logic
+        const warehouseOrders = Object.values(orders).filter(order => order.source === 'order_management');
+        const tmdtOrders = Object.values(orders).filter(order => order.source === 'tmdt_sales');
+        
+        console.log('🔥 Test result - Warehouse orders (should be 0):', warehouseOrders.length);
+        console.log('🔥 Test result - TMĐT orders:', tmdtOrders.length);
+        
+        // Force load data
+        loadTmdtProfitData();
+        updateTmdtOrdersDetailTable('all');
+        
+        return orders;
+    } catch (error) {
+        console.error('🔥 Test failed:', error);
+        return {};
+    }
+}
+
+// Export test function
+window.testTmdtDataLoadingAndFiltering = testTmdtDataLoadingAndFiltering;
+
+// Test function for custom fees initialization
+function testCustomFeesInitialization() {
+    console.log('🧪 Testing custom fees initialization...');
+    console.log('🧪 customFees type:', typeof customFees);
+    console.log('🧪 customFees isArray:', Array.isArray(customFees));
+    console.log('🧪 customFees value:', customFees);
+    console.log('🧪 customFeeCounter type:', typeof customFeeCounter);
+    console.log('🧪 customFeeCounter value:', customFeeCounter);
+    
+    // Test initialization
+    try {
+        initializeCustomFees();
+        console.log('✅ initializeCustomFees() executed successfully');
+        console.log('🧪 After init - customFees:', customFees);
+        console.log('🧪 After init - customFeeCounter:', customFeeCounter);
+    } catch (error) {
+        console.error('❌ Error in initializeCustomFees():', error);
+    }
+}
+
+// Export test function
+window.testCustomFeesInitialization = testCustomFeesInitialization;

@@ -172,16 +172,20 @@ async function processTmdtExcelData(jsonData, platform) {
                     weight: orderData.weight
                 });
                 
-                // Price logic: Use Excel price if available, otherwise use system price
+                // Price logic: Use system price first, fallback to Excel price if system price not available
                 let finalSellingPrice = 0;
-                if (orderData.skuSubtotalAfterDiscount > 0) {
-                    // Calculate unit price from Excel subtotal
+                if (matchedProduct.sellingPrice && matchedProduct.sellingPrice > 0) {
+                    // Use system selling price (priority 1)
+                    finalSellingPrice = matchedProduct.sellingPrice;
+                    console.log(`🔥 Using system price: ${finalSellingPrice} (from database)`);
+                } else if (orderData.skuSubtotalAfterDiscount > 0) {
+                    // Calculate unit price from Excel subtotal (priority 2)
                     finalSellingPrice = orderData.skuSubtotalAfterDiscount / orderData.quantity;
-                    console.log(`🔥 Using Excel price: ${finalSellingPrice} (from subtotal: ${orderData.skuSubtotalAfterDiscount})`);
+                    console.log(`🔥 Using Excel price: ${finalSellingPrice} (from subtotal: ${orderData.skuSubtotalAfterDiscount}) - system price not available`);
                 } else {
-                    // Use system selling price
-                    finalSellingPrice = matchedProduct.sellingPrice || 0;
-                    console.log(`🔥 Using system price: ${finalSellingPrice}`);
+                    // No price available from either source
+                    finalSellingPrice = 0;
+                    console.log(`⚠️ No price available from system or Excel for SKU: ${orderData.sku}`);
                 }
                 
                 orderData.sellingPrice = finalSellingPrice || 0;
