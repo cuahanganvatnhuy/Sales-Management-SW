@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Case Study Template - Excel Format</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 2em;
+        }
+        .case-study-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .case-study-table th {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: bold;
+            width: 200px;
+        }
+        .case-study-table td {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            vertical-align: top;
+            line-height: 1.6;
+        }
+        .case-study-table tr:hover {
+            background-color: #f8f9fa;
+        }
+        .generate-btn {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+            display: block;
+            margin: 20px auto;
+        }
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .title-section {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        .subtitle {
+            font-size: 18px;
+            color: #666;
+            margin: 10px 0;
+        }
+        .main-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Mô Tả Tình Huống Nghiệp Cứu - Excel Format</h1>
+        
+        <div class="title-section">
+            <div class="subtitle">Tình huống dự đoán tỷ lệ sút giảm nhân viên:</div>
+            <div class="subtitle" style="font-style: italic;">Example Data Analytics Case Study</div>
+            <div class="main-title">Customer Behavior Analysis & Marketing Response Prediction</div>
+        </div>
+
+        <table class="case-study-table" id="caseStudyTable">
+            <tr>
+                <th>Title *</th>
+                <td>Customer Behavior Analysis & Marketing Response Prediction</td>
+            </tr>
+            <tr>
+                <th>Industry focus *</th>
+                <td>Retail Marketing & Customer Analytics</td>
+            </tr>
+            <tr>
+                <th>Problem statement *</th>
+                <td>Phân tích sâu về hành vi khách hàng để dự đoán tỷ lệ phản hồi chiến dịch marketing trong tổ chức, cũng như các yếu tố ảnh hưởng đến quyết định mua hàng của khách hàng. Công ty SuperStore đang gặp khó khăn với tỷ lệ phản hồi marketing thấp (dưới 10%), chi phí cao nhưng ROI kém, và không thể xác định chính xác nhóm khách hàng có giá trị cao để tập trung nguồn lực marketing hiệu quả.</td>
+            </tr>
+            <tr>
+                <th>Business use case (what are you solving for?)</th>
+                <td>1. Dự đoán khách hàng có khả năng phản hồi tích cực với chiến dịch marketing<br>
+                2. Phân tích các yếu tố quan trọng ảnh hưởng đến quyết định mua hàng của khách hàng<br>
+                3. Cải thiện hiệu quả targeting và giảm chi phí marketing<br>
+                4. Phân khúc khách hàng theo giá trị và hành vi mua sắm<br>
+                5. Tối ưu hóa kênh bán hàng (Web, Catalog, Store) dựa trên phân tích hiệu suất</td>
+            </tr>
+            <tr>
+                <th>Goals / metrics</th>
+                <td>Tìm ra xác suất khách hàng phản hồi chiến dịch marketing trong 5 năm tới và xác định cách cải thiện tỷ lệ giữ chân khách hàng. Mục tiêu cụ thể: Tăng Response Rate từ 10% lên 25%, giảm Complaint Rate xuống dưới 5%, tăng doanh thu trung bình mỗi khách hàng 20%, cải thiện ROI marketing 40%, và tối ưu hóa Recency (khoảng cách mua hàng) xuống dưới 30 ngày.</td>
+            </tr>
+            <tr>
+                <th>Deliverables</th>
+                <td>Báo cáo phân tích chi tiết với dashboard tương tác, mô hình dự đoán Response Rate sử dụng Machine Learning, phân tích RFM (Recency, Frequency, Monetary), khuyến nghị chiến lược marketing được cá nhân hóa cho từng phân khúc khách hàng, và hệ thống scoring để đánh giá tiềm năng của khách hàng mới.</td>
+            </tr>
+            <tr>
+                <th>Are datasets available?</th>
+                <td>Yes - Dataset có sẵn từ Kaggle với chất lượng cao (Usability Score 10.0/10.0)</td>
+            </tr>
+            <tr>
+                <th>Dataset List</th>
+                <td>Marketing Campaign Customer Data từ Kaggle - Superstore Marketing Campaign Dataset. Kích thước: 2,000 records × 22 attributes. Bao gồm thông tin nhân khẩu học (ID, Year_Birth, Education, Marital_Status, Income), cấu trúc gia đình (Kidhome, Teenhome), hành vi mua sắm theo danh mục sản phẩm (MntWines, MntFruits, MntMeatProducts, MntFishProducts, MntSweetProducts, MntGoldProds), hiệu suất kênh bán hàng (NumWebPurchases, NumCatalogPurchases, NumStorePurchases), và phản hồi chiến dịch (Response, Complain, Recency, NumWebVisitsMonth).</td>
+            </tr>
+            <tr>
+                <th>Websites to scrape the data</th>
+                <td>https://www.kaggle.com/datasets/ahsan81/superstore-marketing-campaign-dataset<br>
+                Nguồn dữ liệu: Kaggle Platform - Tác giả: Ahsan Raza<br>
+                Thời gian: Historical data (2012-2014)<br>
+                Định dạng: CSV/Excel (.xlsx)<br>
+                Tình trạng: Sẵn sàng sử dụng, không cần scraping</td>
+            </tr>
+        </table>
+
+        <button class="generate-btn" onclick="downloadExcelCaseStudy()">
+            📥 Tải Excel Case Study Template
+        </button>
+    </div>
+
+    <script>
+        function downloadExcelCaseStudy() {
+            // Create workbook
+            const wb = XLSX.utils.book_new();
+            
+            // Prepare data for Excel
+            const data = [
+                ["TRƯỜNG ĐẠI HỌC VĂN LANG"],
+                ["KHOA CÔNG NGHỆ THÔNG TIN"],
+                [""],
+                ["Tình huống dự đoán tỷ lệ sút giảm nhân viên:"],
+                ["Example Data Analytics Case Study"],
+                [""],
+                ["Customer Behavior Analysis & Marketing Response Prediction"],
+                [""],
+                ["Tiêu chí", "Nội dung chi tiết"],
+                ["Title *", "Customer Behavior Analysis & Marketing Response Prediction"],
+                ["Industry focus *", "Retail Marketing & Customer Analytics"],
+                ["Problem statement *", "Phân tích sâu về hành vi khách hàng để dự đoán tỷ lệ phản hồi chiến dịch marketing trong tổ chức, cũng như các yếu tố ảnh hưởng đến quyết định mua hàng của khách hàng. Công ty SuperStore đang gặp khó khăn với tỷ lệ phản hồi marketing thấp (dưới 10%), chi phí cao nhưng ROI kém, và không thể xác định chính xác nhóm khách hàng có giá trị cao để tập trung nguồn lực marketing hiệu quả."],
+                ["Business use case (what are you solving for?)", "1. Dự đoán khách hàng có khả năng phản hồi tích cực với chiến dịch marketing\n2. Phân tích các yếu tố quan trọng ảnh hưởng đến quyết định mua hàng của khách hàng\n3. Cải thiện hiệu quả targeting và giảm chi phí marketing\n4. Phân khúc khách hàng theo giá trị và hành vi mua sắm\n5. Tối ưu hóa kênh bán hàng (Web, Catalog, Store) dựa trên phân tích hiệu suất"],
+                ["Goals / metrics", "Tìm ra xác suất khách hàng phản hồi chiến dịch marketing trong 5 năm tới và xác định cách cải thiện tỷ lệ giữ chân khách hàng. Mục tiêu cụ thể: Tăng Response Rate từ 10% lên 25%, giảm Complaint Rate xuống dưới 5%, tăng doanh thu trung bình mỗi khách hàng 20%, cải thiện ROI marketing 40%, và tối ưu hóa Recency (khoảng cách mua hàng) xuống dưới 30 ngày."],
+                ["Deliverables", "Báo cáo phân tích chi tiết với dashboard tương tác, mô hình dự đoán Response Rate sử dụng Machine Learning, phân tích RFM (Recency, Frequency, Monetary), khuyến nghị chiến lược marketing được cá nhân hóa cho từng phân khúc khách hàng, và hệ thống scoring để đánh giá tiềm năng của khách hàng mới."],
+                ["Are datasets available?", "Yes - Dataset có sẵn từ Kaggle với chất lượng cao (Usability Score 10.0/10.0)"],
+                ["Dataset List", "Marketing Campaign Customer Data từ Kaggle - Superstore Marketing Campaign Dataset. Kích thước: 2,000 records × 22 attributes. Bao gồm thông tin nhân khẩu học (ID, Year_Birth, Education, Marital_Status, Income), cấu trúc gia đình (Kidhome, Teenhome), hành vi mua sắm theo danh mục sản phẩm (MntWines, MntFruits, MntMeatProducts, MntFishProducts, MntSweetProducts, MntGoldProds), hiệu suất kênh bán hàng (NumWebPurchases, NumCatalogPurchases, NumStorePurchases), và phản hồi chiến dịch (Response, Complain, Recency, NumWebVisitsMonth)."],
+                ["Websites to scrape the data", "https://www.kaggle.com/datasets/ahsan81/superstore-marketing-campaign-dataset\nNguồn dữ liệu: Kaggle Platform - Tác giả: Ahsan Raza\nThời gian: Historical data (2012-2014)\nĐịnh dạng: CSV/Excel (.xlsx)\nTình trạng: Sẵn sàng sử dụng, không cần scraping"]
+            ];
+            
+            // Create worksheet
+            const ws = XLSX.utils.aoa_to_sheet(data);
+            
+            // Set column widths
+            ws['!cols'] = [
+                {wch: 30}, // Column A - Tiêu chí
+                {wch: 80}  // Column B - Nội dung
+            ];
+            
+            // Set row heights for better readability
+            ws['!rows'] = [
+                {hpt: 20}, // Row 1
+                {hpt: 20}, // Row 2
+                {hpt: 15}, // Row 3 (empty)
+                {hpt: 20}, // Row 4
+                {hpt: 20}, // Row 5
+                {hpt: 15}, // Row 6 (empty)
+                {hpt: 25}, // Row 7 (main title)
+                {hpt: 15}  // Row 8 (empty)
+            ];
+            
+            // Add worksheet to workbook
+            XLSX.utils.book_append_sheet(wb, ws, "Case Study Description");
+            
+            // Save file
+            XLSX.writeFile(wb, "Case_Study_Mo_Ta_Tinh_Huong_Nghiep_Cuu.xlsx");
+            
+            alert('✅ File Excel Case Study đã được tạo thành công!\n\nFile bao gồm:\n- Mô tả tình huống nghiệp cứu chi tiết\n- Format bảng chuẩn theo yêu cầu\n- Nội dung đầy đủ 6 phần bắt buộc');
+        }
+    </script>
+</body>
+</html>
