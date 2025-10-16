@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hóa Đơn Thanh Toán - PMQLDH</title>
+    <link rel="stylesheet" href="../style/man.css">
+    <link rel="stylesheet" href="../style/invoice.css">
+    <link rel="stylesheet" href="../style/navbar-submenu.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="../main/firebase.js"></script>
+    <script src="../main/simple-auth.js"></script>
+    <script src="../main/page-protection.js"></script>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Đang tải...</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Navbar Component -->
+        <div id="navbar-container">
+            <!-- Navbar will be loaded here -->
+        </div>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header Component -->
+            <div id="header-container">
+                <!-- Header will be loaded here -->
+            </div>
+
+            <!-- Content Area -->
+            <div class="content-area">
+                <div class="page-container">
+                    <!-- Invoice Navigation Tabs -->
+                    <div class="page-tabs">
+                        <div class="tab-nav">
+                            <a href="global-invoice.html" class="tab-item">
+                                <i class="fas fa-globe"></i>
+                                <span>Hóa Đơn Toàn Bộ</span>
+                            </a>
+                            <a href="store-invoice.html" class="tab-item">
+                                <i class="fas fa-store"></i>
+                                <span>Hóa Đơn Từng Cửa Hàng TMĐT</span>
+                            </a>
+                            <a href="payment-invoices.html" class="tab-item active">
+                                <i class="fas fa-money-bill-wave"></i>
+                                <span>Hóa Đơn Thanh Toán</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Filter Section -->
+                    <div class="date-filter-section">
+                        <div class="section-header">
+                            <h3><i class="fas fa-filter"></i> Lọc Hóa Đơn</h3>
+                        </div>
+
+                        <div class="date-filter-controls">
+                            <div class="form-group">
+                                <label for="filterStore">Cửa hàng:</label>
+                                <select id="filterStore" class="form-control">
+                                    <option value="">Tất cả cửa hàng</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="filterStatus">Trạng thái:</label>
+                                <select id="filterStatus" class="form-control">
+                                    <option value="">Tất cả</option>
+                                    <option value="paid">Đã thanh toán</option>
+                                    <option value="partial">Thanh toán một phần</option>
+                                    <option value="unpaid">Chưa thanh toán</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="filterDateFrom">Từ ngày:</label>
+                                <input type="date" id="filterDateFrom" class="form-control">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="filterDateTo">Đến ngày:</label>
+                                <input type="date" id="filterDateTo" class="form-control">
+                            </div>
+
+                            <button type="button" class="btn btn-success" id="applyFilterBtn">
+                                <i class="fas fa-filter"></i> Lọc
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Invoices List -->
+                    <div class="invoice-list-section">
+                        <div class="section-header">
+                            <div>
+                                <h3><i class="fas fa-list"></i> Danh Sách Hóa Đơn</h3>
+                            </div>
+                            <div class="header-actions">
+                                <button type="button" class="btn btn-danger" id="deleteSelectedBtn" style="display: none;">
+                                    <i class="fas fa-trash"></i> Xóa đã chọn
+                                </button>
+                                <button type="button" class="btn btn-warning" id="deleteAllBtn">
+                                    <i class="fas fa-trash-alt"></i> Xóa tất cả
+                                </button>
+                                <button type="button" class="btn btn-info" id="exportExcelBtn">
+                                    <i class="fas fa-file-excel"></i> Xuất Excel
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="products-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 50px;">
+                                            <input type="checkbox" id="selectAll" class="select-all-checkbox">
+                                        </th>
+                                        <th>Mã HĐ</th>
+                                        <th>Ngày tạo</th>
+                                        <th>Thời gian thanh toán</th>
+                                        <th>Cửa hàng</th>
+                                        <th>Tổng tiền</th>
+                                        <th>Đã thanh toán</th>
+                                        <th>Còn lại</th>
+                                        <th>Trạng thái</th>
+                                        <th>Ghi chú</th>
+                                        <th>Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="invoicesList">
+                                    <!-- Invoices will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- View Invoice Modal -->
+    <div class="modal" id="viewInvoiceModal" style="display: none;">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-file-invoice"></i> Chi Tiết Hóa Đơn</h2>
+                <button type="button" class="modal-close" onclick="closeViewInvoiceModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="invoiceDetailContent">
+                <!-- Invoice detail will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeViewInvoiceModal()">
+                    <i class="fas fa-times"></i> Đóng
+                </button>
+                <button type="button" class="btn btn-primary" id="printDetailBtn">
+                    <i class="fas fa-print"></i> In
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <div class="toast-content">
+            <i class="toast-icon"></i>
+            <span class="toast-message"></span>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../main/submenu.js"></script>
+    <script src="../main/store-context.js"></script>
+    <script src="../main/header.js"></script>
+
+    <!-- Component Loading Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load navbar
+            const xhr1 = new XMLHttpRequest();
+            xhr1.open('GET', '../components/navbar.html', true);
+            xhr1.onreadystatechange = function() {
+                if (xhr1.readyState === 4 && xhr1.status === 200) {
+                    document.getElementById('navbar-container').innerHTML = xhr1.responseText;
+                    setTimeout(() => {
+                        const invoiceNav = document.querySelector('.has-submenu');
+                        if (invoiceNav) {
+                            invoiceNav.classList.add('active');
+                        }
+                    }, 100);
+                }
+            };
+            xhr1.send();
+            
+            // Load header
+            const xhr2 = new XMLHttpRequest();
+            xhr2.open('GET', '../components/header.html', true);
+            xhr2.onreadystatechange = function() {
+                if (xhr2.readyState === 4 && xhr2.status === 200) {
+                    let content = xhr2.responseText;
+                    content = content.replace('{{PAGE_TITLE}}', 'Hóa Đơn Thanh Toán');
+                    document.getElementById('header-container').innerHTML = content;
+                    
+                    setTimeout(() => {
+                        if (typeof initializeHeader === 'function') {
+                            initializeHeader();
+                        }
+                    }, 200);
+                }
+            };
+            xhr2.send();
+        });
+    </script>
+
+    <!-- Navbar JavaScript -->
+    <script src="../main/navbar.js"></script>
+    
+    <!-- Main JavaScript -->
+    <script src="../main/payment-invoices.js"></script>
+</body>
+</html>

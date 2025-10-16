@@ -272,6 +272,8 @@ span.titlle {
                         let targetUrl;
                         if (type === 'global') {
                             targetUrl = isInRoot ? 'view/global-invoice.html' : 'global-invoice.html';
+                        } else if (type === 'payment') {
+                            targetUrl = isInRoot ? 'view/payment-invoices.html' : 'payment-invoices.html';
                         } else {
                             targetUrl = isInRoot ? 'view/store-invoice.html' : 'store-invoice.html';
                         }
@@ -301,6 +303,12 @@ span.titlle {
                     <a href="#" onclick="event.preventDefault(); navigateToInvoice('store'); return false;" class="order-submenu-link">
                         <i class="fas fa-store order-submenu-icon"></i>
                         Hóa Đơn Từng Cửa Hàng TMĐT
+                    </a>
+                </li>
+                <li class="order-submenu-item">
+                    <a href="/view/payment-invoices.html" data-page="payment-invoices.html" class="order-submenu-link">
+                        <i class="fas fa-money-bill-wave order-submenu-icon"></i>
+                        Hóa Đơn Thanh Toán
                     </a>
                 </li>
             </ul>
