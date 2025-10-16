@@ -762,8 +762,14 @@ function displayInvoice(invoiceHTML) {
     showNotification('Hóa đơn cửa hàng đã được tạo thành công!', 'success');
 }
 
-// Print invoice
+// Print invoice - Show payment confirmation modal first
 function printInvoice() {
+    // Show payment confirmation modal
+    showPaymentConfirmationModal();
+}
+
+// Actual print function (called after payment confirmation)
+function doPrintInvoice() {
     const printWindow = window.open('', '_blank');
     const invoiceContent = document.getElementById('invoiceContent').innerHTML;
     
@@ -846,4 +852,217 @@ function showNotification(message, type = 'info') {
     setTimeout(() => {
         toast.className = 'toast';
     }, 3000);
+}
+
+// ============= PAYMENT CONFIRMATION MODAL FUNCTIONS =============
+
+let currentInvoiceData = null;
+let currentTotalAmount = 0;
+
+// Show payment confirmation modal
+function showPaymentConfirmationModal() {
+    // Get total amount from invoice
+    const invoiceContent = document.getElementById('invoiceContent');
+    if (!invoiceContent) {
+        showNotification('Vui lòng tạo hóa đơn trước!', 'warning');
+        return;
+    }
+    
+    // Calculate total from current invoice data
+    currentTotalAmount = calculateInvoiceTotalAmount();
+    
+    // Reset form
+    document.getElementById('paymentStatus').value = 'unpaid';
+    document.getElementById('amountPaid').value = '';
+    document.getElementById('paymentNote').value = '';
+    document.getElementById('partialPaymentContainer').style.display = 'none';
+    
+    // Update total amount display
+    document.getElementById('totalAmountDisplay').textContent = formatCurrency(currentTotalAmount);
+    document.getElementById('remainingAmountDisplay').textContent = formatCurrency(currentTotalAmount);
+    
+    // Show modal
+    const modal = document.getElementById('paymentConfirmationModal');
+    modal.style.display = 'flex';
+    
+    // Setup event listeners for modal
+    setupPaymentModalListeners();
+}
+
+// Close payment modal
+function closePaymentModal() {
+    const modal = document.getElementById('paymentConfirmationModal');
+    modal.style.display = 'none';
+}
+
+// Setup payment modal event listeners
+function setupPaymentModalListeners() {
+    // Payment status change
+    const paymentStatus = document.getElementById('paymentStatus');
+    paymentStatus.removeEventListener('change', handlePaymentStatusChange);
+    paymentStatus.addEventListener('change', handlePaymentStatusChange);
+    
+    // Amount paid input with formatting
+    const amountPaid = document.getElementById('amountPaid');
+    amountPaid.removeEventListener('input', handleAmountPaidInput);
+    amountPaid.addEventListener('input', handleAmountPaidInput);
+    
+    // Confirm and print button
+    const confirmBtn = document.getElementById('confirmAndPrintBtn');
+    confirmBtn.removeEventListener('click', confirmAndPrint);
+    confirmBtn.addEventListener('click', confirmAndPrint);
+}
+
+// Handle payment status change
+function handlePaymentStatusChange() {
+    const status = document.getElementById('paymentStatus').value;
+    const partialContainer = document.getElementById('partialPaymentContainer');
+    const amountPaid = document.getElementById('amountPaid');
+    
+    if (status === 'paid') {
+        partialContainer.style.display = 'none';
+        amountPaid.value = currentTotalAmount;
+    } else if (status === 'partial') {
+        partialContainer.style.display = 'block';
+        amountPaid.value = '';
+        updateRemainingAmount();
+    } else {
+        partialContainer.style.display = 'none';
+        amountPaid.value = 0;
+    }
+}
+
+// Handle amount paid input with formatting
+function handleAmountPaidInput(e) {
+    let value = e.target.value;
+    
+    // Remove all non-digit characters except for the first character if it's a digit
+    value = value.replace(/[^0-9]/g, '');
+    
+    // Format the number with dots
+    if (value) {
+        // Convert to number and format with dots
+        const num = parseInt(value);
+        e.target.value = num.toLocaleString('vi-VN');
+    }
+    
+    // Update remaining amount
+    updateRemainingAmount();
+}
+
+// Update remaining amount
+function updateRemainingAmount() {
+    const amountPaidInput = document.getElementById('amountPaid').value;
+    // Remove dots to parse the number
+    const amountPaid = parseFloat(amountPaidInput.replace(/\./g, '')) || 0;
+    const remaining = Math.max(0, currentTotalAmount - amountPaid);
+    document.getElementById('remainingAmountDisplay').textContent = formatCurrency(remaining);
+}
+
+// Confirm and print
+async function confirmAndPrint() {
+    const paymentStatus = document.getElementById('paymentStatus').value;
+    const amountPaidInput = document.getElementById('amountPaid').value;
+    // Remove dots to parse the number
+    const amountPaid = parseFloat(amountPaidInput.replace(/\./g, '')) || 0;
+    const paymentNote = document.getElementById('paymentNote').value;
+    
+    // Validate partial payment
+    if (paymentStatus === 'partial') {
+        if (amountPaid <= 0) {
+            showNotification('Vui lòng nhập số tiền đã thanh toán!', 'warning');
+            return;
+        }
+        if (amountPaid >= currentTotalAmount) {
+            showNotification('Số tiền đã thanh toán phải nhỏ hơn tổng tiền!', 'warning');
+            return;
+        }
+    }
+    
+    // Prepare invoice data to save
+    const invoiceDataToSave = {
+        storeId: selectedStoreId,
+        storeName: invoiceData.stores[selectedStoreId]?.name || 'N/A',
+        dateRange: {
+            start: dateRange.start.toISOString(),
+            end: dateRange.end.toISOString()
+        },
+        totalAmount: currentTotalAmount,
+        paymentStatus: paymentStatus,
+        paidAmount: paymentStatus === 'paid' ? currentTotalAmount : amountPaid,
+        paymentNote: paymentNote,
+        createdAt: new Date().toISOString(),
+        invoiceContent: document.getElementById('invoiceContent').innerHTML
+    };
+    
+    try {
+        showLoading(true);
+        
+        // Save to Firebase
+        const invoiceRef = database.ref('invoices').push();
+        await invoiceRef.set(invoiceDataToSave);
+        
+        // Save payment history
+        if (paymentStatus !== 'unpaid') {
+            const paymentHistoryRef = database.ref(`paymentHistory/${invoiceRef.key}`).push();
+            await paymentHistoryRef.set({
+                amount: invoiceDataToSave.paidAmount,
+                status: paymentStatus,
+                note: paymentNote,
+                createdAt: new Date().toISOString()
+            });
+        }
+        
+        showLoading(false);
+        closePaymentModal();
+        
+        showNotification('Đã lưu thông tin thanh toán thành công!', 'success');
+        
+        // Print invoice
+        setTimeout(() => {
+            doPrintInvoice();
+        }, 500);
+        
+    } catch (error) {
+        console.error('Error saving invoice:', error);
+        showLoading(false);
+        showNotification('Có lỗi xảy ra khi lưu hóa đơn!', 'error');
+    }
+}
+
+// Calculate invoice total amount
+function calculateInvoiceTotalAmount() {
+    // Try to get from invoice content
+    const invoiceContent = document.getElementById('invoiceContent');
+    if (!invoiceContent) return 0;
+    
+    // Look for total amount in the invoice HTML
+    const totalElements = invoiceContent.querySelectorAll('.invoice-total');
+    if (totalElements.length > 0) {
+        const totalText = totalElements[0].textContent;
+        const match = totalText.match(/[\d,]+/);
+        if (match) {
+            return parseFloat(match[0].replace(/,/g, ''));
+        }
+    }
+    
+    // Fallback: calculate from orders
+    let total = 0;
+    if (selectedStoreId && invoiceData.orders[selectedStoreId]) {
+        const storeOrders = invoiceData.orders[selectedStoreId];
+        storeOrders.forEach(order => {
+            if (order.items && Array.isArray(order.items)) {
+                order.items.forEach(item => {
+                    total += (item.price || 0) * (item.quantity || 0);
+                });
+            }
+        });
+    }
+    
+    return total;
+}
+
+// Format currency
+function formatCurrency(amount) {
+    return new Intl.NumberFormat('vi-VN').format(amount);
 }

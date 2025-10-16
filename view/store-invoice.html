@@ -52,6 +52,10 @@
                             <i class="fas fa-store"></i>
                             <span>Hóa Đơn Từng Cửa Hàng TMĐT</span>
                         </a>
+                        <a href="payment-invoices.html" class="tab-item">
+                            <i class="fas fa-money-bill-wave"></i>
+                            <span>Hóa Đơn Thanh Toán</span>
+                        </a>
                     </div>
                 </div>
 
@@ -110,6 +114,52 @@
             </div>
         </div>
         </main>
+    </div>
+
+    <!-- Payment Confirmation Modal -->
+    <div class="modal" id="paymentConfirmationModal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-money-bill-wave"></i> Xác nhận thanh toán</h2>
+                <button class="modal-close" onclick="closePaymentModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="paymentConfirmationForm">
+                    <div class="form-group">
+                        <label for="paymentStatus">Trạng thái thanh toán <span class="required">*</span></label>
+                        <select id="paymentStatus" class="form-control" required>
+                            <option value="unpaid">Chưa thanh toán</option>
+                            <option value="partial">Thanh toán một phần</option>
+                            <option value="paid">Đã thanh toán</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" id="partialPaymentContainer" style="display: none;">
+                        <label for="amountPaid">Số tiền đã thanh toán <span class="required">*</span></label>
+                        <input type="text" id="amountPaid" class="form-control" placeholder="Nhập số tiền đã thanh toán">
+                        <div class="payment-info">
+                            <p><strong>Tổng tiền:</strong> <span id="totalAmountDisplay">0</span>₫</p>
+                            <p><strong>Còn lại:</strong> <span id="remainingAmountDisplay">0</span>₫</p>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="paymentNote">Ghi chú thanh toán</label>
+                        <textarea id="paymentNote" class="form-control" rows="3" placeholder="Nhập ghi chú (nếu có)"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closePaymentModal()">
+                    <i class="fas fa-times"></i> Hủy
+                </button>
+                <button type="button" class="btn btn-primary" id="confirmAndPrintBtn">
+                    <i class="fas fa-check"></i> Xác nhận & In
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Toast Notification -->

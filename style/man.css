@@ -2690,7 +2690,6 @@ input[id^="total_"]:focus {
     }
 
     /* ===== STORE SELECTOR IN HEADER ===== */
-    color: white;
 }
 
 .store-item-info {
@@ -3227,4 +3226,88 @@ input[id^="total_"]:focus {
         justify-content: space-between;
         width: 100%;
     }
+}
+
+/* ===== PAYMENT CONFIRMATION MODAL ===== */
+.payment-info {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 10px;
+}
+
+.payment-info p {
+    margin: 8px 0;
+    font-size: 14px;
+    color: var(--text-dark);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.payment-info strong {
+    color: var(--primary-green);
+}
+
+.required {
+    color: #dc3545;
+    margin-left: 4px;
+}
+
+#paymentConfirmationModal .modal {
+    background: rgba(0, 0, 0, 0.5);
+}
+
+#paymentConfirmationModal .modal-content {
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#paymentConfirmationModal .form-group {
+    margin-bottom: 20px;
+}
+
+#paymentConfirmationModal label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+#paymentConfirmationModal select,
+#paymentConfirmationModal input,
+#paymentConfirmationModal textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 2px solid #e5e7eb;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+#paymentConfirmationModal select:focus,
+#paymentConfirmationModal input:focus,
+#paymentConfirmationModal textarea:focus {
+    outline: none;
+    border-color: var(--primary-green);
+    box-shadow: 0 0 0 3px rgba(var(--primary-green-rgb), 0.1);
+}
+
+#paymentConfirmationModal .modal-footer {
+    gap: 12px;
+}
+
+#paymentConfirmationModal .btn {
+    flex: 1;
+    min-width: 120px;
 }
