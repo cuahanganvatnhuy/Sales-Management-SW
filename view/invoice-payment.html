@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hóa Đơn Thanh Toán - Sales Management</title>
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/invoice-payment.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-2 p-0">
+                <div id="navbar-container"></div>
+            </div>
+            
+            <!-- Main Content -->
+            <div class="col-md-10">
+                <!-- Header -->
+                <div id="header-container"></div>
+                
+                <!-- Page Content -->
+                <div class="main-content">
+                    <div class="page-header">
+                        <div class="header-content">
+                            <div class="header-left">
+                                <h1 class="page-title">
+                                    <i class="fas fa-credit-card"></i>
+                                    Quản Lý Thanh Toán Hóa Đơn
+                                </h1>
+                                <p class="page-subtitle">Theo dõi và quản lý trạng thái thanh toán các hóa đơn</p>
+                            </div>
+                            <div class="header-right">
+                                <button class="btn btn-primary" onclick="openCreatePaymentModal()">
+                                    <i class="fas fa-plus"></i>
+                                    Tạo Thanh Toán Mới
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Statistics Cards -->
+                    <div class="statistics-section">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="stat-card total-invoices">
+                                    <div class="stat-icon">
+                                        <i class="fas fa-file-invoice"></i>
+                                    </div>
+                                    <div class="stat-content">
+                                        <h3 id="totalInvoices">0</h3>
+                                        <p>Tổng Hóa Đơn</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card paid-invoices">
+                                    <div class="stat-icon">
+                                        <i class="fas fa-check-circle"></i>
+                                    </div>
+                                    <div class="stat-content">
+                                        <h3 id="paidInvoices">0</h3>
+                                        <p>Đã Thanh Toán</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card unpaid-invoices">
+                                    <div class="stat-icon">
+                                        <i class="fas fa-clock"></i>
+                                    </div>
+                                    <div class="stat-content">
+                                        <h3 id="unpaidInvoices">0</h3>
+                                        <p>Chưa Thanh Toán</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card total-amount">
+                                    <div class="stat-icon">
+                                        <i class="fas fa-money-bill-wave"></i>
+                                    </div>
+                                    <div class="stat-content">
+                                        <h3 id="totalAmount">0₫</h3>
+                                        <p>Tổng Tiền</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Filters Section -->
+                    <div class="filters-section">
+                        <div class="filter-card">
+                            <div class="filter-header">
+                                <h5><i class="fas fa-filter"></i> Bộ Lọc</h5>
+                            </div>
+                            <div class="filter-content">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <label>Khoảng Thời Gian:</label>
+                                        <select id="dateRangeFilter" class="form-control" onchange="applyFilters()">
+                                            <option value="all">Tất cả</option>
+                                            <option value="today">Hôm nay</option>
+                                            <option value="week">Tuần này</option>
+                                            <option value="month">Tháng này</option>
+                                            <option value="quarter">Quý này</option>
+                                            <option value="custom">Tùy chọn</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label>Cửa Hàng:</label>
+                                        <select id="storeFilter" class="form-control" onchange="applyFilters()">
+                                            <option value="all">Tất cả cửa hàng</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label>Trạng Thái:</label>
+                                        <select id="statusFilter" class="form-control" onchange="applyFilters()">
+                                            <option value="all">Tất cả</option>
+                                            <option value="paid">Đã thanh toán</option>
+                                            <option value="unpaid">Chưa thanh toán</option>
+                                            <option value="partial">Thanh toán một phần</option>
+                                            <option value="overdue">Quá hạn</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label>Tìm Kiếm:</label>
+                                        <input type="text" id="searchInput" class="form-control" 
+                                               placeholder="Tìm theo mã hóa đơn, khách hàng..." 
+                                               onkeyup="applyFilters()">
+                                    </div>
+                                </div>
+                                <div class="row mt-3" id="customDateRange" style="display: none;">
+                                    <div class="col-md-3">
+                                        <label>Từ ngày:</label>
+                                        <input type="date" id="fromDate" class="form-control" onchange="applyFilters()">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label>Đến ngày:</label>
+                                        <input type="date" id="toDate" class="form-control" onchange="applyFilters()">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <button class="btn btn-secondary mt-4" onclick="clearFilters()">
+                                            <i class="fas fa-times"></i> Xóa Bộ Lọc
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Payment Chart -->
+                    <div class="chart-section">
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <h5><i class="fas fa-chart-pie"></i> Biểu Đồ Thanh Toán</h5>
+                            </div>
+                            <div class="chart-content">
+                                <canvas id="paymentChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Invoices Table -->
+                    <div class="table-section">
+                        <div class="table-card">
+                            <div class="table-header">
+                                <h5><i class="fas fa-list"></i> Danh Sách Hóa Đơn</h5>
+                                <div class="table-actions">
+                                    <button class="btn btn-success" onclick="exportToExcel()">
+                                        <i class="fas fa-file-excel"></i> Xuất Excel
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="table-content">
+                                <div class="table-responsive">
+                                    <table class="table table-striped" id="invoicesTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Mã Hóa Đơn</th>
+                                                <th>Khách Hàng</th>
+                                                <th>Cửa Hàng</th>
+                                                <th>Ngày Tạo</th>
+                                                <th>Tổng Tiền</th>
+                                                <th>Trạng Thái</th>
+                                                <th>Ngày Thanh Toán</th>
+                                                <th>Thao Tác</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="invoicesTableBody">
+                                            <!-- Data will be loaded here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <!-- Pagination -->
+                                <div class="pagination-section">
+                                    <div class="pagination-info">
+                                        <span id="paginationInfo">Hiển thị 0 - 0 của 0 kết quả</span>
+                                    </div>
+                                    <div class="pagination-controls">
+                                        <button class="btn btn-sm btn-outline-primary" onclick="previousPage()" id="prevBtn" disabled>
+                                            <i class="fas fa-chevron-left"></i> Trước
+                                        </button>
+                                        <span id="pageNumbers"></span>
+                                        <button class="btn btn-sm btn-outline-primary" onclick="nextPage()" id="nextBtn" disabled>
+                                            Sau <i class="fas fa-chevron-right"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Payment Modal -->
+    <div class="modal fade" id="createPaymentModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-plus"></i>
+                        Tạo Thanh Toán Mới
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="createPaymentForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Khoảng Thời Gian:</label>
+                                    <select id="paymentDateRange" class="form-control" onchange="toggleCustomDateRange()">
+                                        <option value="today">Hôm nay</option>
+                                        <option value="week">Tuần này</option>
+                                        <option value="month">Tháng này</option>
+                                        <option value="quarter">Quý này</option>
+                                        <option value="custom">Tùy chọn</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Cửa Hàng:</label>
+                                    <select id="paymentStoreSelect" class="form-control">
+                                        <option value="all">Tất cả cửa hàng</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row" id="customPaymentDateRange" style="display: none;">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Từ ngày:</label>
+                                    <input type="date" id="paymentFromDate" class="form-control">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Đến ngày:</label>
+                                    <input type="date" id="paymentToDate" class="form-control">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label>Trạng Thái Mặc Định:</label>
+                                    <select id="defaultPaymentStatus" class="form-control">
+                                        <option value="paid">Đã thanh toán</option>
+                                        <option value="unpaid">Chưa thanh toán</option>
+                                        <option value="partial">Thanh toán một phần</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label>Ghi Chú:</label>
+                                    <textarea id="paymentNotes" class="form-control" rows="3" 
+                                              placeholder="Nhập ghi chú về thanh toán..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-primary" onclick="createPaymentBatch()">
+                        <i class="fas fa-save"></i> Tạo Thanh Toán
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Detail Modal -->
+    <div class="modal fade" id="paymentDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                        Chi Tiết Thanh Toán Hóa Đơn
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="paymentDetailContent">
+                    <!-- Content will be loaded dynamically -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
+                    <button type="button" class="btn btn-primary" onclick="updatePaymentStatus()">
+                        <i class="fas fa-save"></i> Cập Nhật Trạng Thái
+                    </button>
+                    <button type="button" class="btn btn-success" onclick="printInvoice()">
+                        <i class="fas fa-print"></i> In Hóa Đơn
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Confirmation Modal -->
+    <div class="modal fade" id="paymentConfirmationModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-question-circle"></i>
+                        Xác Nhận Thanh Toán
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="confirmation-content">
+                        <div class="confirmation-icon">
+                            <i class="fas fa-credit-card"></i>
+                        </div>
+                        <h4>Hóa đơn này đã được thanh toán chưa?</h4>
+                        <p class="invoice-info" id="confirmationInvoiceInfo">
+                            <!-- Invoice info will be displayed here -->
+                        </p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" onclick="markAsUnpaid()">
+                        <i class="fas fa-times"></i> Chưa Thanh Toán
+                    </button>
+                    <button type="button" class="btn btn-success" onclick="markAsPaid()">
+                        <i class="fas fa-check"></i> Đã Thanh Toán
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/bootstrap.bundle.min.js"></script>
+    <script src="../main/firebase.js"></script>
+    <script src="../main/invoice-payment.js"></script>
+    <script>
+        // Load components
+        $(document).ready(function() {
+            $('#navbar-container').load('../components/navbar.html');
+            $('#header-container').load('../components/header.html');
+            
+            // Initialize page after components load
+            setTimeout(() => {
+                initializeInvoicePayment();
+            }, 1000);
+        });
+
+        // Global functions for HTML accessibility
+        window.openCreatePaymentModal = openCreatePaymentModal;
+        window.applyFilters = applyFilters;
+        window.clearFilters = clearFilters;
+        window.exportToExcel = exportToExcel;
+        window.previousPage = previousPage;
+        window.nextPage = nextPage;
+        window.toggleCustomDateRange = toggleCustomDateRange;
+        window.createPaymentBatch = createPaymentBatch;
+        window.updatePaymentStatus = updatePaymentStatus;
+        window.printInvoice = printInvoice;
+        window.markAsUnpaid = markAsUnpaid;
+        window.markAsPaid = markAsPaid;
+        window.viewPaymentDetail = viewPaymentDetail;
+        window.showPaymentConfirmation = showPaymentConfirmation;
+    </script>
+</body>
+</html>
