@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giao Dịch Tài Chính - PMQLDH</title>
+    <link rel="stylesheet" href="../style/man.css">
+    <link rel="stylesheet" href="../style/navbar-submenu.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Load header and navbar components -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(function(){
+            $("#header-container").load("../components/header.html");
+            $("#navbar-container").load("../components/navbar.html");
+        });
+    </script>
+    <style>
+        .main-container {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        .main-content {
+            flex: 1;
+            padding: 20px;
+            background-color: #f5f7fa;
+        }
+        
+        .page-header {
+            margin-bottom: 20px;
+        }
+        
+        .page-header h1 {
+            margin: 0;
+            color: #333;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        .breadcrumb {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        
+        .breadcrumb a {
+            color: #1890ff;
+            text-decoration: none;
+        }
+        
+        .card {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .card-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .card-title {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .card-description {
+            margin: 5px 0 0;
+            color: #666;
+            font-size: 13px;
+        }
+        
+        .card-body {
+            padding: 20px;
+        }
+        
+        .upload-section {
+            text-align: center;
+            padding: 30px 20px;
+        }
+        
+        .file-upload-wrapper {
+            margin-bottom: 20px;
+        }
+        
+        .file-upload {
+            width: 0.1px;
+            height: 0.1px;
+            opacity: 0;
+            overflow: hidden;
+            position: absolute;
+            z-index: -1;
+        }
+        
+        .file-upload-label {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            border: 2px dashed #d9d9d9;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .file-upload-label:hover {
+            border-color: #1890ff;
+            background-color: #f5f9ff;
+        }
+        
+        .file-upload-label i {
+            font-size: 36px;
+            color: #1890ff;
+            margin-bottom: 10px;
+        }
+        
+        .file-upload-label span {
+            color: #333;
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+        
+        .file-upload-label small {
+            color: #999;
+            font-size: 12px;
+        }
+        
+        .btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 4px;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+        
+        .btn i {
+            margin-right: 8px;
+        }
+        
+        .btn-primary {
+            background: #1890ff;
+            color: #fff;
+        }
+        
+        .btn-primary:hover {
+            background: #40a9ff;
+        }
+        
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        
+        .loading-spinner {
+            text-align: center;
+        }
+        
+        .loading-spinner i {
+            font-size: 40px;
+            color: #1890ff;
+            margin-bottom: 10px;
+        }
+        
+        .loading-spinner p {
+            margin: 0;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        /* Transaction table styles */
+        .transaction-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        .transaction-table th, 
+        .transaction-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .transaction-table th {
+            background-color: #fafafa;
+            font-weight: 600;
+            color: #333;
+            white-space: nowrap;
+        }
+        
+        .transaction-table tbody tr:hover {
+            background-color: #f9f9f9;
+        }
+        
+        .highlight {
+            color: #1890ff;
+            font-weight: 500;
+        }
+        
+        /* Summary cards */
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .summary-card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .summary-card h3 {
+            margin: 0 0 10px;
+            font-size: 14px;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .summary-amount {
+            font-size: 24px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .summary-note {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header Component -->
+    <div id="header-container">
+        <!-- Header will be loaded here -->
+    </div>
+
+    <div class="main-container">
+        <!-- Navbar Component -->
+        <div id="navbar-container">
+            <!-- Navbar will be loaded here -->
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Loading Overlay -->
+            <div class="loading-overlay" id="loadingOverlay">
+                <div class="loading-spinner">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Đang xử lý dữ liệu...</p>
+                </div>
+            </div>
+
+            <!-- Page Header -->
+            <div class="page-header">
+                <h1><i class="fas fa-exchange-alt"></i> Giao Dịch Tài Chính</h1>
+                <div class="breadcrumb">
+                    <a href="/">Trang chủ</a> / <span>Giao Dịch Tài Chính</span>
+                </div>
+            </div>
+
+            <!-- Upload Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Tải lên file báo cáo</h3>
+                    <p class="card-description">Chọn file Excel xuất từ TikTok Shop để phân tích dữ liệu</p>
+                </div>
+                <div class="card-body">
+                    <div class="upload-section">
+                        <div class="file-upload-wrapper">
+                            <input type="file" id="excelFile" accept=".xlsx, .xls" class="file-upload">
+                            <label for="excelFile" class="file-upload-label">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <span>Kéo thả file vào đây hoặc nhấn để chọn file</span>
+                                <small>Hỗ trợ file .xlsx, .xls</small>
+                            </label>
+                        </div>
+                        <button type="button" class="btn btn-primary" onclick="processExcel()">
+                            <i class="fas fa-upload"></i> Tải lên & Phân tích
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="summary-cards">
+                <div class="summary-card">
+                    <h3>Tổng doanh thu</h3>
+                    <div class="summary-amount" id="totalRevenue">0đ</div>
+                    <div class="summary-note">Trước khi trừ phí</div>
+                </div>
+                <div class="summary-card">
+                    <h3>Tổng phí</h3>
+                    <div class="summary-amount" id="totalFees">0đ</div>
+                    <div class="summary-note">Bao gồm phí giao dịch, hoa hồng</div>
+                </div>
+                <div class="summary-card">
+                    <h3>Thực nhận</h3>
+                    <div class="summary-amount highlight" id="netAmount">0đ</div>
+                    <div class="summary-note">Sau khi trừ phí</div>
+                </div>
+            </div>
+
+            <!-- Transaction Table -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Chi tiết giao dịch</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="transaction-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">STT</th>
+                                    <th scope="col">Ngày giao dịch</th>
+                                    <th scope="col">Mã đơn hàng</th>
+                                    <th scope="col">Doanh thu</th>
+                                    <th scope="col">Phí giao dịch</th>
+                                    <th scope="col">Hoa hồng</th>
+                                    <th scope="col">Thuế GTGT</th>
+                                    <th scope="col">Thuế TNCN</th>
+                                    <th scope="col">Thực nhận</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactionHistory">
+                                <tr>
+                                    <td colspan="9" style="text-align: center; padding: 20px; color: #999;">
+                                        Chưa có dữ liệu. Vui lòng tải lên file báo cáo.
+                                    </td>
+                                </tr>
+                            </tbody>
+                            <tfoot id="transactionFooter" style="display: none;">
+                                <tr class="total-row">
+                                    <td colspan="3">Tổng cộng:</td>
+                                    <td id="sumRevenue">0đ</td>
+                                    <td id="sumTransactionFee">0đ</td>
+                                    <td id="sumCommission">0đ</td>
+                                    <td id="sumVAT">0đ</td>
+                                    <td id="sumIncomeTax">0đ</td>
+                                    <td id="sumNetAmount" class="highlight">0đ</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-analytics.js"></script>
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/global.js"></script>
+    
+    <!-- Load XLSX library for Excel file processing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js"></script>
+    
+    <!-- Load financial transactions JavaScript -->
+    <script src="../main/financial-transactions.js"></script>
+</body>
+</html>
