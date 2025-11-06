@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giao Dịch Tài Chính - PMQLDH</title>
+    <link rel="stylesheet" href="../style/man.css">
+    <link rel="stylesheet" href="../style/navbar-submenu.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Load header and navbar components -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(function(){
+            $("#header-container").load("../components/header.html");
+            $("#navbar-container").load("../components/navbar.html");
+        });
+    </script>
+    <style>
+        .main-container {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        .main-content {
+            flex: 1;
+            padding: 20px;
+            background-color: #f5f7fa;
+        }
+        
+        .page-header {
+            margin-bottom: 20px;
+        }
+        
+        .page-header h1 {
+            margin: 0;
+            color: #333;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        .breadcrumb {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        
+        .breadcrumb a {
+            color: #1890ff;
+            text-decoration: none;
+        }
+        
+        .card {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .card-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .card-title {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .card-description {
+            margin: 5px 0 0;
+            color: #666;
+            font-size: 13px;
+        }
+        
+        .card-body {
+            padding: 20px;
+        }
+        
+        .upload-section {
+            text-align: center;
+            padding: 30px 20px;
+        }
+        
+        .file-upload-wrapper {
+            margin-bottom: 20px;
+        }
+        
+        .file-upload {
+            width: 0.1px;
+            height: 0.1px;
+            opacity: 0;
+            overflow: hidden;
+            position: absolute;
+            z-index: -1;
+        }
+        
+        .file-upload-label {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            border: 2px dashed #d9d9d9;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .file-upload-label:hover {
+            border-color: #1890ff;
+            background-color: #f5f9ff;
+        }
+        
+        .file-upload-label i {
+            font-size: 36px;
+            color: #1890ff;
+            margin-bottom: 10px;
+        }
+        
+        .file-upload-label span {
+            color: #333;
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+        
+        .file-upload-label small {
+            color: #999;
+            font-size: 12px;
+        }
+        
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        
+        .loading-spinner {
+            text-align: center;
+        }
+        
+        .loading-spinner i {
+            font-size: 40px;
+            color: #1890ff;
+            margin-bottom: 10px;
+        }
+        
+        .loading-spinner p {
+            margin: 0;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        /* Transaction table styles */
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .transaction-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 0;
+        }
+        
+        .transaction-table th, 
+        .transaction-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #f0f0f0;
+            white-space: nowrap;
+            min-width: 120px;
+        }
+        
+        .transaction-table th {
+            background-color: #fafafa;
+            font-weight: 600;
+            color: #333;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .transaction-table tbody tr:hover {
+            background-color: #f9f9f9;
+        }
+        
+        .transaction-table td:first-child,
+        .transaction-table th:first-child {
+            position: sticky;
+            left: 0;
+            background-color: #fff;
+            z-index: 11;
+            min-width: 60px;
+        }
+        
+        .transaction-table thead th:first-child {
+            background-color: #fafafa;
+            z-index: 12;
+        }
+        
+        .transaction-table tbody tr:hover td:first-child {
+            background-color: #f9f9f9;
+        }
+        
+        .transaction-table tfoot td {
+            font-weight: bold;
+            background-color: #fafafa;
+        }
+        
+        .transaction-table tfoot td:first-child {
+            background-color: #fafafa;
+        }
+        
+        .highlight {
+            color: #1890ff;
+            font-weight: 500;
+        }
+        
+        /* Summary cards */
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 0;
+        }
+        
+        .summary-card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .summary-card h3 {
+            margin: 0 0 10px;
+            font-size: 14px;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .summary-amount {
+            font-size: 24px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .summary-note {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+        }
+        
+        /* Transaction row styling */
+        .refund-row {
+            background-color: #ffebee !important;
+        }
+        
+        .zero-row {
+            background-color: #f5f5f5 !important;
+        }
+        
+        .transaction-table tbody tr.refund-row:hover {
+            background-color: #ffcdd2 !important;
+        }
+        
+        .transaction-table tbody tr.zero-row:hover {
+            background-color: #eeeeee !important;
+        }
+        
+        .transaction-table tbody tr.refund-row td:first-child {
+            background-color: #ffebee !important;
+        }
+        
+        .transaction-table tbody tr.refund-row:hover td:first-child {
+            background-color: #ffcdd2 !important;
+        }
+        
+        .transaction-table tbody tr.zero-row td:first-child {
+            background-color: #f5f5f5 !important;
+        }
+        
+        .transaction-table tbody tr.zero-row:hover td:first-child {
+            background-color: #eeeeee !important;
+        }
+        
+        /* Empty state message */
+        .empty-message {
+            color: #999;
+            text-align: center;
+            width: 100%;
+        }
+        
+        .empty-table-message {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .transaction-table tfoot td {
+            text-align: right;
+            font-weight: bold;
+        }
+        
+        .transaction-table tfoot td:first-child {
+            text-align: left;
+        }
+        
+        /* Date range selection styles */
+        .date-range-section {
+            padding: 10px 0;
+        }
+        
+        .date-range-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .btn-date-range {
+            padding: 10px 20px;
+            border: 2px solid #d9d9d9;
+            background: #fff;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-date-range:hover {
+            border-color: #1890ff;
+            color: #1890ff;
+        }
+        
+        .btn-date-range.active {
+            border-color: #1890ff;
+            background: #1890ff;
+            color: #fff;
+        }
+        
+        .btn-date-range i {
+            font-size: 16px;
+        }
+        
+        .custom-date-range {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f5f7fa;
+            border-radius: 6px;
+        }
+        
+        .date-inputs {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .date-input-group {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .date-input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+            font-size: 14px;
+        }
+        
+        .date-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #333;
+        }
+        
+        .date-input:focus {
+            outline: none;
+            border-color: #1890ff;
+        }
+        
+        .selected-range-display {
+            padding: 12px 16px;
+            background: #e6f7ff;
+            border-left: 3px solid #1890ff;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #0050b3;
+            font-size: 14px;
+        }
+        
+        .selected-range-display i {
+            font-size: 16px;
+        }
+        
+        /* Save actions footer */
+        .card-footer {
+            padding: 20px;
+            border-top: 2px solid #e8e8e8;
+            background: #f9fafb;
+        }
+        
+        .save-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .save-info {
+            flex: 1;
+        }
+        
+        .save-info p {
+            margin: 4px 0;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .save-info strong {
+            color: #333;
+        }
+        
+        .save-buttons {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .btn-action {
+            padding: 12px 28px;
+            border: none;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-action i {
+            font-size: 16px;
+        }
+        
+        .btn-action.btn-cancel {
+            background: #f0f0f0;
+            color: #666;
+            border: 2px solid #d9d9d9;
+        }
+        
+        .btn-action.btn-cancel:hover {
+            background: #e0e0e0;
+            border-color: #bfbfbf;
+        }
+        
+        .btn-action.btn-save {
+            background: #52c41a;
+            color: #fff;
+            border: 2px solid #52c41a;
+            box-shadow: 0 2px 4px rgba(82, 196, 26, 0.3);
+        }
+        
+        .btn-action.btn-save:hover {
+            background: #73d13d;
+            border-color: #73d13d;
+            box-shadow: 0 4px 8px rgba(82, 196, 26, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header Component -->
+    <div id="header-container"></div>
+
+    <div class="main-container">
+        <!-- Navbar Component -->
+        <div id="navbar-container"></div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Loading Overlay -->
+            <div class="loading-overlay" id="loadingOverlay">
+                <div class="loading-spinner">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Đang xử lý dữ liệu...</p>
+                </div>
+            </div>
+
+            <!-- Page Header -->
+            <div class="page-header">
+                <h1><i class="fas fa-exchange-alt"></i> Giao Dịch Tài Chính</h1>
+                <div class="breadcrumb">
+                    <a href="/">Trang chủ</a> / <span>Giao Dịch Tài Chính</span>
+                </div>
+            </div>
+
+            <!-- Date Range Selection Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Chọn khoảng thời gian</h3>
+                    <p class="card-description">Chọn khoảng thời gian cho dữ liệu bạn sắp tải lên</p>
+                </div>
+                <div class="card-body">
+                    <div class="date-range-section">
+                        <div class="date-range-buttons">
+                            <button type="button" class="btn-date-range active" data-range="today">
+                                <i class="fas fa-calendar-day"></i> Hôm nay
+                            </button>
+                            <button type="button" class="btn-date-range" data-range="week">
+                                <i class="fas fa-calendar-week"></i> Tuần này
+                            </button>
+                            <button type="button" class="btn-date-range" data-range="month">
+                                <i class="fas fa-calendar-alt"></i> Tháng này
+                            </button>
+                            <button type="button" class="btn-date-range" data-range="custom">
+                                <i class="fas fa-calendar"></i> Tùy chọn
+                            </button>
+                        </div>
+                        
+                        <div class="custom-date-range hidden" id="customDateRange">
+                            <div class="date-inputs">
+                                <div class="date-input-group">
+                                    <label for="startDate">Từ ngày:</label>
+                                    <input type="date" id="startDate" class="date-input">
+                                </div>
+                                <div class="date-input-group">
+                                    <label for="endDate">Đến ngày:</label>
+                                    <input type="date" id="endDate" class="date-input">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="selected-range-display">
+                            <i class="fas fa-info-circle"></i>
+                            <span id="selectedRangeText">Đã chọn: Hôm nay</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Upload Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Tải lên file báo cáo</h3>
+                    <p class="card-description">Chọn file Excel xuất từ TikTok Shop (sheet "Order details")</p>
+                </div>
+                <div class="card-body">
+                    <div class="upload-section">
+                        <div class="file-upload-wrapper">
+                            <input type="file" id="excelFile" accept=".xlsx, .xls" class="file-upload">
+                            <label for="excelFile" class="file-upload-label">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <span>Kéo thả file vào đây hoặc nhấn để chọn file</span>
+                                <small>Hỗ trợ file .xlsx, .xls - Tự động phân tích khi upload</small>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Tổng giá trị các cột</h3>
+                    <p class="card-description">Tổng hợp các cột số từ file Excel</p>
+                </div>
+                <div class="card-body">
+                    <div class="summary-cards" id="summaryCardsContainer">
+                        <p class="empty-message">Chưa có dữ liệu. Vui lòng tải lên file báo cáo.</p>
+                    </div>
+                </div>
+                
+                <!-- Save Actions -->
+                <div class="card-footer hidden" id="saveActionsFooter">
+                    <div class="save-actions">
+                        <div class="save-info">
+                            <p><strong>Cửa hàng:</strong> <span id="footerStoreName">--</span></p>
+                            <p><strong>Khoảng thời gian:</strong> <span id="footerDateRange"></span></p>
+                            <p><strong>Số đơn hàng:</strong> <span id="footerOrderCount"></span></p>
+                        </div>
+                        <div class="save-buttons">
+                            <button type="button" class="btn-action btn-cancel" id="btnNoSave">
+                                <i class="fas fa-times"></i> Không lưu
+                            </button>
+                            <button type="button" class="btn-action btn-save" id="btnSaveData">
+                                <i class="fas fa-save"></i> Lưu lại
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transaction Table -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Chi tiết giao dịch</h3>
+                    <p class="card-description">Bảng chi tiết các đơn hàng từ TikTok Shop</p>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="transaction-table">
+                            <thead>
+                                <tr>
+                                    <th>STT</th>
+                                    <th>Mã đơn hàng</th>
+                                    <th>Loại</th>
+                                    <th>Thời gian tạo đơn</th>
+                                    <th>Thời gian thanh toán</th>
+                                    <th>Tiền tệ</th>
+                                    <th>Tổng thanh toán</th>
+                                    <th>Tổng doanh thu</th>
+                                    <th>Tổng phụ sau giảm giá</th>
+                                    <th>Tổng phụ trước giảm giá</th>
+                                    <th>Giảm giá người bán</th>
+                                    <th>Hoàn tiền sau giảm giá</th>
+                                    <th>Hoàn tiền trước giảm giá</th>
+                                    <th>Hoàn giảm giá</th>
+                                    <th>Tổng phí</th>
+                                    <th>Phí giao dịch</th>
+                                    <th>Phí hoa hồng TikTok Shop</th>
+                                    <th>Phí vận chuyển người bán</th>
+                                    <th>Phí vận chuyển thực tế</th>
+                                    <th>Phí vận chuyển nền tảng</th>
+                                    <th>Thuế VAT nền tảng</th>
+                                    <th>Thuế TNCN nền tảng</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactionTableBody">
+                                <tr>
+                                    <td colspan="22" class="empty-table-message">Chưa có dữ liệu. Vui lòng tải lên file báo cáo.</td>
+                                </tr>
+                            </tbody>
+                            <tfoot id="transactionTableFooter" class="hidden">
+                                <tr>
+                                    <td colspan="1"><strong>Tổng:</strong></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td id="sum_Total_settlement_amount">0₫</td>
+                                    <td id="sum_Total_Revenue">0₫</td>
+                                    <td id="sum_Subtotal_after_seller_discounts">0₫</td>
+                                    <td id="sum_Subtotal_before_discounts">0₫</td>
+                                    <td id="sum_Seller_discounts">0₫</td>
+                                    <td id="sum_Refund_subtotal_after_seller_discounts">0₫</td>
+                                    <td id="sum_Refund_subtotal_before_seller_discounts">0₫</td>
+                                    <td id="sum_Refund_of_seller_discounts">0₫</td>
+                                    <td id="sum_Total_Fees">0₫</td>
+                                    <td id="sum_Transaction_fee">0₫</td>
+                                    <td id="sum_TikTok_Shop_commission_fee">0₫</td>
+                                    <td id="sum_Seller_shipping_fee">0₫</td>
+                                    <td id="sum_Actual_shipping_fee">0₫</td>
+                                    <td id="sum_Platform_shipping_fee">0₫</td>
+                                    <td id="sum_Platform_VAT">0₫</td>
+                                    <td id="sum_Platform_income_tax">0₫</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-compat.js"></script>
+    <script src="../main/firebase.js"></script>
+    <script src="../main/simple-auth.js"></script>
+    
+    <!-- Load Header JavaScript (Advanced version with getAllStores) -->
+    <script src="../main/header.js"></script>
+    
+    <!-- Load XLSX library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js"></script>
+    
+    <!-- Load financial transactions JavaScript (Fixed version) -->
+    <script src="../main/financial-transactions-fixed.js"></script>
+</body>
+</html>

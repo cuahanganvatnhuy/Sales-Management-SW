@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Biên Bản Khảo Sát Phần Mềm</title>
+    <style>
+        @media print {
+            .no-print { display: none; }
+            body { margin: 0; }
+        }
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            max-width: 210mm;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 10px 0;
+            text-transform: uppercase;
+        }
+        .header p {
+            font-size: 14px;
+            margin: 5px 0;
+        }
+        .section {
+            margin: 20px 0;
+        }
+        .section-title {
+            font-weight: bold;
+            font-size: 14px;
+            margin: 15px 0 10px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 13px;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th {
+            background-color: #f0f0f0;
+            padding: 8px;
+            text-align: center;
+            font-weight: bold;
+        }
+        td {
+            padding: 8px;
+            vertical-align: top;
+        }
+        .text-center { text-align: center; }
+        .signature-section {
+            margin-top: 40px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .signature-box {
+            text-align: center;
+            width: 45%;
+        }
+        .signature-box p {
+            margin: 5px 0;
+        }
+        .signature-space {
+            height: 80px;
+        }
+        .print-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 30px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .print-btn:hover {
+            background: #45a049;
+        }
+        ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        li {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <button class="print-btn no-print" onclick="window.print()">🖨️ In hoặc Lưu PDF</button>
+    
+    <div class="container">
+        <div class="header">
+            <h1>BIÊN BẢN KHẢO SÁT PHẦN MỀM</h1>
+            <p>V/v Khảo sát yêu cầu xây dựng Hệ thống quản lý kinh doanh đa kênh cho nhà phân phối</p>
+        </div>
+
+        <div class="section">
+            <ul>
+                <li>Căn cứ vào nhu cầu sử dụng của Doanh nghiệp A;</li>
+                <li>Căn cứ vào đề tài đồ án tốt nghiệp của sinh viên Đại học Văn Lang;</li>
+            </ul>
+            <p style="margin-top: 15px;">
+                Hôm nay, ngày <strong>01</strong> tháng <strong>11</strong> năm <strong>2025</strong>, 
+                tại <strong>Phòng họp VL</strong>, chúng tôi bao gồm:
+            </p>
+        </div>
+
+        <div class="section">
+            <div class="section-title">I. THÀNH PHẦN THAM DỰ:</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">TT</th>
+                        <th style="width: 200px;">Người tham dự</th>
+                        <th style="width: 200px;">Đơn vị</th>
+                        <th>Vai trò</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="text-center">1</td>
+                        <td>Nguyễn Văn A</td>
+                        <td>Doanh nghiệp A</td>
+                        <td>Giám đốc</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">2</td>
+                        <td>Nguyễn Phước Đại</td>
+                        <td>Đại học Văn Lang</td>
+                        <td>Sinh viên CNTT</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">3</td>
+                        <td>Phạm Hoàng Phúc</td>
+                        <td>Đại học Văn Lang</td>
+                        <td>Sinh viên CNTT</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section">
+            <div class="section-title">II. KẾT QUẢ KHẢO SÁT:</div>
+            <p><strong>Chi tiết ghi nhận yêu cầu của Doanh nghiệp A:</strong></p>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 40px;">TT</th>
+                        <th style="width: 150px;">Nội dung</th>
+                        <th>Ý kiến Doanh nghiệp A</th>
+                        <th>Ý kiến Đại học Văn Lang</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="text-center">1</td>
+                        <td><strong>Mục tiêu hệ thống</strong></td>
+                        <td>Doanh nghiệp muốn có một nền tảng quản lý tập trung để đồng bộ dữ liệu bán hàng từ Shopee, Lazada, TikTok Shop và cửa hàng offline.</td>
+                        <td>Hệ thống sẽ được thiết kế theo mô hình web-app, quản lý tập trung các kênh bán hàng, hỗ trợ theo dõi đơn hàng, kho, nhân sự, tài chính.</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">2</td>
+                        <td><strong>Cấu trúc giao diện/menu chính</strong></td>
+                        <td>Doanh nghiệp mong muốn giao diện có đủ các menu: Dashboard, Sản phẩm, Đơn hàng, Cửa hàng, Kho, Báo cáo, Tài chính.</td>
+                        <td>Hệ thống cho phép admin tự cấu hình menu ẩn/hiện module tuỳ quyền. Giao diện responsive trên PC và mobile.</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">3</td>
+                        <td><strong>Quản lý sản phẩm đầu vào</strong></td>
+                        <td>Cần thêm mới, sửa, xóa, tìm kiếm sản phẩm theo mã SKU, danh mục.</td>
+                        <td>Cung cấp chức năng CRUD đầy đủ, hỗ trợ import/export Excel.</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">4</td>
+                        <td><strong>Quản lý sản phẩm bán ra</strong></td>
+                        <td>Muốn xem danh sách sản phẩm đang bán, ngưng bán, và cập nhật giá bán nhanh.</td>
+                        <td>Hệ thống hỗ trợ cập nhật hàng loạt, đồng bộ trạng thái và giá từ sản phẩm đầu vào.</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">5</td>
+                        <td><strong>Quản lý đơn hàng đa nền tảng</strong></td>
+                        <td>Doanh nghiệp cần xem tổng hợp tất cả đơn hàng từ nhiều sàn. Muốn có thống kê doanh thu theo từng kênh.</td>
+                        <td>Hệ thống có màn hình tổng hợp đơn hàng (filter theo sàn, cửa hàng, thời gian, trạng thái). Có báo cáo tổng doanh thu.</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">6</td>
+                        <td><strong>Quản lý nhiều cửa hàng TMĐT</strong></td>
+                        <td>Mỗi cửa hàng có mã riêng. Muốn xem hoạt động từng shop và kết quả kinh doanh.</td>
+                        <td>Cho phép thêm, sửa, xóa cửa hàng; lọc thống kê theo từng shop; hỗ trợ hiển thị biểu đồ hiệu suất.</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">7</td>
+                        <td><strong>Quản lý kho hàng</strong></td>
+                        <td>Doanh nghiệp muốn theo dõi tồn kho và xuất nhập hàng trực tiếp.</td>
+                        <td>Hệ thống cho phép nhập, xuất, điều chỉnh tồn kho; cảnh báo tồn thấp; xuất báo cáo Excel.</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">8</td>
+                        <td><strong>Quản lý nhân sự và phân quyền</strong></td>
+                        <td>Có nhiều nhân viên, mỗi người phụ trách 1 cửa hàng hoặc mảng. Cần phân quyền theo vai trò.</td>
+                        <td>Hỗ trợ phân quyền chi tiết (Admin, Manager, Staff, Viewer). Không giới hạn số tài khoản.</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">9</td>
+                        <td><strong>Thống kê – Báo cáo</strong></td>
+                        <td>Doanh nghiệp muốn xem doanh thu, chi phí vận chuyển, lợi nhuận theo thời gian.</td>
+                        <td>Biểu đồ trực quan, có filter theo kênh và thời gian. Dữ liệu real-time.</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">10</td>
+                        <td><strong>Ngôn ngữ hệ thống</strong></td>
+                        <td>Ưu tiên giao diện tiếng Việt, nhưng cần có thêm tiếng Anh nếu mở rộng quốc tế.</td>
+                        <td>Hệ thống hỗ trợ song ngữ Việt – Anh. Admin tự nhập nội dung từng ngôn ngữ.</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">11</td>
+                        <td><strong>Hosting và Domain</strong></td>
+                        <td>Muốn triển khai online, truy cập qua domain riêng.</td>
+                        <td>Bản demo deploy trên Firebase Hosting. Khi triển khai thực tế có thể dùng VPS riêng.</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">12</td>
+                        <td><strong>Tài khoản đăng nhập</strong></td>
+                        <td>Mong muốn đăng nhập bằng email công ty hoặc tài khoản Google.</td>
+                        <td>Dùng Firebase Authentication hỗ trợ Email/Password + Google Sign-In.</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">13</td>
+                        <td><strong>Liên kết nền tảng bên ngoài</strong></td>
+                        <td>Muốn kết nối API Shopee, Lazada, TikTok Shop để đồng bộ đơn hàng tự động.</td>
+                        <td>API các sàn được cấu hình linh hoạt, hỗ trợ import file Excel nếu API không khả dụng.</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">14</td>
+                        <td><strong>Bảo mật hệ thống</strong></td>
+                        <td>Dữ liệu đơn hàng và tài chính cần được bảo mật chặt chẽ.</td>
+                        <td>Sử dụng Firebase Auth, HTTPS, phân quyền và ghi log thao tác người dùng.</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">15</td>
+                        <td><strong>Cơ chế phê duyệt dữ liệu</strong></td>
+                        <td>Muốn thiết lập bước duyệt trước khi cập nhật giá hoặc trạng thái sản phẩm.</td>
+                        <td>Hệ thống có tùy chọn "phê duyệt thay đổi" cho nhóm quyền cao hơn.</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">16</td>
+                        <td><strong>Ngôn ngữ lập trình & công nghệ</strong></td>
+                        <td>Không yêu cầu cụ thể.</td>
+                        <td>Frontend: HTML/CSS/JavaScript. Backend: Firebase Realtime Database. CI/CD: GitHub Actions.</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">17</td>
+                        <td><strong>Báo cáo xuất file</strong></td>
+                        <td>Muốn xuất dữ liệu ra Excel và cả PDF.</td>
+                        <td>Hệ thống hỗ trợ export Excel, in PDF qua trình duyệt.</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">18</td>
+                        <td><strong>Thời gian dự kiến hoàn thành</strong></td>
+                        <td>Trong vòng 8 tuần kể từ ngày ký duyệt yêu cầu.</td>
+                        <td>Được chia làm 4 giai đoạn: Phân tích – Thiết kế – Xây dựng – Hoàn thiện báo cáo.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section" style="page-break-before: always;">
+            <div class="section-title">III. KẾT LUẬN VÀ CÔNG VIỆC TIẾP THEO:</div>
+            
+            <p><strong>1. Hai bên thống nhất những nội dung đã ghi nhận trong buổi làm việc.</strong></p>
+            
+            <p><strong>2. Hai bên thống nhất những nội dung sẽ thực hiện sau buổi làm việc:</strong></p>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 40px;">TT</th>
+                        <th>Công việc tiếp theo</th>
+                        <th style="width: 150px;">Phụ trách</th>
+                        <th style="width: 120px;">Thời gian hoàn thành</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="text-center">1</td>
+                        <td>Hoàn thiện tài liệu phân tích yêu cầu chi tiết (SRS)</td>
+                        <td>Đại học Văn Lang</td>
+                        <td class="text-center">08/11/2025</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">2</td>
+                        <td>Thiết kế cơ sở dữ liệu Firebase và sơ đồ ERD</td>
+                        <td>Đại học Văn Lang</td>
+                        <td class="text-center">12/11/2025</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">3</td>
+                        <td>Thiết kế giao diện (UI/UX) các module chính</td>
+                        <td>Đại học Văn Lang</td>
+                        <td class="text-center">15/11/2025</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">4</td>
+                        <td>Cung cấp dữ liệu mẫu sản phẩm, đơn hàng và logo</td>
+                        <td>Doanh nghiệp A</td>
+                        <td class="text-center">10/11/2025</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">5</td>
+                        <td>Xây dựng module Dashboard và thống kê tổng quan</td>
+                        <td>Đại học Văn Lang</td>
+                        <td class="text-center">22/11/2025</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">6</td>
+                        <td>Xây dựng module Quản lý sản phẩm (CRUD)</td>
+                        <td>Đại học Văn Lang</td>
+                        <td class="text-center">25/11/2025</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">7</td>
+                        <td>Xây dựng module Tạo đơn hàng (TMĐT, Lẻ, Sỉ)</td>
+                        <td>Đại học Văn Lang</td>
+                        <td class="text-center">29/11/2025</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">8</td>
+                        <td>Xây dựng module Quản lý đơn hàng và lọc dữ liệu</td>
+                        <td>Đại học Văn Lang</td>
+                        <td class="text-center">03/12/2025</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">9</td>
+                        <td>Xây dựng module Quản lý kho (nhập/xuất/tồn)</td>
+                        <td>Đại học Văn Lang</td>
+                        <td class="text-center">06/12/2025</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">10</td>
+                        <td>Xây dựng module Tài chính và tính lợi nhuận</td>
+                        <td>Đại học Văn Lang</td>
+                        <td class="text-center">10/12/2025</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">11</td>
+                        <td>Xây dựng module Báo cáo và xuất Excel/PDF</td>
+                        <td>Đại học Văn Lang</td>
+                        <td class="text-center">13/12/2025</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">12</td>
+                        <td>Xây dựng module Quản lý cửa hàng</td>
+                        <td>Đại học Văn Lang</td>
+                        <td class="text-center">12/12/2025</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">13</td>
+                        <td>Xây dựng module Chi phí vận chuyển</td>
+                        <td>Đại học Văn Lang</td>
+                        <td class="text-center">14/12/2025</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">14</td>
+                        <td>Xây dựng module Phân quyền người dùng</td>
+                        <td>Đại học Văn Lang</td>
+                        <td class="text-center">16/12/2025</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">15</td>
+                        <td>Kiểm thử bản demo và góp ý điều chỉnh</td>
+                        <td>Doanh nghiệp A</td>
+                        <td class="text-center">18/12/2025</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">16</td>
+                        <td>Sửa lỗi và hoàn thiện theo góp ý</td>
+                        <td>Đại học Văn Lang</td>
+                        <td class="text-center">22/12/2025</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">17</td>
+                        <td>Deploy lên Firebase Hosting và bàn giao</td>
+                        <td>Đại học Văn Lang</td>
+                        <td class="text-center">24/12/2025</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">18</td>
+                        <td>Hướng dẫn sử dụng và đào tạo nhân viên</td>
+                        <td>Đại học Văn Lang</td>
+                        <td class="text-center">27/12/2025</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">19</td>
+                        <td>Hoàn thiện báo cáo đồ án tốt nghiệp</td>
+                        <td>Đại học Văn Lang</td>
+                        <td class="text-center">30/12/2025</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <p style="margin-top: 20px;"><em>Ghi chú: Biên bản được lập thành 02 bản có giá trị như nhau, mỗi bên giữ 01 bản để thực hiện.</em></p>
+        </div>
+
+        <div class="signature-section">
+            <div class="signature-box">
+                <p><strong>Đại diện Doanh nghiệp A</strong></p>
+                <p><em>(Ký và ghi rõ họ tên)</em></p>
+                <div class="signature-space"></div>
+                <p>_________________________</p>
+                <p><strong>Nguyễn Văn A</strong></p>
+                <p>Giám đốc</p>
+            </div>
+            <div class="signature-box">
+                <p><strong>Đại diện Đại học Văn Lang</strong></p>
+                <p><em>(Ký và ghi rõ họ tên)</em></p>
+                <div class="signature-space"></div>
+                <p>_________________________</p>
+                <p><strong>Phạm Hoàng Phúc</strong></p>
+                <p>Sinh viên thực hiện</p>
+                <br>
+                <p>_________________________</p>
+                <p><strong>Nguyễn Phước Đại</strong></p>
+                <p>Sinh viên thực hiện</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
