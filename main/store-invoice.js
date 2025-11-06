@@ -1040,9 +1040,11 @@ function calculateInvoiceTotalAmount() {
     const totalElements = invoiceContent.querySelectorAll('.invoice-total');
     if (totalElements.length > 0) {
         const totalText = totalElements[0].textContent;
-        const match = totalText.match(/[\d,]+/);
+        // Match numbers with dots (Vietnamese format: 12.000.000) or commas
+        const match = totalText.match(/[\d,.]+/);
         if (match) {
-            return parseFloat(match[0].replace(/,/g, ''));
+            // Remove both dots and commas, then parse
+            return parseFloat(match[0].replace(/[.,]/g, ''));
         }
     }
     
