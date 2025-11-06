@@ -203,7 +203,9 @@ function displayInvoices(invoices) {
                 <td>${invoice.storeName || 'N/A'}</td>
                 <td style="text-align: right;">${formatCurrency(totalAmount)}</td>
                 <td style="text-align: right;">${formatCurrency(paidAmount)}</td>
-                <td style="text-align: right;">${formatCurrency(remainingAmount)}</td>
+                <td style="text-align: right; font-weight: 700; font-size: 15px; color: ${remainingAmount > 0 ? '#dc3545' : '#28a745'};">
+                    ${formatCurrency(remainingAmount)}
+                </td>
                 <td>${statusBadge}</td>
                 <td class="notes-column">${invoice.paymentNote || 'Không có ghi chú'}</td>
                 <td>
