@@ -107,6 +107,9 @@ const ROLE_PERMISSIONS = {
         // Report permissions
         'report_read', 'report_create',
         
+        // Financial Transactions permissions
+        'financial_read', 'financial_upload', 'financial_save', 'financial_manage',
+        
         // Settings permissions
         'settings_read', 'settings_update', 'system_config',
         
@@ -141,7 +144,10 @@ const ROLE_PERMISSIONS = {
         'shipping_read',
         
         // Report permissions
-        'report_read'
+        'report_read',
+        
+        // Financial Transactions permissions
+        'financial_read', 'financial_upload', 'financial_save'
     ],
     [USER_ROLES.EMPLOYEE]: [
         // Product permissions (read only)
@@ -157,7 +163,10 @@ const ROLE_PERMISSIONS = {
         'warehouse_read',
         
         // Invoice permissions (basic)
-        'invoice_read', 'invoice_create'
+        'invoice_read', 'invoice_create',
+        
+        // Financial Transactions permissions (read only)
+        'financial_read'
     ],
     [USER_ROLES.VIEWER]: [
         // Product permissions (read only)
@@ -241,6 +250,12 @@ const PERMISSION_DISPLAY = {
     // Report permissions
     'report_read': '📊 Xem báo cáo',
     'report_create': '📊 Tạo báo cáo',
+    
+    // Financial Transactions permissions
+    'financial_read': '💳 Xem giao dịch tài chính',
+    'financial_upload': '💳 Tải lên dữ liệu giao dịch',
+    'financial_save': '💳 Lưu giao dịch tài chính',
+    'financial_manage': '💳 Quản lý giao dịch đầy đủ',
     
     // Settings permissions
     'settings_read': '⚙️ Xem cài đặt',
